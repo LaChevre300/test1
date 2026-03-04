@@ -456,3 +456,395 @@ h1 {
     font-size: 0.8rem;
   }
 }
+
+/* ===== BitLife-style mobile redesign ===== */
+body {
+  background: #fafafa;
+  color: #101010;
+  font-family: "SF Pro Text", "SF Pro Display", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 16pt;
+}
+
+.background-grid,
+.layout,
+.codex,
+#actions-root,
+#stats-list,
+.top-actions {
+  display: none !important;
+}
+
+.app {
+  width: min(70vw, 560px);
+  margin: 0 auto;
+  min-height: 100vh;
+  padding: 0.8rem 0.8rem 175px;
+  position: relative;
+}
+
+.top-header {
+  text-align: center;
+  margin-bottom: 0.55rem;
+}
+
+.top-header h1 {
+  margin: 0;
+  font-size: 1.05rem;
+  color: #101010;
+  font-weight: 700;
+}
+
+.subtitle {
+  margin: 0;
+  color: #6a6a6a;
+  font-size: 0.8rem;
+}
+
+.stats-bar {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.4rem;
+  margin-bottom: 0.75rem;
+}
+
+.status-item {
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: 10px;
+  padding: 0.35rem;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+  min-height: 64px;
+}
+
+.status-label {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.56rem;
+  line-height: 1;
+  margin-bottom: 0.3rem;
+}
+
+.status-track {
+  height: 7px;
+  border-radius: 999px;
+  background: #ececec;
+  overflow: hidden;
+}
+
+.status-fill {
+  height: 100%;
+  border-radius: 999px;
+  background: #00c851;
+}
+
+.screen {
+  display: none;
+}
+
+.screen.active {
+  display: block;
+}
+
+.card {
+  background: #ffffff;
+  border: 1px solid #ececec;
+  border-radius: 16px;
+  padding: 0.75rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+  margin-bottom: 0.65rem;
+}
+
+.card h2 {
+  margin: 0 0 0.5rem;
+  font-size: 0.9rem;
+  color: #111;
+}
+
+.card h3 {
+  margin: 0.65rem 0 0.4rem;
+  font-size: 0.8rem;
+  color: #222;
+}
+
+.card p {
+  text-align: justify;
+}
+
+.event-text {
+  margin: 0 auto;
+  width: 70%;
+  font-size: 18pt;
+  color: #111;
+  text-align: justify;
+  line-height: 1.35;
+}
+
+.event-choices-inline {
+  margin-top: 0.5rem;
+}
+
+.compact-tag {
+  display: inline-block;
+  margin: 0.12rem 0.2rem 0 0;
+  border-radius: 999px;
+  background: #f1f1f1;
+  border: 1px solid #e3e3e3;
+  color: #3b3b3b;
+  font-size: 0.62rem;
+  padding: 0.22rem 0.45rem;
+}
+
+.log {
+  max-height: 39vh;
+  border: 0;
+  border-radius: 10px;
+  background: #f7f7f7;
+}
+
+.log-entry {
+  border-left: 3px solid #00c851;
+  color: #111;
+  font-size: 0.78rem;
+}
+
+.action-category {
+  border: 1px solid #e7e7e7;
+  border-radius: 12px;
+  background: #fcfcfc;
+}
+
+.action-category summary {
+  background: #fff;
+  color: #111;
+  font-weight: 600;
+  font-size: 0.82rem;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: 1fr;
+}
+
+.action-btn {
+  min-height: 46px;
+  border-radius: 12px;
+  border: 1px solid #dadada;
+  background: #fff;
+  color: #111;
+  font-size: 0.83rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  text-align: left;
+}
+
+.detail-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 0.45rem;
+}
+
+.detail-item {
+  display: grid;
+  grid-template-columns: 24px 1fr;
+  gap: 0.6rem;
+  align-items: start;
+  background: #fff;
+  border: 1px solid #ebebeb;
+  border-radius: 12px;
+  padding: 0.62rem;
+}
+
+.detail-icon {
+  font-size: 24px;
+  line-height: 1;
+}
+
+.detail-title {
+  font-size: 16pt;
+  color: #111;
+  margin: 0;
+}
+
+.detail-sub {
+  font-size: 14pt;
+  color: #7b7b7b;
+  margin: 0.12rem 0 0;
+}
+
+.compact-list li {
+  border: 1px solid #ececec;
+  border-radius: 10px;
+  padding: 0.42rem 0.5rem;
+  background: #fff;
+  color: #111;
+  font-size: 0.74rem;
+}
+
+.bottom-actions {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(60px + env(safe-area-inset-bottom) + 8px);
+  width: min(70vw, 560px);
+  padding: 0 0.65rem;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.5rem;
+  z-index: 30;
+}
+
+.bottom-actions.stacked {
+  grid-template-columns: 1fr;
+}
+
+.btn {
+  border-radius: 12px;
+  border: 0;
+  min-height: 48px;
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.86rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.14);
+}
+
+.btn:disabled {
+  opacity: 0.42;
+}
+
+.btn-green {
+  background: #00c851;
+}
+
+.btn-orange {
+  background: #ff6b35;
+}
+
+.btn-gray {
+  background: #bdbdbd;
+  color: #111;
+}
+
+.btn-blue {
+  background: #1976d2;
+}
+
+.bottom-actions.single {
+  grid-template-columns: 1fr;
+}
+
+.tabbar {
+  position: fixed;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: env(safe-area-inset-bottom);
+  width: min(70vw, 560px);
+  height: 60px;
+  background: #fff;
+  border-top: 1px solid #e9e9e9;
+  box-shadow: 0 -3px 8px rgba(0, 0, 0, 0.08);
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  z-index: 40;
+}
+
+.tab-btn {
+  position: relative;
+  border: 0;
+  background: transparent;
+  font-size: 24px;
+  color: #9e9e9e;
+  cursor: pointer;
+}
+
+.tab-btn[data-accent="green"].is-active {
+  color: #00c851;
+}
+
+.tab-btn[data-accent="blue"].is-active {
+  color: #1976d2;
+}
+
+.tab-btn[data-accent="orange"].is-active {
+  color: #ff6b35;
+}
+
+.tab-orange {
+  color: #ff6b35;
+}
+
+.badge {
+  position: absolute;
+  top: 8px;
+  right: 22%;
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: #ff3b30;
+  display: none;
+}
+
+.badge.show {
+  display: block;
+}
+
+.death-modal {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 1rem;
+}
+
+.death-modal.show {
+  display: flex;
+}
+
+.death-card {
+  width: min(88vw, 430px);
+  background: #fff;
+  border-radius: 24px;
+  padding: 1rem;
+}
+
+.death-card h2 {
+  margin: 0;
+  font-size: 20pt;
+  line-height: 1.25;
+}
+
+.death-stats,
+.death-recap {
+  font-size: 16pt;
+  color: #222;
+}
+
+.death-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.55rem;
+}
+
+@media (max-width: 960px) {
+  .app,
+  .bottom-actions,
+  .tabbar {
+    width: min(94vw, 560px);
+  }
+
+  .stats-bar {
+    gap: 0.3rem;
+  }
+
+  .status-label {
+    font-size: 0.5rem;
+  }
+
+  .event-text {
+    font-size: 16pt;
+  }
+}

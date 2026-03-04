@@ -7,67 +7,107 @@
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div class="background-grid"></div>
     <main class="app">
-      <header class="topbar panel">
-        <div>
-          <h1>Chroniques de Dynastie</h1>
-          <p class="subtitle">Simulation de vie médiévale — style textuel à choix</p>
-        </div>
-        <div class="top-actions">
-          <button id="new-life-btn" class="btn btn-secondary">Nouvelle vie</button>
-          <button id="age-btn" class="btn btn-primary">Vieillir</button>
-        </div>
+      <header class="top-header">
+        <h1>Chroniques de Dynastie</h1>
+        <p class="subtitle">Simulation textuelle médiévale</p>
       </header>
 
-      <section class="status-strip panel" id="status-strip"></section>
+      <section class="stats-bar" id="status-strip"></section>
 
-      <section class="layout">
-        <aside class="panel left-column">
-          <h2>Statistiques</h2>
-          <div id="stats-list" class="stats-list"></div>
+      <section id="screen-home" class="screen active">
+        <article class="card event-card">
+          <p id="event-text" class="event-text"></p>
+          <div id="event-choices" class="event-choices-inline"></div>
+        </article>
 
-          <h3>Ressources</h3>
+        <article class="card">
+          <h2>Journal</h2>
+          <div id="log" class="log"></div>
+        </article>
+      </section>
+
+      <section id="screen-activity" class="screen">
+        <article class="card">
+          <h2>Activités</h2>
+          <div id="activity-root"></div>
+        </article>
+      </section>
+
+      <section id="screen-crime" class="screen">
+        <article class="card">
+          <h2>Crime & prison</h2>
+          <div id="crime-root"></div>
+        </article>
+      </section>
+
+      <section id="screen-stats" class="screen">
+        <article class="card">
+          <h2>Détails</h2>
+          <ul id="detail-menu" class="detail-list"></ul>
+        </article>
+
+        <article class="card">
+          <h2>Ressources</h2>
           <ul id="resources-list" class="compact-list"></ul>
-
           <h3>Conditions</h3>
           <ul id="conditions-list" class="compact-list"></ul>
-
           <h3>Relations proches</h3>
           <ul id="relations-list" class="compact-list"></ul>
-        </aside>
-
-        <section class="panel center-column">
-          <h2>Événement de vie</h2>
-          <div id="event-card" class="event-card"></div>
-
-          <h2>Journal de vie</h2>
-          <div id="log" class="log"></div>
-        </section>
-
-        <aside class="panel right-column">
-          <h2>Actions</h2>
-          <p class="muted">
-            Les conséquences restent cachées. Certaines options peuvent transformer radicalement la
-            vie de votre personnage.
-          </p>
-          <div id="actions-root"></div>
-
-          <h3>Inventaire & possessions</h3>
+          <h3>Inventaire</h3>
           <ul id="inventory-list" class="compact-list"></ul>
-
           <h3>Animaux</h3>
           <ul id="animals-list" class="compact-list"></ul>
-
           <h3>Descendance</h3>
           <ul id="children-list" class="compact-list"></ul>
-        </aside>
+        </article>
       </section>
 
-      <section class="panel codex">
-        <h2>Codex des systèmes inclus</h2>
-        <div id="feature-checklist" class="checklist"></div>
+      <section id="screen-settings" class="screen">
+        <article class="card">
+          <h2>Paramètres</h2>
+          <p class="muted">
+            Interface minimaliste style BitLife mobile. Les conséquences des actions restent cachées.
+          </p>
+          <button id="new-life-btn" class="btn btn-gray">Nouvelle vie</button>
+        </article>
       </section>
+
+      <section class="bottom-actions" id="bottom-actions">
+        <button id="bottom-btn-1" class="btn btn-green"></button>
+        <button id="bottom-btn-2" class="btn btn-orange"></button>
+        <button id="bottom-btn-3" class="btn btn-gray"></button>
+      </section>
+
+      <nav class="tabbar" id="tabbar">
+        <button class="tab-btn is-active" data-tab="home" data-accent="green" aria-label="Accueil">
+          🏠<span class="badge" id="badge-home"></span>
+        </button>
+        <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Activité">
+          ⚙️<span class="badge" id="badge-activity"></span>
+        </button>
+        <button class="tab-btn tab-orange" data-tab="crime" data-accent="orange" aria-label="Crime">
+          🔪<span class="badge" id="badge-crime"></span>
+        </button>
+        <button class="tab-btn" data-tab="stats" data-accent="blue" aria-label="Stats">
+          📊<span class="badge" id="badge-stats"></span>
+        </button>
+        <button class="tab-btn" data-tab="settings" data-accent="gray" aria-label="Paramètres">
+          ⚙️<span class="badge" id="badge-settings"></span>
+        </button>
+      </nav>
+
+      <div id="death-modal" class="death-modal">
+        <div class="death-card">
+          <h2 id="death-title"></h2>
+          <p id="death-stats" class="death-stats"></p>
+          <p id="death-recap" class="death-recap"></p>
+          <div class="death-actions">
+            <button id="death-new-life-btn" class="btn btn-green">Nouvelle vie</button>
+            <button id="death-legacy-btn" class="btn btn-orange">Legacy</button>
+          </div>
+        </div>
+      </div>
     </main>
 
     <template id="action-category-template">

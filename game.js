@@ -162,23 +162,45 @@
 
   const ui = {
     newLifeBtn: document.getElementById("new-life-btn"),
-    ageBtn: document.getElementById("age-btn"),
     statusStrip: document.getElementById("status-strip"),
-    statsList: document.getElementById("stats-list"),
+    eventText: document.getElementById("event-text"),
+    eventChoices: document.getElementById("event-choices"),
+    activityRoot: document.getElementById("activity-root"),
+    crimeRoot: document.getElementById("crime-root"),
+    detailMenu: document.getElementById("detail-menu"),
     resourcesList: document.getElementById("resources-list"),
     conditionsList: document.getElementById("conditions-list"),
     relationsList: document.getElementById("relations-list"),
-    eventCard: document.getElementById("event-card"),
     log: document.getElementById("log"),
-    actionsRoot: document.getElementById("actions-root"),
     inventoryList: document.getElementById("inventory-list"),
     animalsList: document.getElementById("animals-list"),
     childrenList: document.getElementById("children-list"),
-    featureChecklist: document.getElementById("feature-checklist"),
-    actionCategoryTemplate: document.getElementById("action-category-template")
+    actionCategoryTemplate: document.getElementById("action-category-template"),
+    bottomActions: document.getElementById("bottom-actions"),
+    bottomButtons: [
+      document.getElementById("bottom-btn-1"),
+      document.getElementById("bottom-btn-2"),
+      document.getElementById("bottom-btn-3")
+    ],
+    tabButtons: document.querySelectorAll(".tab-btn"),
+    screens: document.querySelectorAll(".screen"),
+    badges: {
+      home: document.getElementById("badge-home"),
+      activity: document.getElementById("badge-activity"),
+      crime: document.getElementById("badge-crime"),
+      stats: document.getElementById("badge-stats"),
+      settings: document.getElementById("badge-settings")
+    },
+    deathModal: document.getElementById("death-modal"),
+    deathTitle: document.getElementById("death-title"),
+    deathStats: document.getElementById("death-stats"),
+    deathRecap: document.getElementById("death-recap"),
+    deathNewLifeBtn: document.getElementById("death-new-life-btn"),
+    deathLegacyBtn: document.getElementById("death-legacy-btn")
   };
 
   let game = null;
+  let activeTab = "home";
 
   function rnd(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -349,6 +371,7 @@
       achievements: []
     };
     game.dynastyName = game.character.surname;
+    activeTab = "home";
     addLog(
       `Début de la génération ${game.character.generation} : ${game.character.fullName} naît en ${game.character.country}.`,
       "good"
@@ -359,13 +382,7 @@
   }
 
   function ensureChecklist() {
-    ui.featureChecklist.innerHTML = "";
-    CHECKLIST.forEach((entry) => {
-      const div = document.createElement("div");
-      div.className = "check-item";
-      div.textContent = `✓ ${entry}`;
-      ui.featureChecklist.append(div);
-    });
+    return;
   }
 
   function addLog(text, tone = "neutral") {
@@ -816,6 +833,34 @@
   function randomEventPool() {
     const c = game.character;
     const pool = [];
+    if (c.age >= 6) {
+      pool.push({
+        text: "Ta mère t'invite au restaurant.",
+        choices: [
+          {
+            label: "Accepter",
+            run: () => {
+              spend(rnd(2, 8));
+              relationshipPulse(c.family.parents, 5);
+              changeStat("happiness", 7);
+            }
+          },
+          {
+            label: "Refuser",
+            run: () => {
+              relationshipPulse(c.family.parents, -4);
+              changeStat("happiness", -3);
+            }
+          },
+          {
+            label: "Passer",
+            run: () => {
+              changeStat("sanity", 1);
+            }
+          }
+        ]
+      });
+    }
     if (c.age <= 4) {
       pool.push({
         text: "Tes parents hésitent sur la manière de t'éduquer.",
@@ -2084,47 +2129,73 @@
 
   function renderStatus() {
     const c = game.character;
+    const netWorth = c.money - getTotalDebt();
+    const moneyScore = clamp(Math.round(((netWorth + 150) / 500) * 100), 0, 100);
     const status = [
-      `Âge: ${c.age} ans`,
-      `Génération: ${c.generation}`,
-      `Dynastie: ${c.surname}`,
-      `Classe: ${c.socialClass}`,
-      `Pays: ${c.country}`,
-      `Argent: ${Math.round(c.money)} pièces`,
-      `Dettes: ${Math.round(getTotalDebt())} pièces`,
-      c.criminal.inPrison ? `Prison: ${c.criminal.yearsLeft} an(s)` : "Statut: libre"
+      { label: "Santé", icon: "❤️", value: c.stats.health },
+      { label: "Bonheur", icon: "😊", value: c.stats.happiness },
+      { label: "Intelligence", icon: "🧠", value: c.stats.intelligence },
+      { label: "Apparence", icon: "👤", value: c.stats.looks },
+      { label: "Argent", icon: "💰", value: moneyScore, text: `$${Math.round(c.money)}` }
     ];
     ui.statusStrip.innerHTML = "";
-    status.forEach((line) => {
+    status.forEach((entry) => {
       const div = document.createElement("div");
       div.className = "status-item";
-      div.textContent = line;
+      const displayValue = entry.text || `${entry.value}%`;
+      const hue = Math.round((entry.value / 100) * 120);
+      div.innerHTML = `
+        <div class="status-label">
+          <span>${entry.icon}</span>
+          <span>${displayValue}</span>
+        </div>
+        <div class="status-track">
+          <div class="status-fill" style="width:${Math.max(
+            2,
+            entry.value
+          )}%; background:hsl(${hue}, 77%, 44%);"></div>
+        </div>
+      `;
       ui.statusStrip.append(div);
     });
   }
 
-  function renderStats() {
+  function renderDetailMenu() {
     const c = game.character;
-    const labels = [
-      ["Santé", "health"],
-      ["Bonheur", "happiness"],
-      ["Intelligence", "intelligence"],
-      ["Apparence", "looks"],
-      ["Force", "strength"],
-      ["Mental", "sanity"],
-      ["Réputation", "reputation"]
+    const items = [
+      {
+        icon: "👪",
+        title: "Famille",
+        detail: `${aliveChildren().length} enfant(s), conjoint: ${c.family.spouse ? "oui" : "non"}`
+      },
+      {
+        icon: "⚒️",
+        title: "Travail",
+        detail: `${c.job || "Aucun"} · salaire ${Math.round(c.salary)}`
+      },
+      {
+        icon: "🏠",
+        title: "Maison",
+        detail: `${c.properties.length} propriété(s), ${c.vehicles.length} monture(s)`
+      },
+      {
+        icon: "🎯",
+        title: "Activité",
+        detail: c.criminal.inPrison ? "En prison" : "Libre de choisir une activité"
+      }
     ];
-    ui.statsList.innerHTML = "";
-    labels.forEach(([label, key]) => {
-      const wrap = document.createElement("div");
-      wrap.className = "stat";
-      const value = c.stats[key];
-      wrap.innerHTML = `
-        <span>${label}</span>
-        <div class="bar-wrap"><div class="bar" style="width:${value}%"></div></div>
-        <strong>${value}</strong>
+    ui.detailMenu.innerHTML = "";
+    items.forEach((entry) => {
+      const li = document.createElement("li");
+      li.className = "detail-item";
+      li.innerHTML = `
+        <span class="detail-icon">${entry.icon}</span>
+        <div>
+          <p class="detail-title">${entry.title}</p>
+          <p class="detail-sub">${entry.detail}</p>
+        </div>
       `;
-      ui.statsList.append(wrap);
+      ui.detailMenu.append(li);
     });
   }
 
@@ -2192,52 +2263,22 @@
 
   function renderEvent() {
     const c = game.character;
-    ui.eventCard.innerHTML = "";
     if (!c.alive) {
-      const wrapper = document.createElement("div");
-      wrapper.innerHTML = `<h3 class="event-title">Fin de vie</h3><p>${summaryText()}</p>`;
-      const heirs = aliveChildren();
-      if (heirs.length) {
-        const choices = document.createElement("div");
-        choices.className = "choice-list";
-        heirs.forEach((heir) => {
-          const btn = document.createElement("button");
-          btn.className = "choice-btn";
-          btn.textContent = `Incarner ${heir.name} (${heir.age} ans)`;
-          btn.addEventListener("click", () => continueAsChild(heir.id));
-          choices.append(btn);
-        });
-        wrapper.append(choices);
-      } else {
-        const p = document.createElement("p");
-        p.textContent = "Aucun héritier direct vivant. Lance une nouvelle vie.";
-        wrapper.append(p);
-      }
-      ui.eventCard.append(wrapper);
+      ui.eventText.textContent = "Votre histoire est terminée.";
+      ui.eventChoices.innerHTML = "";
       return;
     }
 
     if (!game.pendingEvent) {
-      ui.eventCard.innerHTML = `
-        <h3 class="event-title">Aucun événement en attente</h3>
-        <p>Utilise « Vieillir » pour déclencher un nouvel épisode narratif.</p>
-      `;
+      ui.eventText.textContent = "Aucun événement en attente. Utilise « Vieillir » pour continuer.";
+      ui.eventChoices.innerHTML = "";
       return;
     }
-
-    const title = document.createElement("h3");
-    title.className = "event-title";
-    title.textContent = game.pendingEvent.text;
-    const list = document.createElement("div");
-    list.className = "choice-list";
-    game.pendingEvent.choices.forEach((choice, index) => {
-      const btn = document.createElement("button");
-      btn.className = "choice-btn";
-      btn.textContent = choice.label;
-      btn.addEventListener("click", () => executeEventChoice(index));
-      list.append(btn);
-    });
-    ui.eventCard.append(title, list);
+    ui.eventText.textContent = game.pendingEvent.text;
+    ui.eventChoices.innerHTML = game.pendingEvent.choices
+      .slice(0, 3)
+      .map((choice) => `<span class="compact-tag">${choice.label}</span>`)
+      .join(" ");
   }
 
   function renderLog() {
@@ -2253,11 +2294,10 @@
     });
   }
 
-  function renderActions() {
+  function renderActionCategories(target, categoryEntries) {
     const c = game.character;
-    ui.actionsRoot.innerHTML = "";
-    const categories = getActionsByCategory();
-    Object.entries(categories).forEach(([categoryName, actions]) => {
+    target.innerHTML = "";
+    categoryEntries.forEach(([categoryName, actions]) => {
       const template = ui.actionCategoryTemplate.content.cloneNode(true);
       const details = template.querySelector("details");
       const summary = template.querySelector("summary");
@@ -2278,8 +2318,16 @@
         });
         buttons.append(btn);
       });
-      ui.actionsRoot.append(details);
+      target.append(details);
     });
+  }
+
+  function renderActions() {
+    const categories = Object.entries(getActionsByCategory());
+    const crimeEntries = categories.filter(([name]) => name === "Crime & prison");
+    const activityEntries = categories.filter(([name]) => name !== "Crime & prison");
+    renderActionCategories(ui.activityRoot, activityEntries);
+    renderActionCategories(ui.crimeRoot, crimeEntries);
   }
 
   function renderCollections() {
@@ -2309,9 +2357,135 @@
     );
   }
 
+  function setBottomButton(button, config) {
+    button.style.display = config ? "block" : "none";
+    if (!config) {
+      button.onclick = null;
+      return;
+    }
+    button.textContent = config.label;
+    button.className = `btn ${config.tone}`;
+    button.disabled = !!config.disabled;
+    button.onclick = config.onClick;
+  }
+
+  function renderBottomActions() {
+    const [btn1, btn2, btn3] = ui.bottomButtons;
+    const c = game.character;
+
+    if (!c.alive) {
+      ui.bottomActions.style.display = "none";
+      return;
+    }
+    ui.bottomActions.style.display = "grid";
+    ui.bottomActions.classList.remove("single");
+    ui.bottomActions.classList.remove("stacked");
+
+    if (activeTab === "stats") {
+      ui.bottomActions.classList.add("single");
+      setBottomButton(btn1, { label: "Vieillir", tone: "btn-green", onClick: nextYear });
+      setBottomButton(btn2, null);
+      setBottomButton(btn3, null);
+      return;
+    }
+
+    if (activeTab === "home" && game.pendingEvent) {
+      ui.bottomActions.classList.add("stacked");
+      const tones = ["btn-green", "btn-gray", "btn-blue"];
+      for (let i = 0; i < 3; i += 1) {
+        const option = game.pendingEvent.choices[i];
+        if (option) {
+          setBottomButton(ui.bottomButtons[i], {
+            label: option.label,
+            tone: tones[i],
+            onClick: () => executeEventChoice(i)
+          });
+        } else if (i === 2) {
+          setBottomButton(ui.bottomButtons[i], {
+            label: "Passer",
+            tone: "btn-blue",
+            onClick: () => {
+              game.pendingEvent = null;
+              addLog("Tu décides de passer ton tour.", "warn");
+              render();
+            }
+          });
+        } else {
+          setBottomButton(ui.bottomButtons[i], null);
+        }
+      }
+      return;
+    }
+
+    setBottomButton(btn1, { label: "Vieillir", tone: "btn-green", onClick: nextYear });
+    setBottomButton(btn2, {
+      label: "Actions",
+      tone: "btn-orange",
+      onClick: () => {
+        activeTab = "activity";
+        render();
+      }
+    });
+    setBottomButton(btn3, { label: "Nouvelle vie", tone: "btn-gray", onClick: () => bootstrapGame() });
+  }
+
+  function renderBadges() {
+    const c = game.character;
+    const badgeState = {
+      home: !!game.pendingEvent,
+      activity: false,
+      crime: c.criminal.inPrison || c.criminal.record > 0,
+      stats: c.conditions.illnesses.length + c.conditions.mental.length + c.conditions.injuries.length > 0,
+      settings: false
+    };
+    Object.entries(ui.badges).forEach(([key, badge]) => {
+      if (badgeState[key]) {
+        badge.classList.add("show");
+      } else {
+        badge.classList.remove("show");
+      }
+    });
+  }
+
+  function renderTabs() {
+    ui.screens.forEach((screen) => {
+      const screenTab = screen.id.replace("screen-", "");
+      screen.classList.toggle("active", screenTab === activeTab);
+    });
+    ui.tabButtons.forEach((button) => {
+      button.classList.toggle("is-active", button.dataset.tab === activeTab);
+    });
+  }
+
+  function renderDeathModal() {
+    const c = game.character;
+    if (c.alive) {
+      ui.deathModal.classList.remove("show");
+      return;
+    }
+    const cause = c.deceasedCause || "de cause inconnue";
+    const causeText = cause.startsWith("de") || cause.startsWith("d'") ? cause : `de ${cause}`;
+    const spouseState = c.family.spouse?.alive ? "Marié(e)" : "Non marié(e)";
+    const recap = `${spouseState}, ${aliveChildren().length} enfants, ${c.job || "sans emploi"}, $${Math.round(
+      c.money
+    )}`;
+    ui.deathTitle.textContent = `Tu es mort ${causeText} à ${c.age} ans`;
+    ui.deathStats.textContent = `Stats finales: ❤️${c.stats.health} · 😊${c.stats.happiness} · 🧠${c.stats.intelligence} · 👤${c.stats.looks}`;
+    ui.deathRecap.textContent = `Récap vie: ${recap}`;
+    const heirs = aliveChildren();
+    ui.deathLegacyBtn.disabled = heirs.length === 0;
+    ui.deathLegacyBtn.textContent = heirs.length ? "Legacy" : "Legacy indisponible";
+    ui.deathLegacyBtn.onclick = () => {
+      if (heirs.length) {
+        continueAsChild(heirs[0].id);
+      }
+    };
+    ui.deathModal.classList.add("show");
+  }
+
   function render() {
     renderStatus();
-    renderStats();
+    renderDetailMenu();
     renderResources();
     renderConditions();
     renderRelations();
@@ -2319,10 +2493,22 @@
     renderLog();
     renderActions();
     renderCollections();
+    renderTabs();
+    renderBottomActions();
+    renderBadges();
+    renderDeathModal();
   }
 
-  ui.newLifeBtn.addEventListener("click", () => bootstrapGame());
-  ui.ageBtn.addEventListener("click", nextYear);
+  if (ui.newLifeBtn) {
+    ui.newLifeBtn.addEventListener("click", () => bootstrapGame());
+  }
+  ui.tabButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      activeTab = button.dataset.tab;
+      render();
+    });
+  });
+  ui.deathNewLifeBtn.addEventListener("click", () => bootstrapGame());
 
   bootstrapGame();
 })();
