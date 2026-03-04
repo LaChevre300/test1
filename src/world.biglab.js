@@ -76,7 +76,7 @@ export function createLabWorld() {
   floor.position.set(0, -0.5, 0);
   floor.receiveShadow = true;
   group.add(floor);
-  colliders.push(floor);
+  // Le sol ne doit pas bloquer les collisions en XZ (notre collision est 2D).
 
   // Murs extérieurs (collisions)
   const wallLong = (len, x, z, rotY = 0) => {
@@ -101,7 +101,7 @@ export function createLabWorld() {
   ceiling.position.set(0, wallH - 0.15, 0);
   ceiling.receiveShadow = true;
   group.add(ceiling);
-  colliders.push(ceiling);
+  // Idem plafond: on ne le met pas dans les colliders, sinon “murs invisibles” en XZ.
 
   // Helper: murs intérieurs (visuel + collider)
   function addWallBox(sizeX, sizeZ, x, z) {
@@ -166,7 +166,9 @@ export function createLabWorld() {
   addWallBoxRot(corridorZ1 - corridorZ0, 0, corridorW / 2, (corridorZ0 + corridorZ1) / 2, Math.PI / 2);
 
   // Petit “sas” d’entrée: 2 murs courts pour cadrer l’entrée du couloir
-  addWallBox(10, 0, 0, entryZ);
+  // (On laisse une ouverture au centre au lieu d’un mur plein)
+  addWallBox(3.5, 0, -4.5, entryZ);
+  addWallBox(3.5, 0, 4.5, entryZ);
 
   // Salle serveurs (NW)
   const server = {
@@ -302,17 +304,24 @@ export function createLabWorld() {
     }
   }
 
-  // Colliders simplifiés: blocs pour quelques rangées (au lieu de 260 colliders)
-  // (les chaises/PC n’ont pas de collision, mais l’espace se ressent)
+  // Colliders: au lieu de “gros murs invisibles” par rangée, on met des segments alignés avec les bureaux.
+  // (On garde peu de colliders pour rester fluide.)
+  const blockWidth = spacingX * 2 - 1.0; // couvre 2 bureaux
   for (let rz = 0; rz < rowCount; rz++) {
     const z = openMinZ + 5 + rz * spacingZ;
-    const size = new THREE.Vector3(openW - 14, 1.6, 1.8);
-    const pos = new THREE.Vector3(openCenter.x, 0.8, z);
-    addColliderBox(group, colliders, size, pos, "deskRowCollider");
+    for (let rx = 0; rx < colCount; rx += 2) {
+      const x = openMinX + 6 + rx * spacingX;
+      addColliderBox(
+        group,
+        colliders,
+        new THREE.Vector3(blockWidth, 1.55, 1.55),
+        new THREE.Vector3(x + spacingX * 0.5, 0.78, z),
+        "deskBlockCollider"
+      );
+    }
   }
 
   // Salle cours: rangées plus serrées
-  let deskPlaced = di;
   for (let rz = 0; rz < 6 && di < deskCount; rz++) {
     for (let rx = 0; rx < 8 && di < deskCount; rx++) {
       const x = classroom.minX + 7 + rx * 4.2 + (rand() - 0.5) * 0.2;
@@ -331,16 +340,21 @@ export function createLabWorld() {
       ki++;
     }
   }
-  // Collider classroom rows
+  // Colliders salle de cours: segments (2 bureaux) alignés
+  const classSpacingX = 4.2;
+  const classSpacingZ = 3.4;
   for (let rz = 0; rz < 6; rz++) {
-    const z = classroom.minZ + 8 + rz * 3.4;
-    addColliderBox(
-      group,
-      colliders,
-      new THREE.Vector3(classroom.maxX - classroom.minX - 12, 1.6, 1.8),
-      new THREE.Vector3((classroom.minX + classroom.maxX) / 2, 0.8, z),
-      "classRowCollider"
-    );
+    const z = classroom.minZ + 8 + rz * classSpacingZ;
+    for (let rx = 0; rx < 8; rx += 2) {
+      const x = classroom.minX + 7 + rx * classSpacingX;
+      addColliderBox(
+        group,
+        colliders,
+        new THREE.Vector3(classSpacingX * 2 - 1.0, 1.55, 1.55),
+        new THREE.Vector3(x + classSpacingX * 0.5, 0.78, z),
+        "classDeskBlockCollider"
+      );
+    }
   }
 
   // Salle serveurs: racks alignés
