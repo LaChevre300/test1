@@ -69,6 +69,9 @@ const els = {
   imgSrcCommons: document.querySelector("#imgSrcCommons"),
   imgSrcOpenverse: document.querySelector("#imgSrcOpenverse"),
   imgSrcLoC: document.querySelector("#imgSrcLoC"),
+  imgSrcMet: document.querySelector("#imgSrcMet"),
+  imgSrcArtic: document.querySelector("#imgSrcArtic"),
+  imgSrcNasa: document.querySelector("#imgSrcNasa"),
   imgPerPage: document.querySelector("#imgPerPage"),
   btnImgSearch: document.querySelector("#btnImgSearch"),
   btnImgClear: document.querySelector("#btnImgClear"),
@@ -1198,6 +1201,96 @@ async function searchLocImages(query, limit, signal) {
   return items.filter((x) => x.thumb && x.openUrl);
 }
 
+async function searchMetImages(query, limit, signal) {
+  // The Met Collection API (public, no key)
+  const sUrl = `https://collectionapi.metmuseum.org/public/collection/v1/search?hasImages=true&q=${encodeURIComponent(query)}`;
+  const sRes = await fetch(sUrl, { signal });
+  if (!sRes.ok) throw new Error(`HTTP ${sRes.status}`);
+  const sData = await sRes.json();
+  const ids = (sData?.objectIDs || []).slice(0, Math.min(limit, 30));
+  if (!ids.length) return [];
+
+  // Fetch object details (limit concurrency)
+  const out = [];
+  const concurrency = 6;
+  let idx = 0;
+  async function worker() {
+    while (idx < ids.length) {
+      const id = ids[idx++];
+      try {
+        const oUrl = `https://collectionapi.metmuseum.org/public/collection/v1/objects/${id}`;
+        const oRes = await fetch(oUrl, { signal });
+        if (!oRes.ok) continue;
+        const o = await oRes.json();
+        const thumb = o?.primaryImageSmall || o?.primaryImage || "";
+        const openUrl = o?.objectURL || "";
+        if (!thumb || !openUrl) continue;
+        out.push({
+          source: "met",
+          title: o?.title || `Met object ${id}`,
+          pageTitle: o?.objectDate || "",
+          creator: o?.artistDisplayName || o?.culture || "",
+          thumb,
+          openUrl,
+          licenseShort: "Public domain",
+          raw: o,
+        });
+      } catch {
+        // ignore
+      }
+    }
+  }
+  await Promise.all(Array.from({ length: concurrency }, () => worker()));
+  return out.slice(0, limit);
+}
+
+async function searchArticImages(query, limit, signal) {
+  // Art Institute of Chicago API (no key)
+  const url =
+    `https://api.artic.edu/api/v1/artworks/search?q=${encodeURIComponent(query)}` +
+    `&fields=id,title,image_id,artist_title,date_display,thumbnail&limit=${limit}`;
+  const data = await fetchJson(url, signal);
+  const items = (data?.data || []).map((r) => {
+    const imageId = r?.image_id || "";
+    if (!imageId) return null;
+    const thumb = `https://www.artic.edu/iiif/2/${encodeURIComponent(imageId)}/full/843,/0/default.jpg`;
+    const openUrl = `https://www.artic.edu/artworks/${r.id}`;
+    return {
+      source: "artic",
+      title: r?.title || "Artwork",
+      pageTitle: r?.date_display || "",
+      creator: r?.artist_title || "",
+      thumb,
+      openUrl,
+      licenseShort: "",
+      raw: r,
+    };
+  });
+  return items.filter(Boolean);
+}
+
+async function searchNasaImages(query, limit, signal) {
+  const url = `https://images-api.nasa.gov/search?q=${encodeURIComponent(query)}&media_type=image`;
+  const data = await fetchJson(url, signal);
+  const items = (data?.collection?.items || []).slice(0, limit).map((it) => {
+    const d = it?.data?.[0] || {};
+    const link = (it?.links || []).find((l) => l?.render === "image") || (it?.links || [])[0];
+    const thumb = link?.href || "";
+    const openUrl = it?.href || (d?.nasa_id ? `https://images.nasa.gov/details/${encodeURIComponent(d.nasa_id)}` : "");
+    return {
+      source: "nasa",
+      title: d?.title || "NASA image",
+      pageTitle: d?.date_created ? String(d.date_created).slice(0, 10) : "",
+      creator: d?.photographer || d?.center || "",
+      thumb,
+      openUrl,
+      licenseShort: "",
+      raw: it,
+    };
+  });
+  return items.filter((x) => x.thumb && x.openUrl);
+}
+
 function renderReverseLinks() {
   if (!els.imgReverseLinks) return;
   const u = normalizeSpace(els.imgUrl?.value || "");
@@ -1987,7 +2080,12 @@ els.btnImgSearch?.addEventListener("click", async () => {
   const useCommons = !!els.imgSrcCommons?.checked;
   const useOpenverse = !!els.imgSrcOpenverse?.checked;
   const useLoc = !!els.imgSrcLoC?.checked;
-  if (!useWiki && !useCommons && !useOpenverse && !useLoc) return toast("Active au moins une source d’images.");
+  const useMet = !!els.imgSrcMet?.checked;
+  const useArtic = !!els.imgSrcArtic?.checked;
+  const useNasa = !!els.imgSrcNasa?.checked;
+  if (!useWiki && !useCommons && !useOpenverse && !useLoc && !useMet && !useArtic && !useNasa) {
+    return toast("Active au moins une source d’images.");
+  }
 
   setImgStatus("Recherche d’images…");
   els.btnImgSearch.disabled = true;
@@ -1998,6 +2096,9 @@ els.btnImgSearch?.addEventListener("click", async () => {
   if (useCommons) tasks.push(searchCommonsImages(q, limit, controller.signal));
   if (useOpenverse) tasks.push(searchOpenverseImages(q, limit, controller.signal));
   if (useLoc) tasks.push(searchLocImages(q, limit, controller.signal));
+  if (useMet) tasks.push(searchMetImages(q, limit, controller.signal));
+  if (useArtic) tasks.push(searchArticImages(q, limit, controller.signal));
+  if (useNasa) tasks.push(searchNasaImages(q, limit, controller.signal));
 
   const settled = await Promise.allSettled(tasks);
   const out = [];
@@ -2007,15 +2108,41 @@ els.btnImgSearch?.addEventListener("click", async () => {
     else errs.push(s.reason?.message || "Erreur");
   }
 
-  state.img.results = out;
+  // Dédoublonnage + tri pertinence
+  const seen = new Set();
+  const qTokens = tokenizeForSearch(q, settings.lang);
+  const score = (it) => {
+    const t = tokenize(`${it.title || ""} ${it.pageTitle || ""} ${it.creator || ""}`).join(" ");
+    let hits = 0;
+    for (const tok of qTokens) if (t.includes(tok)) hits++;
+    const srcBoost = it.source === "met" || it.source === "artic" ? 0.8 : it.source === "commons" ? 0.45 : it.source === "wikipedia" ? 0.35 : 0.2;
+    return hits * 1.6 + srcBoost;
+  };
+
+  const deduped = [];
+  for (const it of out) {
+    const key = normalizeUrlForDedup(it.openUrl || it.url || it.thumb || "");
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    it._score = score(it);
+    deduped.push(it);
+  }
+  deduped.sort((a, b) => (b._score || 0) - (a._score || 0));
+  state.img.results = deduped;
   renderImageResults();
-  setImgStatus(errs.length ? `Images: ${out.length} (certains échecs: ${errs.join(", ")})` : `Images: ${out.length}`);
+  setImgStatus(
+    errs.length ? `Images: ${deduped.length} (certains échecs: ${errs.join(", ")})` : `Images: ${deduped.length}`
+  );
   els.btnImgSearch.disabled = false;
 
   if (state.img.fileHash) {
     setImgStatus("Analyse visuelle locale…");
     await applyLocalSimilarityIfPossible();
-    setImgStatus(errs.length ? `Images: ${state.img.results.length} (certains échecs: ${errs.join(", ")})` : `Images: ${state.img.results.length}`);
+    setImgStatus(
+      errs.length
+        ? `Images: ${state.img.results.length} (triées par similarité locale quand possible; certains échecs: ${errs.join(", ")})`
+        : `Images: ${state.img.results.length} (triées par similarité locale quand possible)`
+    );
   }
 });
 
