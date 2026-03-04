@@ -1509,6 +1509,49 @@ async function wikipediaDetails(pageid, lang, signal) {
   };
 }
 
+function stripHtml(html) {
+  return normalizeSpace(String(html || "").replace(/<[^>]+>/g, " ").replace(/&nbsp;/g, " ").replace(/&amp;/g, "&"));
+}
+
+async function wikipediaRestSummary(title, lang, signal) {
+  const host = lang === "en" ? "en.wikipedia.org" : "fr.wikipedia.org";
+  const url = `https://${host}/api/rest_v1/page/summary/${encodeURIComponent(String(title || "").replaceAll(" ", "_"))}`;
+  const res = await fetch(url, { signal, headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
+async function wikipediaMobileSections(title, lang, signal) {
+  const host = lang === "en" ? "en.wikipedia.org" : "fr.wikipedia.org";
+  const url = `https://${host}/api/rest_v1/page/mobile-sections/${encodeURIComponent(String(title || "").replaceAll(" ", "_"))}`;
+  const res = await fetch(url, { signal, headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return await res.json();
+}
+
+function extractRelevantWikiSections(mobileSections, intent, lang) {
+  const secs = mobileSections?.remaining?.sections || mobileSections?.lead?.sections || [];
+  const patterns =
+    intent === "uses"
+      ? lang === "en"
+        ? [/use/i, /uses/i, /applications/i, /medicine/i, /medical/i, /pharmac/i, /tox/i, /safety/i]
+        : [/utilis/i, /usage/i, /usages/i, /propri/i, /médec/i, /pharmac/i, /tox/i, /sécur/i, /précaution/i]
+      : lang === "en"
+        ? [/description/i, /overview/i, /etymolog/i, /history/i]
+        : [/description/i, /présentation/i, /histoire/i, /étymolog/i];
+
+  const picked = [];
+  for (const s of secs) {
+    const line = String(s?.line || "");
+    if (!line) continue;
+    if (!patterns.some((re) => re.test(line))) continue;
+    const text = stripHtml(s?.text || "");
+    if (text && text.length >= 80) picked.push(`${line}\n${text}`);
+    if (picked.length >= 3) break;
+  }
+  return picked.join("\n\n");
+}
+
 function reconstructOpenAlexAbstract(abstract_inverted_index) {
   if (!abstract_inverted_index || typeof abstract_inverted_index !== "object") return "";
   const positions = [];
@@ -1878,6 +1921,7 @@ async function autoSearchEvidence(question, settings) {
 
   const c = new AbortController();
   const tasks = [];
+  const intent = /\b(à quoi sert|a quoi sert|usages?|utiliser|used for|uses)\b/i.test(qRaw) ? "uses" : "general";
 
   if (useWiki) {
     tasks.push(
@@ -1886,15 +1930,46 @@ async function autoSearchEvidence(question, settings) {
         const top = items.slice(0, limit);
         const enriched = await Promise.allSettled(
           top.map(async (it) => {
+            // Prefer REST summary + mobile sections for better "uses" extraction.
+            let extract = "";
+            let fullurl = it.url;
+            let timestamp = null;
             try {
-              const d = await wikipediaDetails(it.id, settings.lang, c.signal);
-              if (!d) return it;
-              return { ...it, extract: d.extract, url: d.fullurl || it.url, timestamp: d.timestamp };
+              const sum = await wikipediaRestSummary(it.title, settings.lang, c.signal);
+              extract = normalizeSpace(sum?.extract || "") || extract;
+              fullurl = sum?.content_urls?.desktop?.page || fullurl;
             } catch {
-              return it;
+              // ignore
             }
+
+            if (intent === "uses") {
+              try {
+                const ms = await wikipediaMobileSections(it.title, settings.lang, c.signal);
+                const secText = extractRelevantWikiSections(ms, "uses", settings.lang);
+                if (secText) extract = normalizeSpace(`${extract}\n\n${secText}`);
+              } catch {
+                // ignore
+              }
+            }
+
+            // Fallback to action API extract if still empty
+            if (!extract) {
+              try {
+                const d = await wikipediaDetails(it.id, settings.lang, c.signal);
+                if (d?.extract) {
+                  extract = d.extract;
+                  fullurl = d.fullurl || fullurl;
+                  timestamp = d.timestamp || timestamp;
+                }
+              } catch {
+                // ignore
+              }
+            }
+
+            return { ...it, extract, url: fullurl || it.url, timestamp };
           })
         );
+
         return enriched.filter((x) => x.status === "fulfilled").map((x) => x.value);
       })()
     );
@@ -1950,8 +2025,8 @@ async function aiAnswer(question, settings) {
   let corpus = blocks.map((b) => `${b.title}\n${b.text}`).join("\n\n");
   const lang = settings.lang;
 
-  // If we have too little material, auto-search open sources.
-  if (normalizeSpace(corpus).length < 450) {
+  // Auto-search open sources whenever enabled and we don't already have much.
+  if (normalizeSpace(corpus).length < 900) {
     const auto = await autoSearchEvidence(q, settings).catch(() => ({ blocks: [], usedItems: [] }));
     if (auto.blocks.length) {
       blocks = [...blocks, ...auto.blocks];
