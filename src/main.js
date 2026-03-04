@@ -1,7 +1,7 @@
 import "./style.css";
 import * as THREE from "three";
 import { createPointerLockControls } from "./controls.js";
-import { createLabWorld } from "./world.js";
+import { createLabWorld } from "./world.biglab.js";
 import { createDogMonster } from "./dog.js";
 import { createUI } from "./ui.js";
 import { createAudio } from "./audio.js";
@@ -189,8 +189,9 @@ function updateDog(dt, tNow) {
 
   const next = dogPos.clone().addScaledVector(v, dt);
   // Constrain in bounds (simple)
-  next.x = THREE.MathUtils.clamp(next.x, -18.5, 18.5);
-  next.z = THREE.MathUtils.clamp(next.z, -18.5, 18.5);
+  const b = world.bounds ?? { minX: -18.5, maxX: 18.5, minZ: -18.5, maxZ: 18.5 };
+  next.x = THREE.MathUtils.clamp(next.x, b.minX, b.maxX);
+  next.z = THREE.MathUtils.clamp(next.z, b.minZ, b.maxZ);
   dog.setPosition(next);
 
   if (v.lengthSq() > 1e-5) {
@@ -234,6 +235,9 @@ function tick() {
     const step = move.multiplyScalar(speed * dt);
     player.position.add(step);
     resolveCollisions(player.position, player.radius);
+    const b = world.bounds ?? { minX: -18.5, maxX: 18.5, minZ: -18.5, maxZ: 18.5 };
+    player.position.x = THREE.MathUtils.clamp(player.position.x, b.minX, b.maxX);
+    player.position.z = THREE.MathUtils.clamp(player.position.z, b.minZ, b.maxZ);
     player.position.y = 1.7;
     camera.position.copy(player.position);
 
