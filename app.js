@@ -20,6 +20,7 @@ const els = {
   bubbles: Array.from(document.querySelectorAll(".bubble")),
   viewSearch: document.querySelector("#view-search"),
   viewNotes: document.querySelector("#view-notes"),
+  viewAi: document.querySelector("#view-ai"),
   viewConnexes: document.querySelector("#view-connexes"),
   viewHistory: document.querySelector("#view-history"),
 
@@ -30,6 +31,16 @@ const els = {
   btnInsertApa: document.querySelector("#btnInsertApa"),
   btnInsertAutoNotes: document.querySelector("#btnInsertAutoNotes"),
   btnGoSearch: document.querySelector("#btnGoSearch"),
+
+  aiQ: document.querySelector("#aiQ"),
+  aiUseSelected: document.querySelector("#aiUseSelected"),
+  aiUseAll: document.querySelector("#aiUseAll"),
+  aiUseNotes: document.querySelector("#aiUseNotes"),
+  btnAiAsk: document.querySelector("#btnAiAsk"),
+  btnAiCopy: document.querySelector("#btnAiCopy"),
+  btnAiClear: document.querySelector("#btnAiClear"),
+  btnAiToNotes: document.querySelector("#btnAiToNotes"),
+  aiOut: document.querySelector("#aiOut"),
 
   btnConnexesToSearch: document.querySelector("#btnConnexesToSearch"),
   connexesFromQuery: document.querySelector("#connexesFromQuery"),
@@ -49,8 +60,9 @@ const state = {
   lastQuery: "",
   results: /** @type {Array<any>} */ ([]),
   controllers: /** @type {AbortController[]} */ ([]),
-  view: /** @type {"search"|"notes"|"connexes"|"history"} */ ("search"),
+  view: /** @type {"search"|"ai"|"notes"|"connexes"|"history"} */ ("search"),
   history: /** @type {Array<{key:string,title:string,source:Source,url?:string,year?:string,when:number}>} */ ([]),
+  lastAiAnswer: "",
 };
 
 const CACHE_KEY = "shsearch.cache.v1";
@@ -100,6 +112,7 @@ function setView(next) {
   state.view = v;
   if (els.viewSearch) els.viewSearch.hidden = v !== "search";
   if (els.viewNotes) els.viewNotes.hidden = v !== "notes";
+  if (els.viewAi) els.viewAi.hidden = v !== "ai";
   if (els.viewConnexes) els.viewConnexes.hidden = v !== "connexes";
   if (els.viewHistory) els.viewHistory.hidden = v !== "history";
 
@@ -1020,6 +1033,128 @@ function appendToNotes(block) {
   toast("Ajouté aux notes.");
 }
 
+function pickEvidenceBlocks(settings) {
+  const blocks = [];
+  const used = [];
+
+  const useSelected = !!els.aiUseSelected?.checked;
+  const useAll = !!els.aiUseAll?.checked;
+
+  if (useSelected && state.selected) {
+    const t = normalizeSpace(state.selected.extract || state.selected.abstract || state.selected.snippet || "");
+    if (t) {
+      blocks.push({ title: state.selected.title || "Sans titre", text: t, item: state.selected });
+      used.push(state.selected);
+    }
+  }
+
+  if (useAll) {
+    const top = state.results.slice(0, 12);
+    for (const r of top) {
+      if (useSelected && state.selected && r.source === state.selected.source && String(r.id) === String(state.selected.id)) continue;
+      const t = normalizeSpace(r.abstract || r.extract || r.snippet || "");
+      if (!t) continue;
+      blocks.push({ title: r.title || "Sans titre", text: t, item: r });
+      used.push(r);
+    }
+  }
+
+  const useNotes = !!els.aiUseNotes?.checked;
+  if (useNotes && els.notesArea) {
+    const t = normalizeSpace(String(els.notesArea.value || ""));
+    if (t) blocks.push({ title: "Mes notes", text: t, item: null });
+  }
+
+  return { blocks, usedItems: used };
+}
+
+function bestSentencesForQuestion(question, blocks, lang) {
+  const qTokens = tokenizeForSearch(question, lang);
+  const scored = [];
+  for (const b of blocks) {
+    const sents = splitSentences(b.text);
+    for (const s of sents) {
+      const st = tokenize(s).join(" ");
+      let hits = 0;
+      for (const q of qTokens) if (st.includes(q)) hits++;
+      if (!hits) continue;
+      // prefer shorter, denser sentences
+      const density = hits / Math.max(6, tokenize(s).length);
+      const score = hits * 1.8 + density * 6.0;
+      scored.push({ s, score, from: b.title });
+    }
+  }
+  scored.sort((a, b) => b.score - a.score);
+  return scored.slice(0, 6);
+}
+
+function aiAnswer(question, settings) {
+  const q = normalizeSpace(question);
+  if (!q) return "";
+
+  const { blocks, usedItems } = pickEvidenceBlocks(settings);
+  const corpus = blocks.map((b) => `${b.title}\n${b.text}`).join("\n\n");
+  const lang = settings.lang;
+
+  const keywords = extractKeywords(`${q}\n${corpus}`, lang, 12);
+  const ideas = generateIdeas({ title: q, text: corpus, keywords, lang });
+  const evidence = bestSentencesForQuestion(q, blocks, lang);
+
+  const lines = [];
+  lines.push(`Question: ${q}`);
+  lines.push("");
+  lines.push("Synthèse (à vérifier):");
+  const synth = summarizeExtractive(corpus, lang, 3);
+  lines.push(synth ? synth : "(Pas assez de texte pour synthétiser.)");
+  lines.push("");
+
+  if (evidence.length) {
+    lines.push("Extraits pertinents:");
+    for (const e of evidence) lines.push(`- (${e.from}) ${e.s}`);
+    lines.push("");
+  }
+
+  lines.push("Mots-clés utiles:");
+  lines.push(keywords.slice(0, 10).join(", ") || "(aucun)");
+  lines.push("");
+
+  lines.push("Idées de problématique:");
+  for (const p of ideas.problematiques.slice(0, 4)) lines.push(`- ${p}`);
+  lines.push("");
+
+  lines.push("Angles / conséquences possibles:");
+  for (const c of ideas.consequences.slice(0, 4)) lines.push(`- ${c}`);
+  lines.push("");
+
+  lines.push("Pistes (méthode / solution):");
+  for (const s of ideas.solutions.slice(0, 4)) lines.push(`- ${s}`);
+  lines.push("");
+
+  const cited = usedItems.slice(0, 5);
+  if (cited.length) {
+    lines.push("Sources (APA 7):");
+    for (const it of cited) lines.push(`- ${buildApa(it, settings)}`);
+  }
+
+  return lines.join("\n");
+}
+
+function renderAi(text) {
+  state.lastAiAnswer = text || "";
+  if (!els.aiOut) return;
+  if (!text) {
+    els.aiOut.className = "aiOut empty";
+    els.aiOut.innerHTML = `<div class="emptyTitle">Pose une question</div><div class="emptyText">Sélectionne un résultat et/ou active “tous les résultats”, puis clique “Répondre”.</div>`;
+    if (els.btnAiCopy) els.btnAiCopy.disabled = true;
+    if (els.btnAiToNotes) els.btnAiToNotes.disabled = true;
+    return;
+  }
+  els.aiOut.className = "aiOut";
+  els.aiOut.innerHTML = `<div class="section"><div class="sectionTitle">Réponse</div><div class="sectionBody mono">${escapeHtml(text)}</div></div>`;
+  if (els.btnAiCopy) els.btnAiCopy.disabled = false;
+  if (els.btnAiToNotes) els.btnAiToNotes.disabled = false;
+}
+
 // ---------- Interaction ----------
 
 function setActiveTab(tab) {
@@ -1171,6 +1306,31 @@ for (const b of els.bubbles || []) {
 els.btnGoSearch?.addEventListener("click", () => setView("search"));
 els.btnConnexesToSearch?.addEventListener("click", () => setView("search"));
 els.btnHistoryToSearch?.addEventListener("click", () => setView("search"));
+els.btnAiToNotes?.addEventListener("click", () => {
+  if (!state.lastAiAnswer) return;
+  appendToNotes(`IA:\n${state.lastAiAnswer}`);
+});
+
+els.btnAiCopy?.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(String(state.lastAiAnswer || ""));
+    toast("Réponse copiée.");
+  } catch {
+    toast("Copie impossible (navigateur).");
+  }
+});
+
+els.btnAiClear?.addEventListener("click", () => {
+  if (els.aiQ) els.aiQ.value = "";
+  renderAi("");
+});
+
+els.btnAiAsk?.addEventListener("click", async () => {
+  const settings = getSettings();
+  const q = String(els.aiQ?.value || "");
+  const ans = aiAnswer(q, settings);
+  renderAi(ans);
+});
 
 els.btnHistoryClear?.addEventListener("click", () => {
   state.history = [];
@@ -1398,7 +1558,7 @@ wireConnexesClicks();
 
 // Restore view from hash
 const initialView = (location.hash || "").replace("#", "");
-if (initialView === "notes" || initialView === "connexes" || initialView === "history" || initialView === "search") {
+if (initialView === "ai" || initialView === "notes" || initialView === "connexes" || initialView === "history" || initialView === "search") {
   setView(initialView);
 } else {
   setView("search");

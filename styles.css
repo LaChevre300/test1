@@ -53,7 +53,7 @@ a:hover {
 }
 
 .bubbleBar {
-  margin-top: 12px;
+  margin-top: 10px;
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -410,6 +410,34 @@ button:disabled {
   border-radius: 14px;
   border: 1px solid rgba(29, 107, 255, 0.16);
   background: rgba(255, 255, 255, 0.88);
+}
+
+.aiControls {
+  padding: 12px 14px 12px;
+  border-bottom: 1px solid rgba(29, 107, 255, 0.10);
+  background: linear-gradient(to bottom, rgba(29, 107, 255, 0.03), rgba(255, 255, 255, 0.0));
+}
+
+.aiArea {
+  min-height: 110px;
+  resize: vertical;
+  line-height: 1.55;
+  font-size: 13px;
+  border-radius: 14px;
+  border: 1px solid rgba(29, 107, 255, 0.16);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.aiRow {
+  margin-top: 10px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.aiOut.empty {
+  padding: 10px 0;
 }
 
 .historyList {

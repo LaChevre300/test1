@@ -21,6 +21,29 @@
         </div>
       </div>
 
+      <nav class="bubbleBar" aria-label="Outils">
+        <button class="bubble active" data-view="search" type="button" aria-current="page">
+          <span class="bubbleIcon" aria-hidden="true">⌕</span>
+          <span>Recherche</span>
+        </button>
+        <button class="bubble" data-view="ai" type="button">
+          <span class="bubbleIcon" aria-hidden="true">◎</span>
+          <span>IA</span>
+        </button>
+        <button class="bubble" data-view="notes" type="button">
+          <span class="bubbleIcon" aria-hidden="true">✎</span>
+          <span>Notes</span>
+        </button>
+        <button class="bubble" data-view="connexes" type="button">
+          <span class="bubbleIcon" aria-hidden="true">⟲</span>
+          <span>Connexes</span>
+        </button>
+        <button class="bubble" data-view="history" type="button">
+          <span class="bubbleIcon" aria-hidden="true">⏱</span>
+          <span>Historique</span>
+        </button>
+      </nav>
+
       <div class="toolbar">
         <div class="field">
           <label for="q">Recherche</label>
@@ -48,25 +71,6 @@
           <button id="btnClear" class="ghost" title="Effacer">Effacer</button>
         </div>
       </div>
-
-      <nav class="bubbleBar" aria-label="Outils">
-        <button class="bubble active" data-view="search" type="button" aria-current="page">
-          <span class="bubbleIcon" aria-hidden="true">⌕</span>
-          <span>Recherche</span>
-        </button>
-        <button class="bubble" data-view="notes" type="button">
-          <span class="bubbleIcon" aria-hidden="true">✎</span>
-          <span>Notes</span>
-        </button>
-        <button class="bubble" data-view="connexes" type="button">
-          <span class="bubbleIcon" aria-hidden="true">⟲</span>
-          <span>Connexes</span>
-        </button>
-        <button class="bubble" data-view="history" type="button">
-          <span class="bubbleIcon" aria-hidden="true">⏱</span>
-          <span>Historique</span>
-        </button>
-      </nav>
     </header>
 
     <main>
@@ -178,6 +182,52 @@
             <div class="foot" style="border-top:none;">
               <div class="footTitle">Conseil</div>
               <div class="footText">Clique un résultat puis utilise “Ajouter résumé/APA/notes auto” pour alimenter tes notes sans perdre ta recherche.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-ai" class="view" hidden>
+        <div class="page">
+          <div class="panel">
+            <div class="panelHead">
+              <div class="panelTitle">IA (local) — questions & aide à la synthèse</div>
+              <div class="panelTools">
+                <button id="btnAiToNotes" class="ghost" disabled>Ajouter aux notes</button>
+                <button id="btnAiCopy" class="ghost" disabled>Copier</button>
+                <button id="btnAiClear" class="ghost">Effacer</button>
+              </div>
+            </div>
+
+            <div class="aiControls">
+              <div class="field" style="margin:0;">
+                <label for="aiQ">Question</label>
+                <textarea id="aiQ" class="aiArea" placeholder="Pose une question (ex: “Quels sont les arguments principaux ?”, “Propose un plan”, “Explique le concept et cite des sources”)"></textarea>
+              </div>
+              <div class="aiRow">
+                <div class="chip">
+                  <input id="aiUseSelected" type="checkbox" checked />
+                  <label for="aiUseSelected">Utiliser le résultat sélectionné</label>
+                </div>
+                <div class="chip">
+                  <input id="aiUseAll" type="checkbox" />
+                  <label for="aiUseAll">Utiliser tous les résultats</label>
+                </div>
+                <div class="chip">
+                  <input id="aiUseNotes" type="checkbox" />
+                  <label for="aiUseNotes">Inclure mes notes</label>
+                </div>
+                <button id="btnAiAsk" class="primary" type="button">Répondre</button>
+              </div>
+            </div>
+
+            <div class="detail">
+              <div id="aiOut" class="aiOut empty">
+                <div class="emptyTitle">Astuce</div>
+                <div class="emptyText">
+                  Cette IA est locale: elle synthétise et structure une réponse à partir des textes récupérés (résultats) et/ou de tes notes.
+                </div>
+              </div>
             </div>
           </div>
         </div>
