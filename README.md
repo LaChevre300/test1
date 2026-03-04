@@ -6,9 +6,9 @@ Jeu de simulation de vie médiévale inspiré de BitLife, orienté texte/choix a
 
 ### 1) Création et progression de personnage
 - Génération aléatoire : nom, pays, sexe, classe sociale, famille, stats de base.
-- Bouton **Passer une année** qui déclenche :
+- Bouton **Vieillir** qui déclenche :
   - vieillissement,
-  - événements annuels à choix,
+  - événements de vie à choix,
   - revenus/dettes,
   - risques de santé, prison, décès.
 - Mort possible par : maladie, accident, duel, prison, overdose, règlements de compte, vieillesse.
@@ -27,7 +27,7 @@ Jeu de simulation de vie médiévale inspiré de BitLife, orienté texte/choix a
 
 ### 4) Études et carrière
 - Études supérieures avec dette universitaire.
-- Emplois variés, salaire annuel, promotions et baisses de paie.
+- Emplois variés, salaire, promotions et baisses de paie.
 - Conflits au travail (sabotage, licenciement possible).
 - Voies extrêmes : célébrité, politique, business.
 
@@ -51,7 +51,7 @@ Jeu de simulation de vie médiévale inspiré de BitLife, orienté texte/choix a
 
 ### 8) Activités et événements aléatoires
 - Activités : tournoi, chasse, pèlerinage, charité, fête, chroniques publiques, rumeurs.
-- Événements annuels fréquents et imprévisibles.
+- Événements fréquents et imprévisibles.
 - Choix nombreux avec conséquences non révélées à l’avance.
 
 ### 9) Héritage et générations

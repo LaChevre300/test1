@@ -3,9 +3,7 @@
 
   const MAX_STAT = 100;
   const MIN_STAT = 0;
-  const START_YEAR = 1187;
   const MAX_LOG = 220;
-  const ACTIONS_PER_YEAR = 3;
 
   const COUNTRIES = [
     "Royaume de France",
@@ -26,6 +24,7 @@
     { name: "Haute noblesse", baseMoney: 320, mods: { reputation: 18, looks: 7, happiness: -6 } },
     { name: "Clergé", baseMoney: 75, mods: { sanity: 10, intelligence: 6, happiness: -2 } }
   ];
+  const STARTING_SOCIAL_CLASSES = SOCIAL_CLASSES.filter((entry) => entry.name !== "Clergé");
 
   const MALE_NAMES = [
     "Aymon",
@@ -143,7 +142,7 @@
 
   const CHECKLIST = [
     "Création aléatoire complète (nom, pays, sexe, classe, famille, stats).",
-    "Bouton annuel « Passer une année » avec événements et choix.",
+    "Bouton « Vieillir » avec événements et choix.",
     "Mort possible par maladie, crime, accident, prison, vieillesse.",
     "Relations parents/fratrie/belle-famille + interactions variées.",
     "Enfance et école (résultats, clubs, bagarres, exclusions).",
@@ -256,9 +255,12 @@
 
   function createInitialCharacter(generation, inherited = null) {
     const surname = inherited?.surname || pick(SURNAMES);
-    const socialClass = inherited?.className
-      ? SOCIAL_CLASSES.find((entry) => entry.name === inherited.className) || pick(SOCIAL_CLASSES)
-      : pick(SOCIAL_CLASSES);
+    const inheritedClass = inherited?.className
+      ? SOCIAL_CLASSES.find((entry) => entry.name === inherited.className)
+      : null;
+    const socialClass = inheritedClass && inheritedClass.name !== "Clergé"
+      ? inheritedClass
+      : pick(STARTING_SOCIAL_CLASSES);
     const sex = inherited?.sex || sexName();
     const age = inherited?.age ?? 0;
     const country = inherited?.country || pick(COUNTRIES);
@@ -284,16 +286,14 @@
       socialClass: socialClass.name,
       age,
       alive: true,
-      yearBorn: START_YEAR - age,
       stats,
       money: socialClass.baseMoney + inheritedMoney,
       debt: inherited?.debtCarry || 0,
       fame: inherited?.fameCarry || 0,
       notoriety: inherited?.notorietyCarry || 0,
       karma: rnd(-10, 10),
-      actionsLeft: ACTIONS_PER_YEAR,
       school: {
-        enrolled: age < 16,
+        enrolled: age >= 5 && age < 16,
         expelled: false,
         grade: rnd(35, 75),
         clubs: []
@@ -342,7 +342,6 @@
   function bootstrapGame(inherited = null) {
     const generation = inherited?.generation || 1;
     game = {
-      worldYear: inherited?.worldYear || START_YEAR,
       dynastyName: inherited?.surname || null,
       log: [],
       pendingEvent: null,
@@ -370,8 +369,7 @@
   }
 
   function addLog(text, tone = "neutral") {
-    const prefix = `[${game.worldYear}] `;
-    game.log.unshift({ text: `${prefix}${text}`, tone });
+    game.log.unshift({ text, tone });
     if (game.log.length > MAX_LOG) {
       game.log = game.log.slice(0, MAX_LOG);
     }
@@ -572,7 +570,7 @@
       relative.age += 1;
       if (relative.age > rnd(58, 92) && chance(0.16)) {
         relative.alive = false;
-        addLog(`${relative.name} (${relative.role}) meurt cette année.`, "warn");
+        addLog(`${relative.name} (${relative.role}) meurt.`, "warn");
         if (chance(0.35)) {
           const inheritance = rnd(10, 120);
           changeMoney(inheritance);
@@ -626,7 +624,7 @@
 
   function processEducationAndCareer() {
     const c = game.character;
-    if (c.age < 16 && !c.school.expelled) {
+    if (c.age >= 5 && c.age < 16 && !c.school.expelled) {
       c.school.enrolled = true;
       c.school.grade = clamp(c.school.grade + rnd(-5, 6));
       if (chance(0.05)) {
@@ -646,7 +644,7 @@
         c.careerLevel += 1;
         c.salary += rnd(4, 12);
         changeStat("reputation", rnd(2, 7));
-        addLog("Tu obtiens une promotion après une année agitée.", "good");
+        addLog("Tu obtiens une promotion après une période agitée.", "good");
       }
       if (chance(0.04)) {
         c.salary = Math.max(6, c.salary - rnd(3, 8));
@@ -797,8 +795,7 @@
       properties: [...game.character.properties.slice(0, 4)],
       vehicles: [...game.character.vehicles.slice(0, 3)],
       animals: [...game.character.animals.slice(0, 4)],
-      childrenCarry: [],
-      worldYear: game.worldYear
+      childrenCarry: []
     };
     bootstrapGame(legacyData);
     addLog(`Tu incarnes désormais ${game.character.fullName}, héritier(e) de la lignée.`, "good");
@@ -810,119 +807,45 @@
       return false;
     }
     if (game.pendingEvent) {
-      addLog("Résous l'événement annuel en cours avant d'agir ailleurs.", "warn");
+      addLog("Résous l'événement en cours avant d'agir ailleurs.", "warn");
       return false;
     }
-    if (game.character.actionsLeft <= 0) {
-      addLog("Tu n'as plus d'actions libres cette année. Vieillis pour continuer.", "warn");
-      return false;
-    }
-    game.character.actionsLeft -= 1;
     return true;
   }
 
   function randomEventPool() {
     const c = game.character;
     const pool = [];
-    pool.push({
-      text: "Un collecteur d'impôts te propose un arrangement discret.",
-      choices: [
-        {
-          label: "Payer plein tarif",
-          run: () => {
-            spend(rnd(8, 22));
-            changeStat("reputation", 2);
-          }
-        },
-        {
-          label: "Négocier dans l'ombre",
-          run: () => {
-            if (chance(0.45)) {
-              changeMoney(rnd(5, 16));
-              c.notoriety = clamp(c.notoriety + 4, -100, 100);
-            } else {
-              tryCrime("fraude fiscale", 3, 12, 0.35, 0.01, [1, 3]);
+    if (c.age <= 4) {
+      pool.push({
+        text: "Tes parents hésitent sur la manière de t'éduquer.",
+        choices: [
+          {
+            label: "Rester calme",
+            run: () => {
+              changeStat("sanity", 2);
+              changeStat("happiness", 2);
+            }
+          },
+          {
+            label: "Faire une grosse crise",
+            run: () => {
+              changeStat("happiness", chance(0.5) ? 3 : -2);
+              relationshipPulse(c.family.parents, -4);
+            }
+          },
+          {
+            label: "Chercher du réconfort",
+            run: () => {
+              relationshipPulse(c.family.parents, 4);
+              changeStat("happiness", 4);
             }
           }
-        },
-        {
-          label: "Le dénoncer au seigneur",
-          run: () => {
-            changeStat("reputation", 6);
-            changeStat("happiness", -2);
-            if (chance(0.2)) {
-              addLog("Le collecteur jure de se venger.", "warn");
-              c.notoriety = clamp(c.notoriety + 6, -100, 100);
-            }
-          }
-        }
-      ]
-    });
+        ]
+      });
+    }
 
-    pool.push({
-      text: "Une rumeur sur ton nom circule dans la gazette locale.",
-      choices: [
-        {
-          label: "Ignorer",
-          run: () => {
-            changeStat("sanity", -1);
-          }
-        },
-        {
-          label: "Acheter le silence",
-          run: () => {
-            spend(rnd(6, 20));
-            changeStat("reputation", rnd(1, 6));
-          }
-        },
-        {
-          label: "Contre-attaquer publiquement",
-          run: () => {
-            if (chance(0.45)) {
-              changeStat("reputation", 8);
-              c.celebrity = clamp(c.celebrity + 6, 0, 100);
-            } else {
-              changeStat("reputation", -8);
-              c.notoriety = clamp(c.notoriety + 7, -100, 100);
-            }
-          }
-        }
-      ]
-    });
-
-    pool.push({
-      text: "Un voyageur te propose une carte au trésor douteuse.",
-      choices: [
-        {
-          label: "Acheter",
-          run: () => {
-            spend(rnd(4, 18));
-            if (chance(0.35)) {
-              const loot = rnd(20, 90);
-              changeMoney(loot);
-              addLog(`La piste mène à un butin de ${loot} pièces.`, "good");
-            } else {
-              addCondition("injuries", pick(INJURIES));
-              changeStat("health", -9);
-            }
-          }
-        },
-        {
-          label: "Refuser poliment",
-          run: () => {
-            changeStat("sanity", 2);
-          }
-        },
-        {
-          label: "Voler la carte",
-          run: () => {
-            tryCrime("vol de carte au trésor", 8, 30, 0.3, 0.02, [1, 3]);
-          }
-        }
-      ]
-    });
-
-    if (c.age < 16) {
+    if (c.age >= 5 && c.age < 12) {
       pool.push({
         text: "Un élève t'humilie devant la classe.",
         choices: [
@@ -934,14 +857,14 @@
             }
           },
           {
-            label: "Te battre",
+            label: "Te défendre physiquement",
             run: () => {
               if (chance(0.45)) {
-                changeStat("strength", 4);
-                changeStat("reputation", 3);
+                changeStat("strength", 3);
+                changeStat("reputation", 2);
               } else {
                 addCondition("injuries", pick(INJURIES));
-                changeStat("health", -7);
+                changeStat("health", -6);
               }
               if (chance(0.25)) {
                 c.school.expelled = true;
@@ -961,7 +884,106 @@
       });
     }
 
+    if (c.age >= 12) {
+      pool.push({
+        text: "Une rumeur sur ton nom circule dans la gazette locale.",
+        choices: [
+          {
+            label: "Ignorer",
+            run: () => {
+              changeStat("sanity", -1);
+            }
+          },
+          {
+            label: "T'expliquer publiquement",
+            run: () => {
+              if (chance(0.48)) {
+                changeStat("reputation", 6);
+              } else {
+                changeStat("reputation", -5);
+                c.notoriety = clamp(c.notoriety + 4, -100, 100);
+              }
+            }
+          },
+          {
+            label: "Acheter le silence",
+            run: () => {
+              spend(rnd(4, 16));
+              changeStat("reputation", rnd(1, 5));
+            }
+          }
+        ]
+      });
+    }
+
     if (c.age >= 16) {
+      pool.push({
+        text: "Un collecteur d'impôts te propose un arrangement discret.",
+        choices: [
+          {
+            label: "Payer plein tarif",
+            run: () => {
+              spend(rnd(8, 22));
+              changeStat("reputation", 2);
+            }
+          },
+          {
+            label: "Négocier dans l'ombre",
+            run: () => {
+              if (chance(0.45)) {
+                changeMoney(rnd(5, 16));
+                c.notoriety = clamp(c.notoriety + 4, -100, 100);
+              } else {
+                tryCrime("fraude fiscale", 3, 12, 0.35, 0.01, [1, 3]);
+              }
+            }
+          },
+          {
+            label: "Le dénoncer au seigneur",
+            run: () => {
+              changeStat("reputation", 6);
+              changeStat("happiness", -2);
+              if (chance(0.2)) {
+                addLog("Le collecteur jure de se venger.", "warn");
+                c.notoriety = clamp(c.notoriety + 6, -100, 100);
+              }
+            }
+          }
+        ]
+      });
+
+      pool.push({
+        text: "Un voyageur te propose une carte au trésor douteuse.",
+        choices: [
+          {
+            label: "Acheter",
+            run: () => {
+              spend(rnd(4, 18));
+              if (chance(0.35)) {
+                const loot = rnd(20, 90);
+                changeMoney(loot);
+                addLog(`La piste mène à un butin de ${loot} pièces.`, "good");
+              } else {
+                addCondition("injuries", pick(INJURIES));
+                changeStat("health", -9);
+              }
+            }
+          },
+          {
+            label: "Refuser poliment",
+            run: () => {
+              changeStat("sanity", 2);
+            }
+          },
+          {
+            label: "Voler la carte",
+            run: () => {
+              tryCrime("vol de carte au trésor", 8, 30, 0.3, 0.02, [1, 3]);
+            }
+          }
+        ]
+      });
+
       pool.push({
         text: "Un rival professionnel tente de te discréditer.",
         choices: [
@@ -998,7 +1020,7 @@
       });
     }
 
-    if (c.family.spouse?.alive) {
+    if (c.family.spouse?.alive && c.age >= 16) {
       pool.push({
         text: "Ton/ta partenaire demande un engagement plus sérieux.",
         choices: [
@@ -1049,10 +1071,8 @@
       render();
       return;
     }
-    game.worldYear += 1;
     c.age += 1;
-    c.actionsLeft = ACTIONS_PER_YEAR;
-    addLog(`Tu franchis une nouvelle année: ${game.worldYear}.`, "neutral");
+    addLog(`Tu vieillis. Tu as maintenant ${c.age} ans.`, "neutral");
 
     processAgingRelations();
     annualSalaryAndBills();
@@ -1091,8 +1111,18 @@
     const actions = {
       Famille: [
         {
+          label: "Jouer avec la famille",
+          when: () => c.age <= 4,
+          run: () => {
+            if (!consumeAction()) return;
+            relationshipPulse(c.family.parents, 5);
+            changeStat("happiness", 5);
+            addLog("Tu passes un moment rassurant avec tes proches.", "good");
+          }
+        },
+        {
           label: "Passer du temps avec la famille",
-          when: () => true,
+          when: () => c.age >= 5,
           run: () => {
             if (!consumeAction()) return;
             relationshipPulse(c.family.parents, 4);
@@ -1103,7 +1133,7 @@
         },
         {
           label: "Offrir un cadeau",
-          when: () => true,
+          when: () => c.age >= 6,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(3, 15));
@@ -1116,7 +1146,7 @@
         },
         {
           label: "Insulter un proche",
-          when: () => true,
+          when: () => c.age >= 8,
           run: () => {
             if (!consumeAction()) return;
             relationshipPulse(c.family.parents, -10);
@@ -1129,7 +1159,7 @@
         },
         {
           label: "Couper les liens avec un membre",
-          when: () => true,
+          when: () => c.age >= 12,
           run: () => {
             if (!consumeAction()) return;
             if (c.family.siblings.length && chance(0.6)) {
@@ -1148,7 +1178,7 @@
         },
         {
           label: "Aider financièrement la famille",
-          when: () => c.money > 5,
+          when: () => c.age >= 14 && c.money > 5,
           run: () => {
             if (!consumeAction()) return;
             const amount = rnd(5, Math.min(40, Math.max(7, Math.floor(c.money / 2))));
@@ -1161,7 +1191,7 @@
         },
         {
           label: "Visiter la belle-famille",
-          when: () => !!c.family.spouse,
+          when: () => !!c.family.spouse && c.age >= 16,
           run: () => {
             if (!consumeAction()) return;
             if (!c.family.inlaws.length) {
@@ -1186,7 +1216,7 @@
       "École & carrière": [
         {
           label: "Étudier sérieusement",
-          when: () => c.school.enrolled || c.educationLevel < 4,
+          when: () => c.age >= 5 && (c.school.enrolled || c.educationLevel < 4),
           run: () => {
             if (!consumeAction()) return;
             c.school.grade = clamp(c.school.grade + rnd(3, 10));
@@ -1201,7 +1231,7 @@
         },
         {
           label: "Sécher les cours",
-          when: () => c.school.enrolled && !c.school.expelled,
+          when: () => c.age >= 8 && c.school.enrolled && !c.school.expelled,
           run: () => {
             if (!consumeAction()) return;
             c.school.grade = clamp(c.school.grade - rnd(6, 13));
@@ -1217,7 +1247,7 @@
         },
         {
           label: "Intégrer une activité parascolaire",
-          when: () => c.age < 20 && !c.criminal.inPrison,
+          when: () => c.age >= 7 && c.age < 20 && !c.criminal.inPrison,
           run: () => {
             if (!consumeAction()) return;
             const club = pick(["tir à l'arc", "théâtre", "chant liturgique", "échecs", "escrime"]);
@@ -1241,7 +1271,7 @@
         },
         {
           label: "Demander une promotion",
-          when: () => !!c.job && !isPrison,
+          when: () => !!c.job && c.age >= 16 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             const odds = 0.2 + c.stats.intelligence / 350 + c.stats.reputation / 450;
@@ -1259,7 +1289,7 @@
         },
         {
           label: "Saboter un collègue",
-          when: () => !!c.job && !isPrison,
+          when: () => !!c.job && c.age >= 16 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             if (chance(0.42)) {
@@ -1330,7 +1360,7 @@
         },
         {
           label: "Poursuivre une carrière artistique",
-          when: () => c.age >= 14 && !isPrison,
+          when: () => c.age >= 12 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             if (chance(0.4 + c.stats.looks / 300)) {
@@ -1382,7 +1412,7 @@
         },
         {
           label: "Voir un psy / confesseur",
-          when: () => !isPrison,
+          when: () => c.age >= 10 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(2, 12));
@@ -1399,7 +1429,7 @@
         },
         {
           label: "Entraînement physique intense",
-          when: () => true,
+          when: () => c.age >= 10,
           run: () => {
             if (!consumeAction()) return;
             changeStat("strength", rnd(4, 10));
@@ -1415,7 +1445,7 @@
         },
         {
           label: "Repos total",
-          when: () => true,
+          when: () => c.age >= 3,
           run: () => {
             if (!consumeAction()) return;
             changeStat("health", rnd(3, 9));
@@ -1426,7 +1456,7 @@
         },
         {
           label: "Soirée taverne (alcool)",
-          when: () => true,
+          when: () => c.age >= 16,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(3, 12));
@@ -1439,7 +1469,7 @@
         },
         {
           label: "Essayer l'opium",
-          when: () => c.age >= 16,
+          when: () => c.age >= 18,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(4, 18));
@@ -1472,7 +1502,7 @@
       "Relations & amour": [
         {
           label: "Se faire un nouvel ami",
-          when: () => !isPrison,
+          when: () => c.age >= 5 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             const friend = newPerson("Ami", Math.max(8, c.age - 12), c.age + 12, pick(SURNAMES));
@@ -1483,7 +1513,7 @@
         },
         {
           label: "Créer un ennemi juré",
-          when: () => true,
+          when: () => c.age >= 10,
           run: () => {
             if (!consumeAction()) return;
             const enemy = newPerson("Ennemi", Math.max(10, c.age - 14), c.age + 14, pick(SURNAMES));
@@ -1549,7 +1579,7 @@
         },
         {
           label: "Rompre",
-          when: () => !!c.family.spouse,
+          when: () => !!c.family.spouse && c.age >= 14,
           run: () => {
             if (!consumeAction()) return;
             c.family.spouse = null;
@@ -1581,7 +1611,7 @@
         },
         {
           label: "Faire un test de parentalité",
-          when: () => c.family.children.length > 0,
+          when: () => c.age >= 18 && c.family.children.length > 0,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(3, 14));
@@ -1606,7 +1636,7 @@
             if (c.family.children.length) {
               const pension = rnd(5, 20);
               c.debt += pension;
-              addLog(`Le divorce impose une pension annuelle de ${pension} pièces.`, "warn");
+              addLog(`Le divorce impose une pension régulière de ${pension} pièces.`, "warn");
             }
             c.family.spouse = null;
             addLog("Le divorce est prononcé.", "bad");
@@ -1616,7 +1646,7 @@
       "Argent & biens": [
         {
           label: "Acheter une maison",
-          when: () => !isPrison,
+          when: () => c.age >= 18 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             const price = rnd(30, 120);
@@ -1629,7 +1659,7 @@
         },
         {
           label: "Vendre une maison",
-          when: () => c.properties.length > 0,
+          when: () => c.age >= 18 && c.properties.length > 0,
           run: () => {
             if (!consumeAction()) return;
             const sold = removeRandom(c.properties);
@@ -1641,7 +1671,7 @@
         },
         {
           label: "Acheter une monture / charrette",
-          when: () => !isPrison,
+          when: () => c.age >= 14 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             const cost = rnd(12, 55);
@@ -1653,7 +1683,7 @@
         },
         {
           label: "Acheter un objet de luxe",
-          when: () => !isPrison,
+          when: () => c.age >= 14 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(10, 45));
@@ -1666,7 +1696,7 @@
         },
         {
           label: "Vendre un objet",
-          when: () => c.inventory.length > 0,
+          when: () => c.age >= 12 && c.inventory.length > 0,
           run: () => {
             if (!consumeAction()) return;
             const sold = removeRandom(c.inventory);
@@ -1695,7 +1725,7 @@
         },
         {
           label: "Contracter un prêt bancaire",
-          when: () => !isPrison,
+          when: () => c.age >= 16 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             const amount = rnd(15, 80);
@@ -1706,7 +1736,7 @@
         },
         {
           label: "Rembourser une partie de la dette",
-          when: () => getTotalDebt() > 0 && c.money > 0,
+          when: () => c.age >= 16 && getTotalDebt() > 0 && c.money > 0,
           run: () => {
             if (!consumeAction()) return;
             const payment = Math.min(c.money, rnd(10, 70), getTotalDebt());
@@ -1724,7 +1754,7 @@
         },
         {
           label: "Jouer aux dés",
-          when: () => true,
+          when: () => c.age >= 16,
           run: () => {
             if (!consumeAction()) return;
             const bet = rnd(2, 25);
@@ -1743,7 +1773,7 @@
         },
         {
           label: "Partir en voyage",
-          when: () => !isPrison,
+          when: () => c.age >= 14 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(8, 48));
@@ -1760,7 +1790,7 @@
         },
         {
           label: "Acheter un animal",
-          when: () => !isPrison,
+          when: () => c.age >= 6 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(3, 25));
@@ -1930,7 +1960,7 @@
       "Loisirs & spiritualité": [
         {
           label: "Participer à un tournoi",
-          when: () => !isPrison,
+          when: () => c.age >= 12 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             if (chance(0.38 + c.stats.strength / 280)) {
@@ -1947,7 +1977,7 @@
         },
         {
           label: "Partir à la chasse",
-          when: () => !isPrison,
+          when: () => c.age >= 12 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             if (chance(0.52)) {
@@ -1963,7 +1993,7 @@
         },
         {
           label: "Effectuer un pèlerinage",
-          when: () => !isPrison,
+          when: () => c.age >= 10 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(6, 25));
@@ -1979,7 +2009,7 @@
         },
         {
           label: "S'investir dans la charité",
-          when: () => !isPrison,
+          when: () => c.age >= 12 && !isPrison,
           run: () => {
             if (!consumeAction()) return;
             const donation = rnd(4, 30);
@@ -1991,7 +2021,7 @@
         },
         {
           label: "Fêter au village",
-          when: () => true,
+          when: () => c.age >= 12,
           run: () => {
             if (!consumeAction()) return;
             spend(rnd(2, 12));
@@ -2046,7 +2076,7 @@
       return;
     }
     option.run();
-    addLog(`Décision annuelle: ${option.label}.`, "neutral");
+    addLog(`Décision: ${option.label}.`, "neutral");
     game.pendingEvent = null;
     mortalityCheck();
     render();
@@ -2055,7 +2085,6 @@
   function renderStatus() {
     const c = game.character;
     const status = [
-      `Année: ${game.worldYear}`,
       `Âge: ${c.age} ans`,
       `Génération: ${c.generation}`,
       `Dynastie: ${c.surname}`,
@@ -2063,7 +2092,6 @@
       `Pays: ${c.country}`,
       `Argent: ${Math.round(c.money)} pièces`,
       `Dettes: ${Math.round(getTotalDebt())} pièces`,
-      `Actions restantes: ${c.actionsLeft}`,
       c.criminal.inPrison ? `Prison: ${c.criminal.yearsLeft} an(s)` : "Statut: libre"
     ];
     ui.statusStrip.innerHTML = "";
@@ -2104,7 +2132,7 @@
     const c = game.character;
     const lines = [
       `Emploi: ${c.job || "Aucun"}`,
-      `Salaire annuel: ${c.salary || 0}`,
+      `Salaire: ${c.salary || 0}`,
       `Niveau d'éducation: ${EDU_LEVELS[c.educationLevel]}`,
       `Dette universitaire: ${Math.round(c.universityDebt)}`,
       `Notoriété criminelle: ${Math.round(c.notoriety)}`,
@@ -2192,7 +2220,7 @@
     if (!game.pendingEvent) {
       ui.eventCard.innerHTML = `
         <h3 class="event-title">Aucun événement en attente</h3>
-        <p>Passe une année pour déclencher un nouvel épisode narratif.</p>
+        <p>Utilise « Vieillir » pour déclencher un nouvel épisode narratif.</p>
       `;
       return;
     }
@@ -2243,7 +2271,7 @@
         const btn = document.createElement("button");
         btn.className = "action-btn";
         btn.textContent = action.label;
-        btn.disabled = !c.alive || (c.actionsLeft <= 0 && !game.pendingEvent);
+        btn.disabled = !c.alive;
         btn.addEventListener("click", () => {
           action.run();
           render();
