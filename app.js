@@ -647,18 +647,16 @@ function renderResults() {
     return;
   }
 
-  const selectedKey = state.selected ? `${state.selected.source}:${state.selected.id}` : null;
   els.results.innerHTML = list
     .map((r) => {
-      const key = `${r.source}:${r.id}`;
-      const isSel = selectedKey === key;
+      const isSel = !!(state.selected && r.source === state.selected.source && String(r.id) === String(state.selected.id));
       const metaParts = [];
       if (r.year) metaParts.push(escapeHtml(String(r.year)));
       if (r.authors?.length) metaParts.push(escapeHtml(r.authors.slice(0, 3).join(", ") + (r.authors.length > 3 ? "…" : "")));
       if (r.container) metaParts.push(escapeHtml(String(r.container)));
       if (r.url) metaParts.push(`<a href="${escapeHtml(r.url)}" target="_blank" rel="noopener">ouvrir</a>`);
       return `
-        <div class="result ${isSel ? "selected" : ""}" data-key="${escapeHtml(key)}" tabindex="0">
+        <div class="result ${isSel ? "selected" : ""}" data-source="${escapeHtml(r.source)}" data-id="${escapeHtml(String(r.id))}" tabindex="0">
           <div class="badgeRow">
             ${badge(r.source)}
             ${r.doi ? `<span class="badge warn">DOI</span>` : ""}
@@ -847,26 +845,45 @@ function setActiveTab(tab) {
   renderResults();
 }
 
-function onSelectByKey(key) {
-  const [source, id] = String(key).split(":");
-  const item = state.results.find((r) => r.source === source && String(r.id) === id);
-  if (!item) return;
-  state.selected = item;
+async function selectResult(source, id) {
+  const s = String(source || "");
+  const i = String(id || "");
+  const idx = state.results.findIndex((r) => r.source === s && String(r.id) === i);
+  if (idx < 0) return;
+
+  const settings = getSettings();
+  state.selected = state.results[idx];
   renderResults();
-  renderDetail(item, getSettings());
+  renderDetail(state.selected, settings);
+
+  // If it's Wikipedia, fetch the full extract for better summaries/notes.
+  if (state.selected?.source === "wikipedia" && !state.selected.extract) {
+    try {
+      const enriched = await enrichSelected(state.selected, settings);
+      // Update only if the same result is still selected.
+      if (enriched && state.selected && state.selected.source === s && String(state.selected.id) === i) {
+        state.results[idx] = enriched;
+        state.selected = enriched;
+        renderResults();
+        renderDetail(enriched, settings);
+      }
+    } catch {
+      // ignore enrichment failure
+    }
+  }
 }
 
 els.results.addEventListener("click", (e) => {
   const el = e.target.closest(".result");
   if (!el) return;
-  onSelectByKey(el.dataset.key);
+  selectResult(el.dataset.source, el.dataset.id);
 });
 
 els.results.addEventListener("keydown", (e) => {
   if (e.key !== "Enter") return;
   const el = e.target.closest(".result");
   if (!el) return;
-  onSelectByKey(el.dataset.key);
+  selectResult(el.dataset.source, el.dataset.id);
 });
 
 for (const b of els.tabs) {
