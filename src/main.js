@@ -319,12 +319,11 @@ ui.els.start.addEventListener("click", async () => {
       // Fallback: si le lock ne se fait pas, on reste en jeu (WASD fonctionne) et on affiche une aide.
       setTimeout(() => {
         if (document.pointerLockElement !== renderer.domElement) {
-          ui.setStatus("Clique sur la scène pour capturer la souris (Pointer Lock).");
+          ui.setStatus("Pointer Lock refusé: maintiens clic + bouge pour regarder (ou clique pour réessayer).");
         }
       }, 700);
     } else {
-      ui.showMenu();
-      ui.showError("Pointer Lock non supporté sur ce navigateur/appareil (mobile?).");
+      ui.setStatus("Pointer Lock non supporté: maintiens clic + bouge pour regarder.");
     }
   } catch (e) {
     ui.showMenu();

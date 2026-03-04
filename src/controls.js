@@ -4,6 +4,9 @@ export function createPointerLockControls(camera, domElement) {
   const state = {
     active: false, // jeu démarré
     locked: false, // pointer lock acquis
+    dragging: false, // fallback sans pointer lock
+    lastX: 0,
+    lastY: 0,
     yaw: 0,
     pitch: 0,
     moveF: 0,
@@ -21,9 +24,22 @@ export function createPointerLockControls(camera, domElement) {
   }
 
   function onMouseMove(e) {
-    if (!state.active || !state.locked) return;
-    const mx = e.movementX || 0;
-    const my = e.movementY || 0;
+    if (!state.active) return;
+
+    let mx = 0;
+    let my = 0;
+    if (state.locked) {
+      mx = e.movementX || 0;
+      my = e.movementY || 0;
+    } else if (state.dragging) {
+      mx = (e.clientX ?? state.lastX) - state.lastX;
+      my = (e.clientY ?? state.lastY) - state.lastY;
+      state.lastX = e.clientX ?? state.lastX;
+      state.lastY = e.clientY ?? state.lastY;
+    } else {
+      return;
+    }
+
     const sensitivity = 0.0022;
     state.yaw -= mx * sensitivity;
     state.pitch -= my * sensitivity;
@@ -66,6 +82,30 @@ export function createPointerLockControls(camera, domElement) {
     document.addEventListener("pointerlockchange", () => {
       state.locked = document.pointerLockElement === domElement;
     });
+
+    // Fallback “drag to look” quand Pointer Lock est refusé / non dispo
+    domElement.addEventListener("pointerdown", (e) => {
+      if (!state.active) return;
+      if (state.locked) return;
+      state.dragging = true;
+      state.lastX = e.clientX ?? 0;
+      state.lastY = e.clientY ?? 0;
+      try {
+        domElement.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    });
+    domElement.addEventListener("pointerup", () => {
+      state.dragging = false;
+    });
+    domElement.addEventListener("pointercancel", () => {
+      state.dragging = false;
+    });
+    domElement.addEventListener("pointermove", (e) => {
+      // Sur certains navigateurs, mousemove ne suit pas bien sans lock; pointermove aide.
+      onMouseMove(e);
+    });
   }
 
   function requestLock() {
@@ -76,6 +116,7 @@ export function createPointerLockControls(camera, domElement) {
     state.active = active;
     if (!active) {
       state.locked = false;
+      state.dragging = false;
       state.moveF = 0;
       state.moveR = 0;
       state.running = false;
