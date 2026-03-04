@@ -465,6 +465,81 @@ function splitSentences(text) {
     .filter((s) => s.length >= 25);
 }
 
+function extractYears(text) {
+  const t = String(text || "");
+  const ys = new Set();
+  for (const m of t.matchAll(/\b(19\d{2}|20\d{2})\b/g)) ys.add(m[1]);
+  return [...ys].sort();
+}
+
+function containsUrl(text) {
+  return /https?:\/\/\S+/i.test(String(text || ""));
+}
+
+function tfidfRankSentences(question, blocks, lang, max = 6) {
+  const qTokens = tokenizeForSearch(question, lang);
+  if (!qTokens.length) return [];
+
+  const sentences = [];
+  for (const b of blocks) {
+    for (const s of splitSentences(b.text)) {
+      sentences.push({ s, from: b.title });
+    }
+  }
+  if (!sentences.length) return [];
+
+  const docs = sentences.map((x) => tokenizeForSearch(x.s, lang));
+  const df = new Map();
+  for (const toks of docs) {
+    const uniq = new Set(toks);
+    for (const w of uniq) df.set(w, (df.get(w) || 0) + 1);
+  }
+  const N = docs.length;
+  const idf = (w) => Math.log((N + 1) / ((df.get(w) || 0) + 1)) + 1;
+
+  const scored = sentences.map((x, i) => {
+    const toks = docs[i];
+    if (!toks.length) return { ...x, score: 0 };
+    const tf = new Map();
+    for (const w of toks) tf.set(w, (tf.get(w) || 0) + 1);
+    let score = 0;
+    let hits = 0;
+    for (const q of qTokens) {
+      const c = tf.get(q) || 0;
+      if (c) {
+        hits++;
+        score += (1 + Math.log(c)) * idf(q);
+      }
+    }
+    // Normalize by length; boost denser sentences
+    score = score / Math.sqrt(toks.length);
+    if (hits >= 2) score *= 1.15;
+    // Prefer sentences containing numbers/dates when question is factual
+    if (/\b(quand|date|année|combien|pourcentage|statistique|when|year|how many|percent)\b/i.test(question) && /\d/.test(x.s)) {
+      score *= 1.12;
+    }
+    return { ...x, score };
+  });
+
+  scored.sort((a, b) => b.score - a.score);
+  const picked = scored.filter((x) => x.score > 0).slice(0, max);
+  return picked;
+}
+
+function extractClaimsToCheck(text, lang, max = 6) {
+  const sents = splitSentences(text);
+  const out = [];
+  for (const s of sents) {
+    const hasNumber = /\b\d{1,3}(?:[.,]\d+)?\b/.test(s) || /\b(19\d{2}|20\d{2})\b/.test(s);
+    const hasSuperlative = /\b(toujours|jamais|tous|aucun|le meilleur|le pire|always|never|all|none|best|worst)\b/i.test(s);
+    const hasCausal = /\b(parce que|donc|cause|entraîne|résulte|because|therefore|leads to|results in)\b/i.test(s);
+    if (hasNumber || hasSuperlative || hasCausal) out.push(s);
+    if (out.length >= max) break;
+  }
+  if (!out.length && sents.length) out.push(sents[0]);
+  return out.slice(0, max);
+}
+
 function summarizeExtractive(text, lang, maxSentences = 3) {
   const sentences = splitSentences(text);
   if (sentences.length === 0) return "";
@@ -640,6 +715,8 @@ function analyzeExcerpt(text, settings) {
   const themes = detectThemes(baseText, lang);
   const tone = detectTone(baseText, lang);
   const strategies = detectStrategies(baseText, lang);
+  const years = extractYears(baseText);
+  const claims = extractClaimsToCheck(baseText, lang, 6);
 
   const podcast = !!els.aiForPodcast?.checked;
   const audience = String(els.aiAudience?.value || "general");
@@ -652,12 +729,13 @@ function analyzeExcerpt(text, settings) {
   const ideas = generateIdeas({ title: "Analyse d'extraits", text: baseText, keywords: kw, lang });
 
   const lines = [];
-  lines.push("Je garde un œil vigilant: ce qui suit est une analyse automatique (heuristique). Vérifie les citations et le contexte.");
+  lines.push("Œil vigilant: analyse automatique (locale). Je signale les manques/incohérences potentielles, mais tu dois vérifier les sources.");
   lines.push("");
 
   if (podcast) {
     lines.push("Résumé exploitable pour un balado (base de script)");
     lines.push(`- Style visé: ${voice}`);
+    if (years.length) lines.push(`- Repères temporels détectés: ${years.join(", ")}`);
     lines.push("");
     lines.push("Intro (30–45 s)");
     lines.push(intro ? intro : "(à compléter)");
@@ -669,11 +747,12 @@ function analyzeExcerpt(text, settings) {
     lines.push(concl ? concl : "(à compléter)");
     lines.push("");
     lines.push("Mini‑plan de balado (segments)");
-    lines.push("- Contexte et source(s) des extraits");
-    lines.push("- Thèmes centraux et cadrage");
-    lines.push("- Ton et stratégies de communication");
-    lines.push("- Enjeux / conséquences (points de vue)");
-    lines.push("- Ouverture: quelles questions de recherche?");
+    lines.push("- 0:00 Contexte (qui parle? où? quand? quelle plateforme?)");
+    lines.push("- 0:30 Résumé + 2 idées fortes");
+    lines.push("- 1:20 Thèmes centraux (avec exemples)");
+    lines.push("- 2:20 Ton & stratégies (comment ça persuade?)");
+    lines.push("- 3:20 Enjeux/conséquences (plusieurs points de vue)");
+    lines.push("- 4:20 Ouverture: questions de recherche + ce qu’il faut vérifier");
     lines.push("");
   } else {
     lines.push("Résumé");
@@ -686,6 +765,18 @@ function analyzeExcerpt(text, settings) {
   lines.push(`- Ton (indices): ${tone.labels.join(", ")}${tone.cues.length ? ` — ${tone.cues.join(" · ")}` : ""}`);
   lines.push("- Stratégies de communication (indices):");
   for (const s of strategies.slice(0, 6)) lines.push(`  - ${s.name}${s.evidence ? `: ${s.evidence}` : ""}`);
+  lines.push("");
+
+  lines.push("Œil vigilant: points à vérifier (claims)");
+  for (const c of claims) lines.push(`- ${c}`);
+  lines.push("");
+
+  lines.push("Œil vigilant: informations manquantes (si applicable)");
+  const miss = [];
+  if (!years.length) miss.push(lang === "en" ? "No date/year detected" : "Aucune date/année détectée");
+  if (!containsUrl(baseText)) miss.push(lang === "en" ? "No source URL in the pasted text" : "Aucune URL de source dans le texte collé");
+  if (!miss.length) miss.push(lang === "en" ? "No obvious missing metadata detected" : "Pas de manque évident détecté");
+  for (const m of miss) lines.push(`- ${m}`);
   lines.push("");
 
   lines.push("Problématiques (sciences humaines)");
@@ -1706,23 +1797,9 @@ function pickEvidenceBlocks(settings) {
 }
 
 function bestSentencesForQuestion(question, blocks, lang) {
-  const qTokens = tokenizeForSearch(question, lang);
-  const scored = [];
-  for (const b of blocks) {
-    const sents = splitSentences(b.text);
-    for (const s of sents) {
-      const st = tokenize(s).join(" ");
-      let hits = 0;
-      for (const q of qTokens) if (st.includes(q)) hits++;
-      if (!hits) continue;
-      // prefer shorter, denser sentences
-      const density = hits / Math.max(6, tokenize(s).length);
-      const score = hits * 1.8 + density * 6.0;
-      scored.push({ s, score, from: b.title });
-    }
-  }
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, 6);
+  // Backward-compatible wrapper (now TF‑IDF based).
+  const picked = tfidfRankSentences(question, blocks, lang, 6);
+  return picked.map((p) => ({ s: p.s, score: p.score, from: p.from }));
 }
 
 function aiAnswer(question, settings) {
@@ -1733,38 +1810,81 @@ function aiAnswer(question, settings) {
   const corpus = blocks.map((b) => `${b.title}\n${b.text}`).join("\n\n");
   const lang = settings.lang;
 
-  const keywords = extractKeywords(`${q}\n${corpus}`, lang, 12);
+  const keywords = extractKeywords(`${q}\n${corpus}`, lang, 14);
   const ideas = generateIdeas({ title: q, text: corpus, keywords, lang });
-  const evidence = bestSentencesForQuestion(q, blocks, lang);
+  const evidence = tfidfRankSentences(q, blocks, lang, 7);
+  const years = extractYears(corpus);
+  const claims = extractClaimsToCheck(corpus, lang, 6);
 
   const lines = [];
+  lines.push("Œil vigilant — réponse structurée (locale)");
   lines.push(`Question: ${q}`);
+  if (years.length) lines.push(`Repères temporels détectés: ${years.join(", ")}`);
   lines.push("");
-  lines.push("Synthèse (à vérifier):");
-  const synth = summarizeExtractive(corpus, lang, 3);
-  lines.push(synth ? synth : "(Pas assez de texte pour synthétiser.)");
+
+  const isPodcast = /\b(balado|podcast|script|intro|conclusion)\b/i.test(q);
+  const isPlan = /\b(plan|structure|outline)\b/i.test(q);
+
+  const synth = summarizeExtractive(corpus, lang, isPodcast ? 4 : 3);
+  lines.push(isPodcast ? "Résumé pour balado (base de script)" : "Synthèse (à vérifier)");
+  lines.push(synth ? synth : "(Pas assez de texte disponible pour synthétiser.)");
+  lines.push("");
+
+  if (isPodcast || isPlan) {
+    lines.push("Mini‑plan (proposition)");
+    lines.push("- Intro: contexte + pourquoi c’est important");
+    lines.push("- Partie 1: thèses/arguments (avec 2 extraits)");
+    lines.push("- Partie 2: thèmes + stratégies de communication");
+    lines.push("- Partie 3: enjeux/conséquences (plusieurs points de vue)");
+    lines.push("- Conclusion: limites + ce qu’il faut vérifier + ouverture");
+    lines.push("");
+  }
+
+  lines.push("Points clés (tirés des sources)");
+  const topPts = evidence.slice(0, 4).map((e) => `- ${e.s}`);
+  if (topPts.length) lines.push(...topPts);
+  else lines.push("- (Je manque de texte exploitable: active “tous les résultats” ou colle des extraits.)");
   lines.push("");
 
   if (evidence.length) {
-    lines.push("Extraits pertinents:");
+    lines.push("Extraits pertinents (avec provenance)");
     for (const e of evidence) lines.push(`- (${e.from}) ${e.s}`);
     lines.push("");
   }
 
-  lines.push("Mots-clés utiles:");
-  lines.push(keywords.slice(0, 10).join(", ") || "(aucun)");
+  lines.push("Analyse rapide (thèmes / ton / stratégies)");
+  const themes = detectThemes(corpus, lang).slice(0, 6);
+  const tone = detectTone(corpus, lang);
+  const strat = detectStrategies(corpus, lang).slice(0, 6);
+  lines.push(`- Thèmes: ${themes.length ? themes.join(", ") : "(non détectés)"}`);
+  lines.push(`- Ton: ${tone.labels.join(", ")}${tone.cues.length ? ` — ${tone.cues.join(" · ")}` : ""}`);
+  lines.push("- Stratégies (indices):");
+  for (const s of strat) lines.push(`  - ${s.name}${s.evidence ? `: ${s.evidence}` : ""}`);
   lines.push("");
 
-  lines.push("Idées de problématique:");
-  for (const p of ideas.problematiques.slice(0, 4)) lines.push(`- ${p}`);
+  lines.push("Problématiques (sciences humaines)");
+  for (const p of ideas.problematiques.slice(0, 6)) lines.push(`- ${p}`);
   lines.push("");
 
-  lines.push("Angles / conséquences possibles:");
-  for (const c of ideas.consequences.slice(0, 4)) lines.push(`- ${c}`);
+  lines.push("Conséquences / enjeux (axes)");
+  for (const c of ideas.consequences.slice(0, 6)) lines.push(`- ${c}`);
   lines.push("");
 
-  lines.push("Pistes (méthode / solution):");
-  for (const s of ideas.solutions.slice(0, 4)) lines.push(`- ${s}`);
+  lines.push("Pistes de solutions / réflexion");
+  for (const s of ideas.solutions.slice(0, 6)) lines.push(`- ${s}`);
+  lines.push("");
+
+  lines.push("Œil vigilant: points à vérifier (claims)");
+  for (const c of claims) lines.push(`- ${c}`);
+  lines.push("");
+
+  lines.push("Œil vigilant: ce qui manque souvent (si applicable)");
+  const miss = [];
+  if (!years.length) miss.push(lang === "en" ? "Dates/years missing" : "Dates/années manquantes");
+  if (!containsUrl(corpus)) miss.push(lang === "en" ? "No URLs to cite" : "Pas d’URL à citer (risque de citation incomplète)");
+  if (!usedItems.length) miss.push(lang === "en" ? "No sources selected" : "Aucune source sélectionnée");
+  if (!miss.length) miss.push(lang === "en" ? "Nothing obvious" : "Rien d’évident");
+  for (const m of miss) lines.push(`- ${m}`);
   lines.push("");
 
   const cited = usedItems.slice(0, 5);
