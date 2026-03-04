@@ -154,16 +154,6 @@ export function createLabWorld() {
   group.add(pillars);
   pillars.instanceMatrix.needsUpdate = true;
 
-  // Cadres de portes (visuel) au niveau de l'ouverture du couloir/open-space
-  const frameMat = new THREE.MeshStandardMaterial({ color: 0x0c101a, roughness: 0.55, metalness: 0.25 });
-  const frameSide = new THREE.Mesh(new THREE.BoxGeometry(0.28, 3.2, 0.4), frameMat);
-  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.28, 0.4), frameMat);
-  frameSide.position.set(-3.4, 1.1, openMaxZ);
-  const frameSide2 = frameSide.clone();
-  frameSide2.position.set(3.4, 1.1, openMaxZ);
-  frameTop.position.set(0, 2.65, openMaxZ);
-  group.add(frameSide, frameSide2, frameTop);
-
   // Helper: murs intérieurs (visuel + collider)
   function addWallBox(sizeX, sizeZ, x, z) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(sizeX, wallH - 1.2, wallT), wallMat);
@@ -205,6 +195,17 @@ export function createLabWorld() {
   const openMaxX = openCenter.x + openW / 2;
   const openMinZ = openCenter.z - openD / 2;
   const openMaxZ = openCenter.z + openD / 2;
+
+  // Cadres de portes (visuel) au niveau de l'ouverture du couloir/open-space
+  // (placé ici pour éviter l'accès à openMaxZ avant initialisation)
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x0c101a, roughness: 0.55, metalness: 0.25 });
+  const frameSide = new THREE.Mesh(new THREE.BoxGeometry(0.28, 3.2, 0.4), frameMat);
+  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.28, 0.4), frameMat);
+  frameSide.position.set(-3.4, 1.1, openMaxZ);
+  const frameSide2 = frameSide.clone();
+  frameSide2.position.set(3.4, 1.1, openMaxZ);
+  frameTop.position.set(0, 2.65, openMaxZ);
+  group.add(frameSide, frameSide2, frameTop);
 
   // Encadrement open-space (murs) AVEC vraie porte vers le couloir sud
   // Nord (mur continu)
