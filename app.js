@@ -39,6 +39,9 @@ const els = {
   aiUseNotes: document.querySelector("#aiUseNotes"),
   aiAutoSearch: document.querySelector("#aiAutoSearch"),
   aiAutoLimit: document.querySelector("#aiAutoLimit"),
+  aiAutoWiki: document.querySelector("#aiAutoWiki"),
+  aiAutoOpenAlex: document.querySelector("#aiAutoOpenAlex"),
+  aiAutoCrossref: document.querySelector("#aiAutoCrossref"),
   btnAiAsk: document.querySelector("#btnAiAsk"),
   btnAiCopy: document.querySelector("#btnAiCopy"),
   btnAiClear: document.querySelector("#btnAiClear"),
@@ -1798,7 +1801,22 @@ function pickEvidenceBlocks(settings) {
   return { blocks, usedItems: used };
 }
 
-async function autoSearchWikipediaEvidence(question, settings) {
+function dedupeAutoItems(items) {
+  const seen = new Set();
+  const out = [];
+  for (const it of items) {
+    const doiKey = it?.doi ? `doi:${String(it.doi).toLowerCase()}` : "";
+    const urlKey = it?.url ? `url:${normalizeUrlForDedup(it.url).toLowerCase()}` : "";
+    const titleKey = `t:${normTitleKey(it?.title)}|y:${String(it?.year || "")}`;
+    const key = doiKey || urlKey || titleKey;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    out.push(it);
+  }
+  return out;
+}
+
+async function autoSearchEvidence(question, settings) {
   const limit = clampInt(parseInt(String(els.aiAutoLimit?.value || "3"), 10), 1, 8, 3);
   const auto = !!els.aiAutoSearch?.checked;
   if (!auto) return { blocks: [], usedItems: [] };
@@ -1806,30 +1824,66 @@ async function autoSearchWikipediaEvidence(question, settings) {
   const q = normalizeSpace(question);
   if (!q) return { blocks: [], usedItems: [] };
 
-  // Use Wikipedia search as a general "no API key" fallback for factual questions.
+  const useWiki = !!els.aiAutoWiki?.checked;
+  const useOA = !!els.aiAutoOpenAlex?.checked;
+  const useCR = !!els.aiAutoCrossref?.checked;
+  if (!useWiki && !useOA && !useCR) return { blocks: [], usedItems: [] };
+
   const c = new AbortController();
-  const items = await searchWikipedia(q, settings.lang, limit, c.signal);
-  const top = items.slice(0, limit);
-  const enriched = await Promise.allSettled(
-    top.map(async (it) => {
-      try {
-        const d = await wikipediaDetails(it.id, settings.lang, c.signal);
-        if (!d) return it;
-        return { ...it, extract: d.extract, url: d.fullurl || it.url, timestamp: d.timestamp };
-      } catch {
-        return it;
-      }
-    })
-  );
+  const tasks = [];
+
+  if (useWiki) {
+    tasks.push(
+      (async () => {
+        const items = await searchWikipedia(q, settings.lang, limit, c.signal);
+        const top = items.slice(0, limit);
+        const enriched = await Promise.allSettled(
+          top.map(async (it) => {
+            try {
+              const d = await wikipediaDetails(it.id, settings.lang, c.signal);
+              if (!d) return it;
+              return { ...it, extract: d.extract, url: d.fullurl || it.url, timestamp: d.timestamp };
+            } catch {
+              return it;
+            }
+          })
+        );
+        return enriched.filter((x) => x.status === "fulfilled").map((x) => x.value);
+      })()
+    );
+  }
+
+  if (useOA) {
+    tasks.push(
+      (async () => {
+        const items = await searchOpenAlex(q, { ...settings, perPage: limit }, c.signal);
+        return items.slice(0, limit);
+      })()
+    );
+  }
+
+  if (useCR) {
+    tasks.push(
+      (async () => {
+        const items = await searchCrossref(q, { ...settings, perPage: limit }, c.signal);
+        return items.slice(0, limit);
+      })()
+    );
+  }
+
+  const settled = await Promise.allSettled(tasks);
+  const combined = [];
+  for (const s of settled) if (s.status === "fulfilled") combined.push(...(s.value || []));
+
+  const itemsAll = dedupeAutoItems(combined).slice(0, Math.max(limit, 3));
 
   const blocks = [];
   const usedItems = [];
-  for (const s of enriched) {
-    if (s.status !== "fulfilled") continue;
-    const it = s.value;
-    const t = normalizeSpace(it.extract || it.snippet || "");
+  for (const it of itemsAll) {
+    const t = normalizeSpace(it.extract || it.abstract || it.snippet || "");
     if (!t) continue;
-    blocks.push({ title: it.title || "Wikipédia", text: t, item: it });
+    const src = it.source === "openalex" ? "OpenAlex" : it.source === "crossref" ? "Crossref" : "Wikipedia";
+    blocks.push({ title: `${src} — ${it.title || "Sans titre"}`, text: t, item: it });
     usedItems.push(it);
   }
   return { blocks, usedItems };
@@ -1851,7 +1905,7 @@ async function aiAnswer(question, settings) {
 
   // If we have too little material, auto-search Wikipedia.
   if (normalizeSpace(corpus).length < 450) {
-    const auto = await autoSearchWikipediaEvidence(q, settings).catch(() => ({ blocks: [], usedItems: [] }));
+    const auto = await autoSearchEvidence(q, settings).catch(() => ({ blocks: [], usedItems: [] }));
     if (auto.blocks.length) {
       blocks = [...blocks, ...auto.blocks];
       usedItems = [...usedItems, ...auto.usedItems];
