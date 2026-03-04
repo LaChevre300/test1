@@ -15,11 +15,14 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.35;
 root.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x04050a);
-scene.fog = new THREE.Fog(0x04050a, 3, 28);
+scene.background = new THREE.Color(0x070914);
+scene.fog = new THREE.Fog(0x070914, 4, 42);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 120);
 camera.position.set(0, 1.7, 14);
@@ -27,13 +30,22 @@ camera.position.set(0, 1.7, 14);
 const controls = createPointerLockControls(camera, renderer.domElement);
 
 // Lighting baseline
-scene.add(new THREE.AmbientLight(0x203050, 0.25));
+scene.add(new THREE.HemisphereLight(0x9fbfff, 0x06040a, 0.22));
+scene.add(new THREE.AmbientLight(0x1f2b44, 0.22));
 
 // World
 const world = createLabWorld();
 scene.add(world.group);
 
 for (const l of world.lights) scene.add(l);
+
+// Lampe torche (évite le “tout noir” et garde l’ambiance horreur)
+const flashlight = new THREE.SpotLight(0xe8f4ff, 85, 22, Math.PI / 8, 0.45, 1.7);
+flashlight.castShadow = true;
+flashlight.shadow.mapSize.set(1024, 1024);
+flashlight.shadow.bias = -0.0002;
+scene.add(flashlight);
+scene.add(flashlight.target);
 
 // A simple bald head "mirror" prop: a shiny sphere on a stand near entrance
 const mirrorStand = new THREE.Mesh(
@@ -210,6 +222,10 @@ function tick() {
 
   controls.updateCamera();
   updateFlicker(tNow);
+
+  // Suivi lampe torche
+  flashlight.position.copy(camera.position);
+  flashlight.target.position.copy(camera.position).add(tmpVec3.set(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(2.0));
 
   if (controls.state.enabled && player.alive) {
     // Movement
