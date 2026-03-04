@@ -442,6 +442,39 @@ function tokenizeForSearch(text, lang) {
   return tokenize(text).filter((w) => w.length >= 3 && !stop.has(w));
 }
 
+function autoQueryFromQuestion(question, lang) {
+  const q = normalizeSpace(question);
+  if (!q) return "";
+  const dropFr = new Set([
+    "quoi",
+    "pourquoi",
+    "comment",
+    "sert",
+    "servir",
+    "utilise",
+    "utiliser",
+    "usage",
+    "usages",
+    "définition",
+    "définir",
+    "expliquer",
+    "expliques",
+    "peux",
+    "peut",
+    "donne",
+    "donner",
+    "résume",
+    "résumer",
+    "resume",
+    "plan",
+  ]);
+  const dropEn = new Set(["what", "why", "how", "use", "used", "uses", "definition", "define", "explain", "summarize", "outline", "plan"]);
+  const drop = lang === "en" ? dropEn : dropFr;
+  const toks = tokenizeForSearch(q, lang).filter((t) => !drop.has(t));
+  // Keep a compact query
+  return toks.slice(0, 10).join(" ").trim();
+}
+
 function keywordCandidates(text, lang) {
   const stop = lang === "en" ? STOP_EN : STOP_FR;
   const tokens = tokenize(text).filter((w) => w.length >= 4 && !stop.has(w));
@@ -542,6 +575,19 @@ function extractClaimsToCheck(text, lang, max = 6) {
     if (out.length >= max) break;
   }
   if (!out.length && sents.length) out.push(sents[0]);
+  return out.slice(0, max);
+}
+
+function extractUseSentences(text, lang, max = 6) {
+  const sents = splitSentences(text);
+  const out = [];
+  const re = lang === "en"
+    ? /\b(used for|used to|is used|treat|treatment|medicin|remedy|herbal|soothe|relief)\b/i
+    : /\b(utilis|usage|sert à|trait|soign|médicin|remède|plante|tisane|sirop|adouc)\b/i;
+  for (const s of sents) {
+    if (re.test(s)) out.push(s);
+    if (out.length >= max) break;
+  }
   return out.slice(0, max);
 }
 
@@ -1821,8 +1867,9 @@ async function autoSearchEvidence(question, settings) {
   const auto = !!els.aiAutoSearch?.checked;
   if (!auto) return { blocks: [], usedItems: [] };
 
-  const q = normalizeSpace(question);
-  if (!q) return { blocks: [], usedItems: [] };
+  const qRaw = normalizeSpace(question);
+  if (!qRaw) return { blocks: [], usedItems: [] };
+  const q = autoQueryFromQuestion(qRaw, settings.lang) || qRaw;
 
   const useWiki = !!els.aiAutoWiki?.checked;
   const useOA = !!els.aiAutoOpenAlex?.checked;
@@ -1903,7 +1950,7 @@ async function aiAnswer(question, settings) {
   let corpus = blocks.map((b) => `${b.title}\n${b.text}`).join("\n\n");
   const lang = settings.lang;
 
-  // If we have too little material, auto-search Wikipedia.
+  // If we have too little material, auto-search open sources.
   if (normalizeSpace(corpus).length < 450) {
     const auto = await autoSearchEvidence(q, settings).catch(() => ({ blocks: [], usedItems: [] }));
     if (auto.blocks.length) {
@@ -1913,17 +1960,46 @@ async function aiAnswer(question, settings) {
     }
   }
 
+  // If still empty, produce an actionable message instead of a non-answer.
+  if (normalizeSpace(corpus).length < 120) {
+    const lines = [];
+    lines.push("Œil vigilant: je n’ai pas trouvé assez de matière pour répondre.");
+    lines.push("");
+    lines.push("À faire (rapide):");
+    lines.push("- Active “Chercher des sources si besoin” et coche au moins Wikipedia.");
+    lines.push("- Ou colle un extrait (IA → Extraits) ou sélectionne un résultat de recherche.");
+    lines.push("- Reformule en mots-clés (ex: “guimauve plante usages” au lieu d’une phrase longue).");
+    return lines.join("\n");
+  }
+
   const keywords = extractKeywords(`${q}\n${corpus}`, lang, 14);
   const ideas = generateIdeas({ title: q, text: corpus, keywords, lang });
   const evidence = tfidfRankSentences(q, blocks, lang, 7);
   const years = extractYears(corpus);
   const claims = extractClaimsToCheck(corpus, lang, 6);
+  const directBase = evidence.length ? evidence.slice(0, 3).map((e) => e.s).join(" ") : corpus;
+  const direct = summarizeExtractive(directBase, lang, 2);
+  const useCases = extractUseSentences(corpus, lang, 5);
 
   const lines = [];
   lines.push("Œil vigilant — réponse structurée (locale, sources ouvertes)");
   lines.push(`Question: ${q}`);
   if (years.length) lines.push(`Repères temporels détectés: ${years.join(", ")}`);
   lines.push("");
+
+  lines.push("Réponse courte");
+  lines.push(direct ? direct : "(Je n’ai pas assez d’extraits nets pour une réponse courte.)");
+  lines.push("");
+
+  if (/\b(à quoi sert|a quoi sert|usages?|utiliser|used for|uses)\b/i.test(q)) {
+    lines.push("Utilisations (extraits)");
+    if (useCases.length) {
+      for (const s of useCases) lines.push(`- ${s}`);
+    } else {
+      lines.push("- (Je ne vois pas d’énoncés d’usage explicites dans les sources récupérées.)");
+    }
+    lines.push("");
+  }
 
   const isPodcast = /\b(balado|podcast|script|intro|conclusion)\b/i.test(q);
   const isPlan = /\b(plan|structure|outline)\b/i.test(q);
@@ -2206,8 +2282,12 @@ els.btnAiAsk?.addEventListener("click", async () => {
   const settings = getSettings();
   const q = String(els.aiQ?.value || "");
   renderAi("Œil vigilant: je rassemble des sources…");
-  const ans = await aiAnswer(q, settings);
-  renderAi(ans);
+  try {
+    const ans = await aiAnswer(q, settings);
+    renderAi(ans);
+  } catch {
+    renderAi("Œil vigilant: erreur inattendue pendant la recherche. Réessaie, ou colle un extrait dans IA → Extraits.");
+  }
 });
 
 // Images view
