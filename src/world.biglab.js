@@ -132,12 +132,33 @@ export function createLabWorld() {
   wallLong(half * 2, -half, 0, Math.PI / 2);
   wallLong(half * 2, half, 0, Math.PI / 2);
 
-  // Plafond (dalles)
+  // Plafond (structure) + plafond suspendu en dalles (réaliste)
   const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x0b0f18, roughness: 0.98, metalness: 0.0 });
   const ceiling = new THREE.Mesh(new THREE.BoxGeometry(half * 2, 0.8, half * 2), ceilingMat);
   ceiling.position.set(0, wallH - 0.15, 0);
   ceiling.receiveShadow = true;
   group.add(ceiling);
+
+  // Dalles plafond suspendu (InstancedMesh)
+  const tileMat = new THREE.MeshStandardMaterial({ color: 0x0e1420, roughness: 0.92, metalness: 0.02 });
+  const tileGeo = new THREE.BoxGeometry(1.18, 0.06, 1.18);
+  const tiles = new THREE.InstancedMesh(tileGeo, tileMat, 2400);
+  tiles.castShadow = false;
+  tiles.receiveShadow = false;
+  let ti = 0;
+  const tileY = wallH - 1.15;
+  const gridStep = 1.25;
+  for (let z = -half + 6; z <= half - 6; z += gridStep) {
+    for (let x = -half + 6; x <= half - 6; x += gridStep) {
+      if (ti >= tiles.count) break;
+      // petites “dalles manquantes” pour l’ambiance
+      if (rand() < 0.03) continue;
+      setInstance(tiles, ti, new THREE.Vector3(x, tileY, z), 0, 1);
+      ti++;
+    }
+  }
+  group.add(tiles);
+  tiles.instanceMatrix.needsUpdate = true;
   // Idem plafond: on ne le met pas dans les colliders, sinon “murs invisibles” en XZ.
 
   // Piliers (donne une vraie “pièce”)
@@ -162,11 +183,20 @@ export function createLabWorld() {
   function addWallBox(sizeX, sizeZ, x, z) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(sizeX, wallH - 1.2, wallT), wallMat);
     mesh.position.set(x, (wallH - 1.2) / 2 - 0.5, z);
-    mesh.castShadow = true;
+    mesh.castShadow = false;
     mesh.receiveShadow = true;
     group.add(mesh);
     colliders.push(mesh);
     cacheWorldAabb(mesh);
+
+    // Plinthe (visuelle) au pied du mur
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x0a0d14, roughness: 0.6, metalness: 0.25 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(sizeX, 0.22, 0.12), baseMat);
+    base.position.set(x, -0.5 + 0.11, z + wallT / 2 - 0.06);
+    base.castShadow = false;
+    base.receiveShadow = false;
+    group.add(base);
+
     return mesh;
   }
   function addWallBoxRot(sizeX, sizeZ, x, z, rotY) {
@@ -174,13 +204,111 @@ export function createLabWorld() {
     const mesh = new THREE.Mesh(geo, wallMat);
     mesh.position.set(x, (wallH - 1.2) / 2 - 0.5, z);
     mesh.rotation.y = rotY;
-    mesh.castShadow = true;
+    mesh.castShadow = false;
     mesh.receiveShadow = true;
     group.add(mesh);
     colliders.push(mesh);
     cacheWorldAabb(mesh);
+
+    const baseMat = new THREE.MeshStandardMaterial({ color: 0x0a0d14, roughness: 0.6, metalness: 0.25 });
+    const base = new THREE.Mesh(new THREE.BoxGeometry(sizeX, 0.22, 0.12), baseMat);
+    base.position.set(0, -0.5 + 0.11, wallT / 2 - 0.06);
+    base.rotation.y = rotY;
+    base.position.applyMatrix4(new THREE.Matrix4().makeRotationY(rotY)).add(new THREE.Vector3(x, 0, z));
+    base.castShadow = false;
+    base.receiveShadow = false;
+    group.add(base);
+
     return mesh;
   }
+
+  // Porte réaliste (cadre + battant entrouvert)
+  const door = (() => {
+    const frameMat = new THREE.MeshStandardMaterial({ color: 0x0c101a, roughness: 0.45, metalness: 0.35 });
+    const leafMat = new THREE.MeshStandardMaterial({ color: 0x12182a, roughness: 0.65, metalness: 0.15 });
+    const handleMat = new THREE.MeshStandardMaterial({ color: 0xc9d6e6, roughness: 0.25, metalness: 0.85 });
+
+    return function addDoor({
+      x,
+      z,
+      rotY,
+      width = 3.2,
+      height = 3.05,
+      openAngle = 1.05,
+      isDouble = false,
+    }) {
+      const y0 = -0.5;
+      const frameT = 0.18;
+      const jambW = 0.14;
+
+      const g = new THREE.Group();
+      g.position.set(x, y0, z);
+      g.rotation.y = rotY;
+
+      // Frame
+      const sideGeo = new THREE.BoxGeometry(jambW, height, frameT);
+      const topGeo = new THREE.BoxGeometry(width + jambW * 2, jambW, frameT);
+      const left = new THREE.Mesh(sideGeo, frameMat);
+      const right = new THREE.Mesh(sideGeo, frameMat);
+      const top = new THREE.Mesh(topGeo, frameMat);
+      left.position.set(-width / 2 - jambW / 2, height / 2, 0);
+      right.position.set(width / 2 + jambW / 2, height / 2, 0);
+      top.position.set(0, height + jambW / 2, 0);
+      g.add(left, right, top);
+
+      // Door leaf(s)
+      const leafT = 0.08;
+      const leafH = height - 0.12;
+      const leafW = isDouble ? width / 2 - 0.04 : width - 0.08;
+      const leafGeo = new THREE.BoxGeometry(leafW, leafH, leafT);
+
+      const hingeOffset = isDouble ? leafW / 2 : leafW / 2;
+
+      function addLeaf(sideSign) {
+        const leafPivot = new THREE.Group();
+        leafPivot.position.set(sideSign * (isDouble ? width / 4 : -width / 2) + (sideSign * (isDouble ? 0 : 0)) + (isDouble ? 0 : jambW * 0.0), 0, 0);
+        leafPivot.position.x = isDouble ? sideSign * (width / 4) : -width / 2;
+
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        leaf.position.set(sideSign * hingeOffset, leafH / 2 + 0.02, 0);
+        leafPivot.add(leaf);
+
+        // Handle
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.18), handleMat);
+        handle.position.set(sideSign * (leafW * 0.34), leafH * 0.52, 0.09);
+        leaf.add(handle);
+
+        leafPivot.rotation.y = sideSign * (isDouble ? openAngle * 0.85 : openAngle);
+        g.add(leafPivot);
+      }
+
+      if (isDouble) {
+        addLeaf(-1);
+        addLeaf(1);
+      } else {
+        // Simple: ouvre vers l’intérieur (rotation autour du jamb gauche)
+        const leafPivot = new THREE.Group();
+        leafPivot.position.set(-width / 2, 0, 0);
+        const leaf = new THREE.Mesh(leafGeo, leafMat);
+        leaf.position.set(leafW / 2, leafH / 2 + 0.02, 0);
+        leafPivot.add(leaf);
+        const handle = new THREE.Mesh(new THREE.BoxGeometry(0.05, 0.14, 0.18), handleMat);
+        handle.position.set(leafW * 0.82, leafH * 0.52, 0.09);
+        leaf.add(handle);
+        leafPivot.rotation.y = openAngle;
+        g.add(leafPivot);
+      }
+
+      group.add(g);
+
+      // Colliders seulement pour le cadre (pas le battant entrouvert)
+      const worldPos = new THREE.Vector3(x, y0 + height / 2, z);
+      const frameColliderW = width + 0.5;
+      addColliderBox(group, colliders, new THREE.Vector3(jambW, height, 0.35), worldPos.clone().add(new THREE.Vector3(-width / 2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY)), "doorFrameCollider");
+      addColliderBox(group, colliders, new THREE.Vector3(jambW, height, 0.35), worldPos.clone().add(new THREE.Vector3(width / 2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY)), "doorFrameCollider");
+      addColliderBox(group, colliders, new THREE.Vector3(frameColliderW, jambW, 0.35), new THREE.Vector3(x, y0 + height + jambW / 2, z), "doorTopCollider");
+    };
+  })();
 
   // ZONES: grand open-space + salles + couloirs
   // Plan simple:
@@ -200,16 +328,8 @@ export function createLabWorld() {
   const openMinZ = openCenter.z - openD / 2;
   const openMaxZ = openCenter.z + openD / 2;
 
-  // Cadres de portes (visuel) au niveau de l'ouverture du couloir/open-space
-  // (placé ici pour éviter l'accès à openMaxZ avant initialisation)
-  const frameMat = new THREE.MeshStandardMaterial({ color: 0x0c101a, roughness: 0.55, metalness: 0.25 });
-  const frameSide = new THREE.Mesh(new THREE.BoxGeometry(0.28, 3.2, 0.4), frameMat);
-  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.28, 0.4), frameMat);
-  frameSide.position.set(-3.4, 1.1, openMaxZ);
-  const frameSide2 = frameSide.clone();
-  frameSide2.position.set(3.4, 1.1, openMaxZ);
-  frameTop.position.set(0, 2.65, openMaxZ);
-  group.add(frameSide, frameSide2, frameTop);
+  // Porte principale couloir -> open-space
+  door({ x: 0, z: openMaxZ, rotY: 0, width: corridorW + 1.4, height: 3.05, openAngle: 1.0, isDouble: true });
 
   // Encadrement open-space (murs) AVEC vraie porte vers le couloir sud
   // Nord (mur continu)
@@ -251,6 +371,9 @@ export function createLabWorld() {
   addWallBoxRot(server.maxZ - server.minZ, 0, server.minX, (server.minZ + server.maxZ) / 2, Math.PI / 2);
   addWallBoxRot(server.maxZ - server.minZ, 0, server.maxX, (server.minZ + server.maxZ) / 2, Math.PI / 2);
 
+  // Porte salle serveurs (ouverture laissée à gauche sur le mur sud)
+  door({ x: server.minX + 5.0, z: server.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 1.15, isDouble: false });
+
   // Salle cours (NE)
   const classroom = {
     minX: 18,
@@ -262,6 +385,9 @@ export function createLabWorld() {
   addWallBox(classroom.maxX - classroom.minX - 10, 0, (classroom.minX + classroom.maxX) / 2 - 5, classroom.maxZ);
   addWallBoxRot(classroom.maxZ - classroom.minZ, 0, classroom.minX, (classroom.minZ + classroom.maxZ) / 2, Math.PI / 2);
   addWallBoxRot(classroom.maxZ - classroom.minZ, 0, classroom.maxX, (classroom.minZ + classroom.maxZ) / 2, Math.PI / 2);
+
+  // Porte salle de cours (ouverture laissée à droite sur le mur sud)
+  door({ x: classroom.maxX - 5.0, z: classroom.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 0.9, isDouble: false });
 
   // Cloison vitrée côté sud de la salle de cours (plus “réaliste”)
   const glassMat = new THREE.MeshPhysicalMaterial({
@@ -325,6 +451,9 @@ export function createLabWorld() {
   addWallBox(storage.maxX - storage.minX - 10, 0, (storage.minX + storage.maxX) / 2 + 5, storage.maxZ);
   addWallBoxRot(storage.maxZ - storage.minZ, 0, storage.minX, (storage.minZ + storage.maxZ) / 2, Math.PI / 2);
   addWallBoxRot(storage.maxZ - storage.minZ, 0, storage.maxX, (storage.minZ + storage.maxZ) / 2, Math.PI / 2);
+
+  // Porte stockage (ouverture à gauche sur le mur sud)
+  door({ x: storage.minX + 5.0, z: storage.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 1.0, isDouble: false });
 
   // --- Remplissage massif (InstancedMesh) ---
   // Géométries simples, mais beaucoup d’instances.
