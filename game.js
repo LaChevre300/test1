@@ -2778,11 +2778,10 @@
     }
     const rarity = followUp?.rarity || null;
     const rarityTag = rarity ? ` [${rarityLabel(rarity)}]` : "";
+    const eventName = followUp?.text || actionLabel;
     return {
-      title: `Action effectuée${rarityTag}: ${actionLabel}`,
-      text: followUp?.text
-        ? `Tu as réalisé "${actionLabel}". Conséquence: ${followUp.text}`
-        : `Tu as réalisé "${actionLabel}".`,
+      title: `Événement${rarityTag}`,
+      text: eventName,
       details,
       rarity
     };
