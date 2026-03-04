@@ -191,7 +191,7 @@
         <div class="page">
           <div class="panel">
             <div class="panelHead">
-              <div class="panelTitle">IA (local) — questions & aide à la synthèse</div>
+              <div class="panelTitle">IA (local) — œil vigilant sur ton analyse</div>
               <div class="panelTools">
                 <button id="btnAiToNotes" class="ghost" disabled>Ajouter aux notes</button>
                 <button id="btnAiCopy" class="ghost" disabled>Copier</button>
@@ -200,6 +200,11 @@
             </div>
 
             <div class="aiControls">
+              <div class="aiMode" role="tablist" aria-label="Mode IA">
+                <button class="tab active" id="aiModeQuestions" data-aimode="questions" type="button" role="tab" aria-selected="true">Questions</button>
+                <button class="tab" id="aiModeExtraits" data-aimode="extraits" type="button" role="tab" aria-selected="false">Extraits</button>
+              </div>
+
               <div class="field" style="margin:0;">
                 <label for="aiQ">Question</label>
                 <textarea id="aiQ" class="aiArea" placeholder="Pose une question (ex: “Quels sont les arguments principaux ?”, “Propose un plan”, “Explique le concept et cite des sources”)"></textarea>
@@ -218,6 +223,61 @@
                   <label for="aiUseNotes">Inclure mes notes</label>
                 </div>
                 <button id="btnAiAsk" class="primary" type="button">Répondre</button>
+              </div>
+
+              <div id="aiExcerptBox" class="aiExcerptBox" hidden>
+                <div class="section" style="margin-top:12px;">
+                  <div class="sectionTitle">Texte / extraits à analyser</div>
+                  <div class="sectionBody">Colle ici un ou plusieurs extraits (posts, discours, article). Je garde un œil sur les manques: date, auteur, contexte.</div>
+                  <textarea id="aiExcerpt" class="aiArea" placeholder="Colle tes extraits ici… (tu peux en mettre plusieurs)"></textarea>
+                </div>
+
+                <div class="section">
+                  <div class="sectionTitle">Contexte (optionnel)</div>
+                  <div class="sectionBody">
+                    <div class="aiRow" style="margin-top:0;">
+                      <div class="chip">
+                        <input id="aiForPodcast" type="checkbox" checked />
+                        <label for="aiForPodcast">Je prépare un balado</label>
+                      </div>
+                      <div class="miniField" style="min-width:220px;">
+                        <label for="aiAudience">Audience</label>
+                        <select id="aiAudience">
+                          <option value="general" selected>Grand public</option>
+                          <option value="etudiant">Étudiant·es</option>
+                          <option value="academique">Académique</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="section">
+                  <div class="sectionTitle">Données bibliographiques (si tu les as)</div>
+                  <div class="sectionBody">Si tu fournis au moins auteur/organisation, année, titre et URL/source, je génère l’APA 7 + une citation dans le texte.</div>
+                  <div class="filters" style="grid-template-columns: repeat(2, 1fr); border-bottom:none; background:transparent; padding:10px 0 0;">
+                    <div class="miniField">
+                      <label for="bibAuthor">Auteur / organisation</label>
+                      <input id="bibAuthor" placeholder="ex: Trump, D. / The Washington Post / Organisation" />
+                    </div>
+                    <div class="miniField">
+                      <label for="bibYear">Année</label>
+                      <input id="bibYear" inputmode="numeric" placeholder="ex: 2020" />
+                    </div>
+                    <div class="miniField">
+                      <label for="bibTitle">Titre</label>
+                      <input id="bibTitle" placeholder="ex: Statement on …" />
+                    </div>
+                    <div class="miniField">
+                      <label for="bibUrl">URL / source</label>
+                      <input id="bibUrl" placeholder="ex: https://…" />
+                    </div>
+                  </div>
+                </div>
+
+                <div class="aiRow">
+                  <button id="btnAiAnalyze" class="primary" type="button">Analyser l’extrait</button>
+                </div>
               </div>
             </div>
 

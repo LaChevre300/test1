@@ -41,6 +41,17 @@ const els = {
   btnAiClear: document.querySelector("#btnAiClear"),
   btnAiToNotes: document.querySelector("#btnAiToNotes"),
   aiOut: document.querySelector("#aiOut"),
+  aiModeQuestions: document.querySelector("#aiModeQuestions"),
+  aiModeExtraits: document.querySelector("#aiModeExtraits"),
+  aiExcerptBox: document.querySelector("#aiExcerptBox"),
+  aiExcerpt: document.querySelector("#aiExcerpt"),
+  aiForPodcast: document.querySelector("#aiForPodcast"),
+  aiAudience: document.querySelector("#aiAudience"),
+  bibAuthor: document.querySelector("#bibAuthor"),
+  bibYear: document.querySelector("#bibYear"),
+  bibTitle: document.querySelector("#bibTitle"),
+  bibUrl: document.querySelector("#bibUrl"),
+  btnAiAnalyze: document.querySelector("#btnAiAnalyze"),
 
   btnConnexesToSearch: document.querySelector("#btnConnexesToSearch"),
   connexesFromQuery: document.querySelector("#connexesFromQuery"),
@@ -63,6 +74,7 @@ const state = {
   view: /** @type {"search"|"ai"|"notes"|"connexes"|"history"} */ ("search"),
   history: /** @type {Array<{key:string,title:string,source:Source,url?:string,year?:string,when:number}>} */ ([]),
   lastAiAnswer: "",
+  aiMode: /** @type {"questions"|"extraits"} */ ("questions"),
 };
 
 const CACHE_KEY = "shsearch.cache.v1";
@@ -170,6 +182,14 @@ function parseMaybeInt(v) {
   const n = parseInt(s, 10);
   if (!Number.isFinite(n)) return null;
   return n;
+}
+
+function firstNonEmpty(...vals) {
+  for (const v of vals) {
+    const t = normalizeSpace(v);
+    if (t) return t;
+  }
+  return "";
 }
 
 function clampInt(n, min, max, fallback) {
@@ -435,6 +455,253 @@ function summarizeExtractive(text, lang, maxSentences = 3) {
   scored.sort((a, b) => b.score - a.score);
   const picked = scored.slice(0, maxSentences).sort((a, b) => a.idx - b.idx).map((x) => x.s);
   return picked.join(" ");
+}
+
+function splitParagraphs(text) {
+  return String(text || "")
+    .split(/\n{2,}/g)
+    .map((p) => normalizeSpace(p))
+    .filter((p) => p.length >= 30);
+}
+
+function ratioAllCaps(text) {
+  const words = String(text || "").split(/\s+/).filter(Boolean);
+  if (!words.length) return 0;
+  const caps = words.filter((w) => w.length >= 4 && w === w.toUpperCase() && /[A-ZÀÂÇÉÈÊËÎÏÔÙÛÜŸ]/.test(w)).length;
+  return caps / words.length;
+}
+
+function detectTone(text, lang) {
+  const t = String(text || "");
+  const exclam = (t.match(/!/g) || []).length;
+  const quest = (t.match(/\?/g) || []).length;
+  const capsRatio = ratioAllCaps(t);
+  const len = t.length;
+
+  const lex = lang === "en"
+    ? {
+        conflict: ["fight", "enemy", "attack", "corrupt", "rigged", "lie", "fake", "disaster", "hate"],
+        defensive: ["truth", "fact", "hoax", "witch hunt", "unfair"],
+        rally: ["together", "great", "win", "strong", "patriot", "proud", "support"],
+        fear: ["danger", "crime", "threat", "terror", "invasion"],
+      }
+    : {
+        conflict: ["attaque", "ennemi", "corrompu", "truqué", "mensonge", "fake", "désastre", "haine"],
+        defensive: ["vérité", "faits", "canular", "injuste", "chasse aux sorcières"],
+        rally: ["ensemble", "grand", "victoire", "fort", "patriote", "fier", "soutien"],
+        fear: ["danger", "crime", "menace", "terror", "invasion"],
+      };
+
+  const low = t.toLowerCase();
+  const score = (arr) => arr.reduce((acc, w) => acc + (low.includes(w) ? 1 : 0), 0);
+  const sConflict = score(lex.conflict);
+  const sDef = score(lex.defensive);
+  const sRally = score(lex.rally);
+  const sFear = score(lex.fear);
+
+  const labels = [];
+  if (sConflict || exclam >= 3 || capsRatio > 0.05) labels.push(lang === "en" ? "confrontational" : "conflictuel");
+  if (sDef) labels.push(lang === "en" ? "defensive" : "défensif");
+  if (sRally) labels.push(lang === "en" ? "rallying" : "rassembleur");
+  if (sFear) labels.push(lang === "en" ? "fear-evoking" : "inquiétant / alarmiste");
+  if (!labels.length) labels.push(lang === "en" ? "neutral / informational" : "plutôt neutre / informatif");
+
+  const cues = [];
+  if (exclam) cues.push(`${exclam} !`);
+  if (quest) cues.push(`${quest} ?`);
+  if (capsRatio > 0.03) cues.push(lang === "en" ? "many ALL‑CAPS words" : "beaucoup de MAJUSCULES");
+  if (len < 400) cues.push(lang === "en" ? "short / punchy" : "court / percutant");
+
+  return { labels, cues };
+}
+
+function detectStrategies(text, lang) {
+  const t = String(text || "");
+  const low = t.toLowerCase();
+  const strategies = [];
+
+  // repetition: repeated 3+ times of same word (excluding stopwords) or repeated short phrases
+  const tokens = tokenize(t).filter((w) => w.length >= 4);
+  const freq = new Map();
+  for (const w of tokens) freq.set(w, (freq.get(w) || 0) + 1);
+  const rep = [...freq.entries()].filter(([, c]) => c >= 4).sort((a, b) => b[1] - a[1]).slice(0, 5).map(([w, c]) => `${w} ×${c}`);
+  if (rep.length) strategies.push({ name: lang === "en" ? "Repetition / emphasis" : "Répétition / insistance", evidence: rep.join(", ") });
+
+  if ((t.match(/!/g) || []).length >= 3) strategies.push({ name: lang === "en" ? "Exclamations / escalation" : "Exclamations / dramatisation", evidence: "!" });
+  if (ratioAllCaps(t) > 0.04) strategies.push({ name: lang === "en" ? "ALL‑CAPS signaling" : "Signalement en MAJUSCULES", evidence: "MAJUSCULES" });
+
+  const usThem = lang === "en"
+    ? (/\b(we|our|us)\b/.test(low) && /\b(they|them|their)\b/.test(low))
+    : (/\b(nous|notre|nos)\b/.test(low) && /\b(eux|leur|leurs|ils|elles)\b/.test(low));
+  if (usThem) strategies.push({ name: lang === "en" ? "Us vs. them framing" : "Cadrage “nous” vs “eux”", evidence: lang === "en" ? "we/they" : "nous/eux" });
+
+  const slogans = lang === "en"
+    ? ["make", "great again", "fake news", "witch hunt"]
+    : ["fake news", "rendre", "grand", "encore"];
+  const foundSlogans = slogans.filter((s) => low.includes(s)).slice(0, 3);
+  if (foundSlogans.length) strategies.push({ name: lang === "en" ? "Slogans / catchphrases" : "Slogans / formules", evidence: foundSlogans.join(", ") });
+
+  const attacks = lang === "en"
+    ? ["corrupt", "crooked", "weak", "loser", "liar"]
+    : ["corrompu", "faible", "menteur", "honte", "traître"];
+  const foundAttacks = attacks.filter((w) => low.includes(w)).slice(0, 4);
+  if (foundAttacks.length) strategies.push({ name: lang === "en" ? "Attacks / delegitimization" : "Attaques / délégitimation", evidence: foundAttacks.join(", ") });
+
+  if (!strategies.length) strategies.push({ name: lang === "en" ? "No strong rhetorical markers detected" : "Pas de marqueurs rhétoriques très saillants", evidence: "" });
+  return strategies;
+}
+
+function detectThemes(text, lang) {
+  const low = String(text || "").toLowerCase();
+  const themes = lang === "en"
+    ? [
+        { k: "Immigration / borders", w: ["immigration", "border", "illegal", "migrant", "deport", "asylum"] },
+        { k: "Economy / jobs", w: ["economy", "jobs", "inflation", "tax", "wage", "industry", "trade"] },
+        { k: "Security / crime", w: ["security", "crime", "police", "terror", "threat", "violence"] },
+        { k: "Identity / nation", w: ["nation", "patriot", "identity", "culture", "values", "flag"] },
+        { k: "Institutions / democracy", w: ["election", "court", "constitution", "democracy", "institution", "corruption"] },
+        { k: "Media / platforms", w: ["media", "press", "fake news", "platform", "social", "facebook", "twitter"] },
+      ]
+    : [
+        { k: "Immigration / frontières", w: ["immigration", "frontière", "illégal", "migrant", "expulsion", "asile"] },
+        { k: "Économie / emploi", w: ["économie", "emploi", "inflation", "taxe", "salaire", "industrie", "commerce"] },
+        { k: "Sécurité / crime", w: ["sécurité", "crime", "police", "terror", "menace", "violence"] },
+        { k: "Identité / nation", w: ["nation", "patriote", "identité", "culture", "valeurs", "drapeau"] },
+        { k: "Institutions / démocratie", w: ["élection", "tribunal", "constitution", "démocratie", "institution", "corruption"] },
+        { k: "Médias / plateformes", w: ["médias", "presse", "fake news", "plateforme", "réseaux", "facebook", "twitter"] },
+      ];
+
+  const scored = themes
+    .map((t) => ({ theme: t.k, score: t.w.reduce((acc, w) => acc + (low.includes(w) ? 1 : 0), 0) }))
+    .filter((x) => x.score > 0)
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 6);
+
+  if (scored.length) return scored.map((x) => x.theme);
+  const kws = extractKeywords(text, lang, 8);
+  return kws.length ? kws.map((k) => (lang === "en" ? `Theme: ${k}` : `Thème: ${k}`)) : [];
+}
+
+function buildApaFromBib(settings) {
+  const author = normalizeSpace(els.bibAuthor?.value || "");
+  const year = normalizeSpace(els.bibYear?.value || "") || "n.d.";
+  const title = normalizeSpace(els.bibTitle?.value || "");
+  const url = normalizeSpace(els.bibUrl?.value || "");
+  if (!author || !title || !url) return null;
+  const siteName = ""; // unknown; user can put organization in author
+  const apa = apaForWebPage({ author, year, title, siteName, url, retrieved: formatRetrievedToday() });
+  const inText = author.includes(",") ? `(${author.split(",")[0]}, ${year})` : `(${author}, ${year})`;
+  return { apa, inText };
+}
+
+function analyzeExcerpt(text, settings) {
+  const lang = settings.lang;
+  const corpus = normalizeSpace(text);
+  if (!corpus) return "";
+
+  const paras = splitParagraphs(corpus);
+  const baseText = paras.length ? paras.join("\n\n") : corpus;
+  const kw = extractKeywords(baseText, lang, 12);
+  const themes = detectThemes(baseText, lang);
+  const tone = detectTone(baseText, lang);
+  const strategies = detectStrategies(baseText, lang);
+
+  const podcast = !!els.aiForPodcast?.checked;
+  const audience = String(els.aiAudience?.value || "general");
+  const voice = audience === "academique" ? "académique" : audience === "etudiant" ? "pédagogique" : "grand public";
+
+  const intro = summarizeExtractive(baseText, lang, 1);
+  const dev = summarizeExtractive(baseText, lang, 3);
+  const concl = summarizeExtractive(baseText, lang, 1);
+
+  const ideas = generateIdeas({ title: "Analyse d'extraits", text: baseText, keywords: kw, lang });
+
+  const lines = [];
+  lines.push("Je garde un œil vigilant: ce qui suit est une analyse automatique (heuristique). Vérifie les citations et le contexte.");
+  lines.push("");
+
+  if (podcast) {
+    lines.push("Résumé exploitable pour un balado (base de script)");
+    lines.push(`- Style visé: ${voice}`);
+    lines.push("");
+    lines.push("Intro (30–45 s)");
+    lines.push(intro ? intro : "(à compléter)");
+    lines.push("");
+    lines.push("Développement (2–4 min)");
+    lines.push(dev ? dev : "(à compléter)");
+    lines.push("");
+    lines.push("Conclusion (30–45 s)");
+    lines.push(concl ? concl : "(à compléter)");
+    lines.push("");
+    lines.push("Mini‑plan de balado (segments)");
+    lines.push("- Contexte et source(s) des extraits");
+    lines.push("- Thèmes centraux et cadrage");
+    lines.push("- Ton et stratégies de communication");
+    lines.push("- Enjeux / conséquences (points de vue)");
+    lines.push("- Ouverture: quelles questions de recherche?");
+    lines.push("");
+  } else {
+    lines.push("Résumé");
+    lines.push(summarizeExtractive(baseText, lang, 4) || "(à compléter)");
+    lines.push("");
+  }
+
+  lines.push("Analyse du contenu");
+  lines.push(`- Thèmes majeurs: ${themes.length ? themes.join(", ") : "(non détectés — ajoute du contexte)"}`);
+  lines.push(`- Ton (indices): ${tone.labels.join(", ")}${tone.cues.length ? ` — ${tone.cues.join(" · ")}` : ""}`);
+  lines.push("- Stratégies de communication (indices):");
+  for (const s of strategies.slice(0, 6)) lines.push(`  - ${s.name}${s.evidence ? `: ${s.evidence}` : ""}`);
+  lines.push("");
+
+  lines.push("Problématiques (sciences humaines)");
+  for (const p of ideas.problematiques.slice(0, 6)) lines.push(`- ${p}`);
+  lines.push("");
+
+  lines.push("Conséquences et enjeux (points de vue)");
+  const views = lang === "en"
+    ? [
+        "Partisans: legitimacy, authenticity, mobilization",
+        "Opponents: polarization, misinformation, harm to institutions",
+        "Researchers: effects on trust, agenda-setting, platform dynamics",
+        "Journalists: verification constraints, amplification, framing",
+      ]
+    : [
+        "Partisans: authenticité, mobilisation, sentiment de représentation",
+        "Opposants: polarisation, désinformation, délégitimation des institutions",
+        "Chercheurs: effets sur la confiance, l’agenda médiatique, dynamique des plateformes",
+        "Journalistes: vérification, amplification involontaire, cadrage",
+      ];
+  for (const v of views) lines.push(`- ${v}`);
+  lines.push("");
+
+  lines.push("Pistes de solutions / réflexion (à discuter)");
+  const sol = lang === "en"
+    ? [
+        "Media literacy: how to verify and contextualize excerpts",
+        "Platform governance: transparency, moderation, recommendation systems",
+        "Journalism: slow news, context boxes, corrections",
+        "Research: triangulate sources, compare across platforms and time",
+      ]
+    : [
+        "Éducation aux médias: vérifier, contextualiser, dater les extraits",
+        "Gouvernance des plateformes: transparence, modération, recommandations",
+        "Journalisme: formats lents, encadrés de contexte, corrections visibles",
+        "Recherche: trianguler les sources, comparer plateformes et périodes",
+      ];
+  for (const s of sol) lines.push(`- ${s}`);
+  lines.push("");
+
+  lines.push("Citations / APA 7 (si données fournies)");
+  const bib = buildApaFromBib(settings);
+  if (bib) {
+    lines.push(`- Référence APA 7: ${bib.apa}`);
+    lines.push(`- Citation dans le texte: ${bib.inText}`);
+  } else {
+    lines.push("- Je garde un œil: il manque au moins auteur/organisation, titre, URL/source (et idéalement l’année) pour générer une référence APA fiable.");
+  }
+  lines.push("Rappel: cite tes sources, et évite le plagiat (paraphrase + référence).");
+
+  return lines.join("\n");
 }
 
 function generateIdeas({ title, text, keywords, lang }) {
@@ -1157,6 +1424,23 @@ function renderAi(text) {
 
 // ---------- Interaction ----------
 
+function setAiMode(mode) {
+  const m = mode === "extraits" ? "extraits" : "questions";
+  state.aiMode = m;
+  const isQ = m === "questions";
+  if (els.aiExcerptBox) els.aiExcerptBox.hidden = isQ;
+  if (els.aiModeQuestions) {
+    els.aiModeQuestions.classList.toggle("active", isQ);
+    els.aiModeQuestions.setAttribute("aria-selected", isQ ? "true" : "false");
+  }
+  if (els.aiModeExtraits) {
+    els.aiModeExtraits.classList.toggle("active", !isQ);
+    els.aiModeExtraits.setAttribute("aria-selected", !isQ ? "true" : "false");
+  }
+  if (isQ) renderAi("");
+  else renderAi("");
+}
+
 function setActiveTab(tab) {
   state.activeTab = tab;
   for (const b of els.tabs) {
@@ -1330,6 +1614,16 @@ els.btnAiAsk?.addEventListener("click", async () => {
   const q = String(els.aiQ?.value || "");
   const ans = aiAnswer(q, settings);
   renderAi(ans);
+});
+
+els.aiModeQuestions?.addEventListener("click", () => setAiMode("questions"));
+els.aiModeExtraits?.addEventListener("click", () => setAiMode("extraits"));
+
+els.btnAiAnalyze?.addEventListener("click", () => {
+  const settings = getSettings();
+  const t = String(els.aiExcerpt?.value || "");
+  const out = analyzeExcerpt(t, settings);
+  renderAi(out);
 });
 
 els.btnHistoryClear?.addEventListener("click", () => {
@@ -1563,4 +1857,6 @@ if (initialView === "ai" || initialView === "notes" || initialView === "connexes
 } else {
   setView("search");
 }
+
+setAiMode("questions");
 
