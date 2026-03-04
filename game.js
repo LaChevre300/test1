@@ -162,8 +162,8 @@
 
   const ui = {
     newLifeBtn: document.getElementById("new-life-btn"),
-    menuBtn: document.getElementById("menu-btn"),
     topSettingsBtn: document.getElementById("top-settings-btn"),
+    profileTrigger: document.getElementById("profile-trigger"),
     profileAvatar: document.getElementById("profile-avatar"),
     profileName: document.getElementById("profile-name"),
     profileStage: document.getElementById("profile-stage"),
@@ -196,11 +196,15 @@
     deathStats: document.getElementById("death-stats"),
     deathRecap: document.getElementById("death-recap"),
     deathNewLifeBtn: document.getElementById("death-new-life-btn"),
-    deathLegacyBtn: document.getElementById("death-legacy-btn")
+    deathLegacyBtn: document.getElementById("death-legacy-btn"),
+    characterModal: document.getElementById("character-modal"),
+    characterInfoList: document.getElementById("character-info-list"),
+    characterCloseBtn: document.getElementById("character-close-btn")
   };
 
   let game = null;
   let activeTab = "home";
+  let isCharacterModalOpen = false;
 
   function rnd(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -2146,7 +2150,7 @@
       const hue = Math.round((entry.value / 100) * 120);
       div.innerHTML = `
         <div class="status-label">
-          <span>${entry.icon}</span>
+          <span>${entry.icon} ${entry.label}</span>
           <span>${displayValue}</span>
         </div>
         <div class="status-track">
@@ -2160,18 +2164,25 @@
     });
   }
 
+  function getLifeStage(age) {
+    if (age <= 2) return "Infant";
+    if (age <= 12) return "Enfant";
+    if (age <= 17) return "Adolescent";
+    if (age <= 59) return "Adulte";
+    return "Senior";
+  }
+
+  function getAvatarForCharacter(c) {
+    if (c.age <= 2) return "👶";
+    if (c.age <= 12) return "🧒";
+    if (c.age <= 17) return "🧑";
+    return c.sex === "Homme" ? "👨" : "👩";
+  }
+
   function renderTopProfile() {
     const c = game.character;
-    const stage = c.age <= 2
-      ? "Infant"
-      : c.age <= 12
-        ? "Enfant"
-        : c.age <= 17
-          ? "Adolescent"
-          : c.age <= 59
-            ? "Adulte"
-            : "Senior";
-    const avatar = c.age <= 2 ? "👶" : c.age <= 12 ? "🧒" : c.age <= 17 ? "🧑" : c.sex === "Homme" ? "👨" : "👩";
+    const stage = getLifeStage(c.age);
+    const avatar = getAvatarForCharacter(c);
     ui.profileAvatar.textContent = avatar;
     ui.profileName.textContent = c.fullName;
     ui.profileStage.textContent = stage;
@@ -2450,6 +2461,33 @@
     ui.deathModal.classList.add("show");
   }
 
+  function renderCharacterModal() {
+    const c = game.character;
+    if (!isCharacterModalOpen) {
+      ui.characterModal.classList.remove("show");
+      return;
+    }
+    const list = [
+      `Nom: ${c.fullName}`,
+      `Âge: ${c.age} ans (${getLifeStage(c.age)})`,
+      `Sexe: ${c.sex}`,
+      `Pays: ${c.country}`,
+      `Classe sociale: ${c.socialClass}`,
+      `Travail: ${c.job || "Aucun"}`,
+      `Argent: $${Math.round(c.money)} · Dettes: $${Math.round(getTotalDebt())}`,
+      `Santé: ${c.stats.health}% · Bonheur: ${c.stats.happiness}%`,
+      `Intelligence: ${c.stats.intelligence}% · Apparence: ${c.stats.looks}%`,
+      `Réputation: ${c.stats.reputation}% · Casier: ${c.criminal.record}`
+    ];
+    ui.characterInfoList.innerHTML = "";
+    list.forEach((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      ui.characterInfoList.append(li);
+    });
+    ui.characterModal.classList.add("show");
+  }
+
   function render() {
     renderTopProfile();
     renderStatus();
@@ -2464,21 +2502,43 @@
     renderTabs();
     renderBadges();
     renderDeathModal();
+    renderCharacterModal();
   }
 
   if (ui.newLifeBtn) {
     ui.newLifeBtn.addEventListener("click", () => bootstrapGame());
   }
-  if (ui.menuBtn) {
-    ui.menuBtn.addEventListener("click", () => {
-      activeTab = "home";
-      render();
-    });
-  }
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {
       activeTab = "settings";
       render();
+    });
+  }
+  if (ui.profileTrigger) {
+    const openProfile = () => {
+      isCharacterModalOpen = true;
+      renderCharacterModal();
+    };
+    ui.profileTrigger.addEventListener("click", openProfile);
+    ui.profileTrigger.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openProfile();
+      }
+    });
+  }
+  if (ui.characterCloseBtn) {
+    ui.characterCloseBtn.addEventListener("click", () => {
+      isCharacterModalOpen = false;
+      renderCharacterModal();
+    });
+  }
+  if (ui.characterModal) {
+    ui.characterModal.addEventListener("click", (event) => {
+      if (event.target === ui.characterModal) {
+        isCharacterModalOpen = false;
+        renderCharacterModal();
+      }
     });
   }
   ui.tabButtons.forEach((button) => {

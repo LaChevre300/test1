@@ -10,12 +10,12 @@
     <main class="app">
       <header class="app-top">
         <div class="app-nav">
-          <button id="menu-btn" class="nav-btn" aria-label="Menu">☰</button>
-          <h1>E-LIFE SIMULATION</h1>
           <button id="top-settings-btn" class="nav-btn" aria-label="Paramètres">⚙️</button>
+          <h1>E-LIFE SIMULATION</h1>
+          <span class="nav-spacer" aria-hidden="true"></span>
         </div>
         <div class="profile-strip">
-          <div class="profile-left">
+          <div class="profile-left profile-trigger" id="profile-trigger" role="button" tabindex="0">
             <div class="avatar" id="profile-avatar">👶</div>
             <div class="profile-meta">
               <div class="profile-name-row">
@@ -136,6 +136,16 @@
             <button id="death-new-life-btn" class="btn btn-green">Nouvelle vie</button>
             <button id="death-legacy-btn" class="btn btn-orange">Legacy</button>
           </div>
+        </div>
+      </div>
+
+      <div id="character-modal" class="character-modal">
+        <div class="character-card">
+          <div class="character-head">
+            <h2>Fiche personnage</h2>
+            <button id="character-close-btn" class="character-close-btn" aria-label="Fermer">✕</button>
+          </div>
+          <ul id="character-info-list" class="compact-list"></ul>
         </div>
       </div>
     </main>
