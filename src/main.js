@@ -14,11 +14,14 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.35;
 root.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x04050a);
-scene.fog = new THREE.Fog(0x04050a, 3, 28);
+scene.background = new THREE.Color(0x060812);
+scene.fog = new THREE.Fog(0x060812, 7, 58);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 120);
 camera.position.set(0, 1.7, 14);
@@ -26,7 +29,8 @@ camera.position.set(0, 1.7, 14);
 const controls = createPointerLockControls(camera, renderer.domElement);
 
 // Lighting baseline
-scene.add(new THREE.AmbientLight(0x203050, 0.25));
+scene.add(new THREE.AmbientLight(0x9fc2ff, 0.55));
+scene.add(new THREE.HemisphereLight(0xbfdcff, 0x0b0a10, 0.45));
 
 // World
 const world = createLabWorld();
