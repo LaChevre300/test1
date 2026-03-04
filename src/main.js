@@ -16,12 +16,12 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.35;
+renderer.toneMappingExposure = 1.9;
 root.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
-scene.background = new THREE.Color(0x060812);
-scene.fog = new THREE.Fog(0x060812, 7, 58);
+scene.background = new THREE.Color(0x0a1022);
+scene.fog = new THREE.Fog(0x0a1022, 6, 70);
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 120);
 camera.position.set(0, 1.7, 14);
@@ -31,6 +31,16 @@ const controls = createPointerLockControls(camera, renderer.domElement);
 // Lighting baseline
 scene.add(new THREE.AmbientLight(0x9fc2ff, 0.55));
 scene.add(new THREE.HemisphereLight(0xbfdcff, 0x0b0a10, 0.45));
+const sun = new THREE.DirectionalLight(0xeaf2ff, 0.55);
+sun.position.set(8, 16, 6);
+scene.add(sun);
+
+// Camera flashlight: guarantees visibility even on dark screens
+const flashlight = new THREE.SpotLight(0xffffff, 3.25, 38, Math.PI / 7, 0.35, 1.0);
+flashlight.castShadow = false;
+scene.add(flashlight);
+scene.add(flashlight.target);
+const tmpDir = new THREE.Vector3();
 
 // World
 const world = createLabWorld();
@@ -213,6 +223,10 @@ function tick() {
 
   controls.updateCamera();
   updateFlicker(tNow);
+  // Keep flashlight aligned to view direction
+  flashlight.position.copy(camera.position).addScaledVector(tmpVec3.set(0, 1, 0), 0.1);
+  tmpDir.set(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(6);
+  flashlight.target.position.copy(camera.position).add(tmpDir);
 
   if (controls.state.enabled && player.alive) {
     // Movement

@@ -15,7 +15,6 @@ export function createLabWorld() {
   floor.position.set(0, -0.5, 0);
   floor.receiveShadow = true;
   group.add(floor);
-  colliders.push(floor);
 
   const wallH = 4.8;
 
@@ -24,7 +23,6 @@ export function createLabWorld() {
   ceiling.position.set(0, wallH + 0.4, 0);
   ceiling.receiveShadow = true;
   group.add(ceiling);
-  colliders.push(ceiling);
 
   // Deterministic PRNG (so the maze stays the same for everyone)
   function mulberry32(seed) {
@@ -161,8 +159,8 @@ export function createLabWorld() {
   lights.push(red);
 
   // Spawn points / dog waypoints
-  const playerStartCell = [0, 1];
-  const dogStartCell = [gw - 2, 1];
+  const playerStartCell = [1, 1];
+  const dogStartCell = [gw - 2, gh - 2];
   const playerStart = cellToWorld(playerStartCell[0], playerStartCell[1]).setY(1.7);
   const dogStart = cellToWorld(dogStartCell[0], dogStartCell[1]).setY(0.55);
 
