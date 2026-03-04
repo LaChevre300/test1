@@ -26,6 +26,10 @@
           <span class="bubbleIcon" aria-hidden="true">⌕</span>
           <span>Recherche</span>
         </button>
+        <button class="bubble" data-view="images" type="button">
+          <span class="bubbleIcon" aria-hidden="true">▦</span>
+          <span>Images</span>
+        </button>
         <button class="bubble" data-view="ai" type="button">
           <span class="bubbleIcon" aria-hidden="true">◎</span>
           <span>IA</span>
@@ -157,6 +161,78 @@
               </footer>
             </div>
           </section>
+        </div>
+      </section>
+
+      <section id="view-images" class="view" hidden>
+        <div class="page">
+          <div class="panel">
+            <div class="panelHead">
+              <div class="panelTitle">Images — sources ouvertes</div>
+              <div class="panelTools">
+                <button id="btnImgToSearch" class="primary" type="button">Revenir aux résultats</button>
+              </div>
+            </div>
+
+            <div class="aiControls">
+              <div class="field" style="margin:0;">
+                <label for="imgQ">Recherche d’images (mots-clés)</label>
+                <input id="imgQ" type="text" placeholder="ex: Louis XII, affiche de propagande, palais de justice…" />
+              </div>
+              <div class="aiRow">
+                <div class="chip">
+                  <input id="imgSrcWiki" type="checkbox" checked />
+                  <label for="imgSrcWiki">Wikipedia</label>
+                </div>
+                <div class="chip">
+                  <input id="imgSrcCommons" type="checkbox" checked />
+                  <label for="imgSrcCommons">Wikimedia Commons</label>
+                </div>
+                <div class="miniField" style="min-width:220px;">
+                  <label for="imgPerPage">Résultats</label>
+                  <select id="imgPerPage">
+                    <option value="12" selected>12</option>
+                    <option value="24">24</option>
+                    <option value="36">36</option>
+                  </select>
+                </div>
+                <button id="btnImgSearch" class="primary" type="button">Chercher des images</button>
+                <button id="btnImgClear" class="ghost" type="button">Effacer</button>
+              </div>
+            </div>
+
+            <div class="detail">
+              <div class="section">
+                <div class="sectionTitle">Recherche inversée (origine / images similaires)</div>
+                <div class="sectionBody">
+                  Sans clé API, le moyen le plus fiable est d’utiliser une recherche inversée par <strong>URL publique</strong>.
+                  Si tu n’as qu’un fichier local, il faut d’abord obtenir une URL (ex: page Wikipedia/Commons, site du journal, etc.).
+                </div>
+                <div class="filters" style="grid-template-columns: repeat(2, 1fr); border-bottom:none; background:transparent; padding:10px 0 0;">
+                  <div class="miniField">
+                    <label for="imgUrl">URL de l’image</label>
+                    <input id="imgUrl" placeholder="https://…" />
+                  </div>
+                  <div class="miniField">
+                    <label for="imgFile">Fichier (local)</label>
+                    <input id="imgFile" type="file" accept="image/*" />
+                  </div>
+                </div>
+                <div class="aiRow">
+                  <button id="btnImgReverse" class="primary" type="button">Ouvrir la recherche inversée</button>
+                  <div id="imgReverseLinks" class="kws"></div>
+                </div>
+                <div id="imgPreview" class="imgPreview" style="display:none;"></div>
+              </div>
+
+              <div class="section">
+                <div class="sectionTitle">Photos venant des sites (aperçus)</div>
+                <div class="sectionBody">Clique une image pour ouvrir la source. Les vignettes proviennent de Wikipedia et/ou Wikimedia Commons.</div>
+                <div id="imgStatus" class="rMeta" style="margin-top:8px;">Prêt.</div>
+                <div id="imgResults" class="imgGrid"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 

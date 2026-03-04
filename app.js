@@ -21,6 +21,7 @@ const els = {
   viewSearch: document.querySelector("#view-search"),
   viewNotes: document.querySelector("#view-notes"),
   viewAi: document.querySelector("#view-ai"),
+  viewImages: document.querySelector("#view-images"),
   viewConnexes: document.querySelector("#view-connexes"),
   viewHistory: document.querySelector("#view-history"),
 
@@ -61,6 +62,22 @@ const els = {
   btnHistoryClear: document.querySelector("#btnHistoryClear"),
   btnHistoryToSearch: document.querySelector("#btnHistoryToSearch"),
   historyList: document.querySelector("#historyList"),
+
+  // Images
+  btnImgToSearch: document.querySelector("#btnImgToSearch"),
+  imgQ: document.querySelector("#imgQ"),
+  imgSrcWiki: document.querySelector("#imgSrcWiki"),
+  imgSrcCommons: document.querySelector("#imgSrcCommons"),
+  imgPerPage: document.querySelector("#imgPerPage"),
+  btnImgSearch: document.querySelector("#btnImgSearch"),
+  btnImgClear: document.querySelector("#btnImgClear"),
+  imgStatus: document.querySelector("#imgStatus"),
+  imgResults: document.querySelector("#imgResults"),
+  imgUrl: document.querySelector("#imgUrl"),
+  imgFile: document.querySelector("#imgFile"),
+  btnImgReverse: document.querySelector("#btnImgReverse"),
+  imgReverseLinks: document.querySelector("#imgReverseLinks"),
+  imgPreview: document.querySelector("#imgPreview"),
 };
 
 /** @typedef {"wikipedia"|"openalex"|"crossref"} Source */
@@ -71,10 +88,13 @@ const state = {
   lastQuery: "",
   results: /** @type {Array<any>} */ ([]),
   controllers: /** @type {AbortController[]} */ ([]),
-  view: /** @type {"search"|"ai"|"notes"|"connexes"|"history"} */ ("search"),
+  view: /** @type {"search"|"images"|"ai"|"notes"|"connexes"|"history"} */ ("search"),
   history: /** @type {Array<{key:string,title:string,source:Source,url?:string,year?:string,when:number}>} */ ([]),
   lastAiAnswer: "",
   aiMode: /** @type {"questions"|"extraits"} */ ("questions"),
+  img: {
+    results: /** @type {Array<any>} */ ([]),
+  },
 };
 
 const CACHE_KEY = "shsearch.cache.v1";
@@ -125,6 +145,7 @@ function setView(next) {
   if (els.viewSearch) els.viewSearch.hidden = v !== "search";
   if (els.viewNotes) els.viewNotes.hidden = v !== "notes";
   if (els.viewAi) els.viewAi.hidden = v !== "ai";
+  if (els.viewImages) els.viewImages.hidden = v !== "images";
   if (els.viewConnexes) els.viewConnexes.hidden = v !== "connexes";
   if (els.viewHistory) els.viewHistory.hidden = v !== "history";
 
@@ -140,6 +161,12 @@ function setView(next) {
 
   if (v === "connexes") renderConnexes();
   if (v === "history") renderHistory();
+  if (v === "images") {
+    // keep the image query in sync with the main query if empty
+    if (els.imgQ && !normalizeSpace(els.imgQ.value)) els.imgQ.value = normalizeSpace(els.q?.value || "");
+    renderImageResults();
+    renderReverseLinks();
+  }
 }
 
 function loadNotes() {
@@ -964,6 +991,129 @@ async function fetchJson(url, signal) {
   return await res.json();
 }
 
+// ---------- Images ----------
+
+function setImgStatus(text) {
+  if (els.imgStatus) els.imgStatus.textContent = text;
+}
+
+function renderImageResults() {
+  if (!els.imgResults) return;
+  const list = state.img?.results || [];
+  if (!list.length) {
+    els.imgResults.innerHTML = "";
+    setImgStatus("Prêt.");
+    return;
+  }
+
+  els.imgResults.innerHTML = list
+    .map((it) => {
+      const srcBadge = it.source === "commons" ? `<span class="badge">Commons</span>` : `<span class="badge ok">Wikipedia</span>`;
+      const title = it.title || "Sans titre";
+      const sub = [it.pageTitle, it.licenseShort].filter(Boolean).join(" · ");
+      const thumb = it.thumb || "";
+      const openUrl = it.openUrl || it.url || "";
+      return `
+        <div class="imgCard" tabindex="0" data-open="${escapeHtml(openUrl)}">
+          ${thumb ? `<img class="imgThumb" src="${escapeHtml(thumb)}" alt="${escapeHtml(title)}" loading="lazy" />` : `<div class="imgThumb"></div>`}
+          <div class="imgMeta">
+            <div class="badgeRow">${srcBadge}${it.licenseShort ? `<span class="badge">${escapeHtml(it.licenseShort)}</span>` : ""}</div>
+            <div class="imgTitle">${escapeHtml(truncate(title, 70))}</div>
+            ${sub ? `<div class="imgSub">${escapeHtml(truncate(sub, 90))}</div>` : ""}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+
+  els.imgResults.querySelectorAll("[data-open]").forEach((el) => {
+    el.addEventListener("click", () => {
+      const u = el.getAttribute("data-open");
+      if (u) window.open(u, "_blank", "noopener");
+    });
+    el.addEventListener("keydown", (e) => {
+      if (e.key !== "Enter") return;
+      const u = el.getAttribute("data-open");
+      if (u) window.open(u, "_blank", "noopener");
+    });
+  });
+}
+
+async function searchWikipediaImages(query, lang, limit, signal) {
+  const base = lang === "en" ? "https://en.wikipedia.org/w/api.php" : "https://fr.wikipedia.org/w/api.php";
+  const url =
+    `${base}?action=query&generator=search&gsrsearch=${encodeURIComponent(query)}` +
+    `&gsrlimit=${limit}&prop=pageimages|info&piprop=thumbnail&pithumbsize=420&inprop=url&format=json&origin=*`;
+  const data = await fetchJson(url, signal);
+  const pages = Object.values(data?.query?.pages || {});
+  return pages
+    .filter((p) => p?.thumbnail?.source)
+    .map((p) => ({
+      source: "wikipedia",
+      title: p.title,
+      pageTitle: p.title,
+      thumb: p.thumbnail.source,
+      openUrl: p.fullurl,
+      licenseShort: "",
+      raw: p,
+    }));
+}
+
+async function searchCommonsImages(query, limit, signal) {
+  const api = "https://commons.wikimedia.org/w/api.php";
+  const sUrl = `${api}?action=query&list=search&srnamespace=6&srsearch=${encodeURIComponent(query)}&srlimit=${limit}&format=json&origin=*`;
+  const sData = await fetchJson(sUrl, signal);
+  const titles = (sData?.query?.search || []).map((x) => x.title).filter(Boolean).slice(0, limit);
+  if (!titles.length) return [];
+
+  const t = titles.map(encodeURIComponent).join("|");
+  const iUrl =
+    `${api}?action=query&titles=${t}` +
+    `&prop=imageinfo&iiprop=url|extmetadata&iiurlwidth=420&format=json&origin=*`;
+  const iData = await fetchJson(iUrl, signal);
+  const pages = Object.values(iData?.query?.pages || {});
+  return pages
+    .map((p) => {
+      const ii = p?.imageinfo?.[0];
+      const meta = ii?.extmetadata || {};
+      const licenseShort = meta?.LicenseShortName?.value ? String(meta.LicenseShortName.value).replace(/<[^>]+>/g, "") : "";
+      const descUrl = ii?.descriptionurl || "";
+      const url = ii?.url || "";
+      const thumb = ii?.thumburl || "";
+      return {
+        source: "commons",
+        title: p?.title?.replace(/^File:/, "") || "Fichier",
+        pageTitle: p?.title || "",
+        thumb,
+        openUrl: descUrl || url,
+        licenseShort,
+        raw: p,
+      };
+    })
+    .filter((x) => x.thumb);
+}
+
+function renderReverseLinks() {
+  if (!els.imgReverseLinks) return;
+  const u = normalizeSpace(els.imgUrl?.value || "");
+  if (!u) {
+    els.imgReverseLinks.innerHTML = `<span class="kw" style="border-style:dashed;">Colle une URL d’image</span>`;
+    return;
+  }
+
+  const enc = encodeURIComponent(u);
+  const links = [
+    { name: "TinEye", url: `https://tineye.com/search?url=${enc}` },
+    { name: "Google Images", url: `https://www.google.com/searchbyimage?image_url=${enc}` },
+    { name: "Google Lens", url: `https://lens.google.com/uploadbyurl?url=${enc}` },
+    { name: "Bing", url: `https://www.bing.com/images/search?q=imgurl:${enc}&view=detailv2&iss=sbi&FORM=IRSBIQ` },
+  ];
+
+  els.imgReverseLinks.innerHTML = links
+    .map((l) => `<a class="kw" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.name)}</a>`)
+    .join("");
+}
+
 async function searchWikipedia(query, lang, limit, signal) {
   const base = lang === "en" ? "https://en.wikipedia.org/w/api.php" : "https://fr.wikipedia.org/w/api.php";
   const url = `${base}?action=query&list=search&srsearch=${encodeURIComponent(query)}&srlimit=${limit}&format=json&origin=*`;
@@ -1616,6 +1766,78 @@ els.btnAiAsk?.addEventListener("click", async () => {
   renderAi(ans);
 });
 
+// Images view
+els.btnImgToSearch?.addEventListener("click", () => setView("search"));
+els.btnImgClear?.addEventListener("click", () => {
+  if (els.imgQ) els.imgQ.value = "";
+  if (els.imgUrl) els.imgUrl.value = "";
+  if (els.imgFile) els.imgFile.value = "";
+  state.img.results = [];
+  if (els.imgPreview) {
+    els.imgPreview.style.display = "none";
+    els.imgPreview.innerHTML = "";
+  }
+  renderImageResults();
+  renderReverseLinks();
+  setImgStatus("Prêt.");
+});
+
+els.imgUrl?.addEventListener("input", () => renderReverseLinks());
+
+els.imgFile?.addEventListener("change", async () => {
+  if (!els.imgPreview) return;
+  const f = els.imgFile.files?.[0];
+  if (!f) {
+    els.imgPreview.style.display = "none";
+    els.imgPreview.innerHTML = "";
+    return;
+  }
+  const url = URL.createObjectURL(f);
+  els.imgPreview.style.display = "";
+  els.imgPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="Aperçu" /><div class="rMeta">Fichier local: ${escapeHtml(
+    f.name
+  )}<br/>Astuce: pour retrouver l’origine/similaires, il faut une URL publique (ex: la page Wikipedia/Commons où tu as trouvé l’image).</div>`;
+});
+
+els.btnImgReverse?.addEventListener("click", () => {
+  renderReverseLinks();
+  const u = normalizeSpace(els.imgUrl?.value || "");
+  if (!u) return toast("Colle une URL d’image (publique) pour lancer la recherche inversée.");
+  // open the first reverse search in a new tab (TinEye) as a starting point
+  window.open(`https://tineye.com/search?url=${encodeURIComponent(u)}`, "_blank", "noopener");
+});
+
+els.btnImgSearch?.addEventListener("click", async () => {
+  const settings = getSettings();
+  const q = normalizeSpace(els.imgQ?.value || "");
+  if (!q) return toast("Entre des mots-clés pour chercher des images.");
+  const limit = clampInt(parseInt(els.imgPerPage?.value || "12", 10), 6, 60, 12);
+  const useWiki = !!els.imgSrcWiki?.checked;
+  const useCommons = !!els.imgSrcCommons?.checked;
+  if (!useWiki && !useCommons) return toast("Active au moins une source d’images.");
+
+  setImgStatus("Recherche d’images…");
+  els.btnImgSearch.disabled = true;
+
+  const controller = new AbortController();
+  const tasks = [];
+  if (useWiki) tasks.push(searchWikipediaImages(q, settings.lang, limit, controller.signal));
+  if (useCommons) tasks.push(searchCommonsImages(q, limit, controller.signal));
+
+  const settled = await Promise.allSettled(tasks);
+  const out = [];
+  const errs = [];
+  for (const s of settled) {
+    if (s.status === "fulfilled") out.push(...s.value);
+    else errs.push(s.reason?.message || "Erreur");
+  }
+
+  state.img.results = out;
+  renderImageResults();
+  setImgStatus(errs.length ? `Images: ${out.length} (certains échecs: ${errs.join(", ")})` : `Images: ${out.length}`);
+  els.btnImgSearch.disabled = false;
+});
+
 els.aiModeQuestions?.addEventListener("click", () => setAiMode("questions"));
 els.aiModeExtraits?.addEventListener("click", () => setAiMode("extraits"));
 
@@ -1852,7 +2074,14 @@ wireConnexesClicks();
 
 // Restore view from hash
 const initialView = (location.hash || "").replace("#", "");
-if (initialView === "ai" || initialView === "notes" || initialView === "connexes" || initialView === "history" || initialView === "search") {
+if (
+  initialView === "images" ||
+  initialView === "ai" ||
+  initialView === "notes" ||
+  initialView === "connexes" ||
+  initialView === "history" ||
+  initialView === "search"
+) {
   setView(initialView);
 } else {
   setView("search");
