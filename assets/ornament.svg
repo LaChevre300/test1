@@ -1,0 +1,31 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="640" height="220" viewBox="0 0 640 220" fill="none">
+  <defs>
+    <linearGradient id="g" x1="70" y1="30" x2="570" y2="200" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#061A4D" stop-opacity="0.0"/>
+      <stop offset="0.45" stop-color="#061A4D" stop-opacity="0.22"/>
+      <stop offset="1" stop-color="#0A3AA8" stop-opacity="0.16"/>
+    </linearGradient>
+    <radialGradient id="r" cx="0" cy="0" r="1" gradientUnits="userSpaceOnUse" gradientTransform="translate(468 92) rotate(120) scale(180 120)">
+      <stop stop-color="#0A3AA8" stop-opacity="0.20"/>
+      <stop offset="1" stop-color="#0A3AA8" stop-opacity="0.0"/>
+    </radialGradient>
+    <filter id="blur" x="-10%" y="-10%" width="120%" height="120%">
+      <feGaussianBlur stdDeviation="0.8"/>
+    </filter>
+  </defs>
+
+  <!-- subtle waves -->
+  <path d="M38 174c76-76 162-114 258-114 104 0 194 38 270 114" stroke="url(#g)" stroke-width="2.2" stroke-linecap="round"/>
+  <path d="M68 184c70-62 148-92 234-92 92 0 172 30 240 92" stroke="url(#g)" stroke-width="1.8" stroke-linecap="round" opacity="0.7"/>
+  <path d="M98 193c62-48 132-72 210-72 84 0 156 24 216 72" stroke="url(#g)" stroke-width="1.6" stroke-linecap="round" opacity="0.55"/>
+
+  <!-- eye outline -->
+  <g filter="url(#blur)">
+    <path d="M182 104c42-42 90-63 144-63 58 0 108 21 150 63-42 42-92 63-150 63-54 0-102-21-144-63Z" stroke="#061A4D" stroke-opacity="0.22" stroke-width="2"/>
+    <circle cx="326" cy="104" r="30" stroke="#0A3AA8" stroke-opacity="0.22" stroke-width="2"/>
+    <circle cx="326" cy="104" r="10" fill="#061A4D" fill-opacity="0.18"/>
+  </g>
+
+  <!-- soft glow blob -->
+  <circle cx="468" cy="92" r="120" fill="url(#r)"/>
+</svg>
