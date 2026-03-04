@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { createProceduralTextures } from "./textures.js";
 
 function makeRng(seed0 = 4512) {
   let seed = seed0 >>> 0;
@@ -63,9 +64,27 @@ export function createLabWorld() {
     maxZ: half - 2,
   };
 
-  // Matériaux
-  const floorMat = new THREE.MeshStandardMaterial({ color: 0x0a0c12, roughness: 0.98, metalness: 0.0 });
-  const wallMat = new THREE.MeshStandardMaterial({ color: 0x151a2a, roughness: 0.93, metalness: 0.0 });
+  const tex = createProceduralTextures();
+  tex.floorBase.repeat.set(18, 18);
+  tex.floorRough.repeat.set(18, 18);
+  tex.wallBase.repeat.set(10, 4);
+  tex.wallRough.repeat.set(10, 4);
+
+  // Matériaux (avec textures)
+  const floorMat = new THREE.MeshStandardMaterial({
+    map: tex.floorBase,
+    roughnessMap: tex.floorRough,
+    color: 0xffffff,
+    roughness: 0.92,
+    metalness: 0.02,
+  });
+  const wallMat = new THREE.MeshStandardMaterial({
+    map: tex.wallBase,
+    roughnessMap: tex.wallRough,
+    color: 0xffffff,
+    roughness: 0.95,
+    metalness: 0.0,
+  });
   const deskMat = new THREE.MeshStandardMaterial({ color: 0x1b2033, roughness: 0.78, metalness: 0.06 });
   const chairMat = new THREE.MeshStandardMaterial({ color: 0x101422, roughness: 0.85, metalness: 0.08 });
   const plasticMat = new THREE.MeshStandardMaterial({ color: 0x0c111c, roughness: 0.62, metalness: 0.12 });
@@ -109,15 +128,41 @@ export function createLabWorld() {
   wallLong(half * 2, -half, 0, Math.PI / 2);
   wallLong(half * 2, half, 0, Math.PI / 2);
 
-  // Plafond (pour que la lumière rebondisse + occlusion)
-  const ceiling = new THREE.Mesh(
-    new THREE.BoxGeometry(half * 2, 0.8, half * 2),
-    new THREE.MeshStandardMaterial({ color: 0x070911, roughness: 1.0, metalness: 0.0 })
-  );
+  // Plafond (dalles)
+  const ceilingMat = new THREE.MeshStandardMaterial({ color: 0x0b0f18, roughness: 0.98, metalness: 0.0 });
+  const ceiling = new THREE.Mesh(new THREE.BoxGeometry(half * 2, 0.8, half * 2), ceilingMat);
   ceiling.position.set(0, wallH - 0.15, 0);
   ceiling.receiveShadow = true;
   group.add(ceiling);
   // Idem plafond: on ne le met pas dans les colliders, sinon “murs invisibles” en XZ.
+
+  // Piliers (donne une vraie “pièce”)
+  const pillarMat = new THREE.MeshStandardMaterial({ color: 0x0e1220, roughness: 0.9, metalness: 0.02 });
+  const pillarGeo = new THREE.BoxGeometry(0.9, wallH - 1.0, 0.9);
+  const pillars = new THREE.InstancedMesh(pillarGeo, pillarMat, 140);
+  pillars.castShadow = true;
+  pillars.receiveShadow = true;
+  let pil = 0;
+  const step = 12;
+  for (let z = -half + 10; z <= half - 10; z += step) {
+    for (let x = -half + 10; x <= half - 10; x += step) {
+      if (pil >= pillars.count) break;
+      setInstance(pillars, pil, new THREE.Vector3(x, (wallH - 1.0) / 2 - 0.5, z), 0, 1);
+      pil++;
+    }
+  }
+  group.add(pillars);
+  pillars.instanceMatrix.needsUpdate = true;
+
+  // Cadres de portes (visuel) au niveau de l'ouverture du couloir/open-space
+  const frameMat = new THREE.MeshStandardMaterial({ color: 0x0c101a, roughness: 0.55, metalness: 0.25 });
+  const frameSide = new THREE.Mesh(new THREE.BoxGeometry(0.28, 3.2, 0.4), frameMat);
+  const frameTop = new THREE.Mesh(new THREE.BoxGeometry(6.8, 0.28, 0.4), frameMat);
+  frameSide.position.set(-3.4, 1.1, openMaxZ);
+  const frameSide2 = frameSide.clone();
+  frameSide2.position.set(3.4, 1.1, openMaxZ);
+  frameTop.position.set(0, 2.65, openMaxZ);
+  group.add(frameSide, frameSide2, frameTop);
 
   // Helper: murs intérieurs (visuel + collider)
   function addWallBox(sizeX, sizeZ, x, z) {
@@ -426,6 +471,27 @@ export function createLabWorld() {
       ni++;
     }
   }
+
+  // Panneaux lumineux (plafonniers) visibles, plus crédibles que des points “flottants”
+  const panelMat = new THREE.MeshStandardMaterial({ color: 0x060a10, emissive: 0xbfefff, emissiveIntensity: 1.45, roughness: 0.2, metalness: 0.0 });
+  const panelGeo = new THREE.BoxGeometry(1.8, 0.08, 1.0);
+  const panels = new THREE.InstancedMesh(panelGeo, panelMat, 96);
+  let pa = 0;
+  for (let i = 0; i < 96; i++) {
+    const x = openMinX + 8 + Math.floor(i % 12) * ((openW - 16) / 11);
+    const z = openMinZ + 8 + Math.floor(i / 12) * ((openD - 16) / 7);
+    if (rand() < 0.18) continue;
+    if (pa >= panels.count) break;
+    setInstance(panels, pa, new THREE.Vector3(x, wallH - 0.85, z), rand() > 0.5 ? 0 : Math.PI / 2, 1);
+    // Light aligned with the panel
+    const l = new THREE.PointLight(0xd7f1ff, 2.4, 22, 2.0);
+    l.position.set(x, wallH - 1.25, z);
+    l.castShadow = false;
+    lights.push(l);
+    pa++;
+  }
+  group.add(panels);
+  panels.instanceMatrix.needsUpdate = true;
 
   // Place a bunch of lights (sans que ça devienne une guirlande)
   const mkLight = (x, z, color, intensity, dist) => {

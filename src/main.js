@@ -5,6 +5,7 @@ import { createLabWorld } from "./world.biglab.js";
 import { createDogMonster } from "./dog.js";
 import { createUI } from "./ui.js";
 import { createAudio } from "./audio.js";
+import { RoomEnvironment } from "three/addons/environments/RoomEnvironment.js";
 
 const root = document.querySelector("#app");
 const ui = createUI(root);
@@ -25,6 +26,10 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x070914);
 // Le labo est beaucoup plus grand maintenant: on recule le fog pour ne pas “cacher” tout le décor.
 scene.fog = new THREE.Fog(0x070914, 10, 160);
+
+// Environnement de type “pièce” => reflets/éclairage plus crédibles sur les matériaux.
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 220);
 camera.position.set(0, 1.7, 14);
