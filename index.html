@@ -21,6 +21,9 @@
               <div class="profile-name-row">
                 <span id="profile-name" class="profile-name">Anna David</span>
                 <span class="info-pill">i</span>
+                <button id="open-avatar-editor-inline-btn" class="mini-avatar-btn" aria-label="Modifier avatar">
+                  🎨
+                </button>
               </div>
               <div class="profile-sub">
                 <span id="profile-stage">Infant</span>
@@ -144,7 +147,10 @@
         <div class="character-card">
           <div class="character-head">
             <h2>Fiche personnage</h2>
-            <button id="character-close-btn" class="character-close-btn" aria-label="Fermer">✕</button>
+            <div class="character-head-actions">
+              <button id="character-edit-avatar-btn" class="character-edit-btn">Modifier avatar</button>
+              <button id="character-close-btn" class="character-close-btn" aria-label="Fermer">✕</button>
+            </div>
           </div>
           <ul id="character-info-list" class="compact-list"></ul>
         </div>
@@ -181,6 +187,10 @@
             <label>Accessoire
               <select id="avatar-accessory-select"></select>
             </label>
+          </div>
+          <div class="death-actions">
+            <button id="avatar-editor-random-btn" class="btn btn-blue">Aléatoire</button>
+            <button id="avatar-editor-reset-btn" class="btn btn-orange">Réinitialiser</button>
           </div>
           <div class="death-actions">
             <button id="avatar-editor-save-btn" class="btn btn-green">Enregistrer</button>

@@ -196,6 +196,7 @@
     profileName: document.getElementById("profile-name"),
     profileStage: document.getElementById("profile-stage"),
     profileMoney: document.getElementById("profile-money"),
+    openAvatarEditorInlineBtn: document.getElementById("open-avatar-editor-inline-btn"),
     statusStrip: document.getElementById("status-strip"),
     eventText: document.getElementById("event-text"),
     eventChoices: document.getElementById("event-choices"),
@@ -228,9 +229,12 @@
     characterModal: document.getElementById("character-modal"),
     characterInfoList: document.getElementById("character-info-list"),
     characterCloseBtn: document.getElementById("character-close-btn"),
+    characterEditAvatarBtn: document.getElementById("character-edit-avatar-btn"),
     openAvatarEditorBtn: document.getElementById("open-avatar-editor-btn"),
     avatarEditorModal: document.getElementById("avatar-editor-modal"),
     avatarEditorCloseBtn: document.getElementById("avatar-editor-close-btn"),
+    avatarEditorRandomBtn: document.getElementById("avatar-editor-random-btn"),
+    avatarEditorResetBtn: document.getElementById("avatar-editor-reset-btn"),
     avatarEditorSaveBtn: document.getElementById("avatar-editor-save-btn"),
     avatarEditorCancelBtn: document.getElementById("avatar-editor-cancel-btn"),
     avatarEditorPreview: document.getElementById("avatar-editor-preview"),
@@ -2645,6 +2649,15 @@
     fillSelect(ui.avatarAccessorySelect, AVATAR_ACCESSORIES, (entry) => entry, (entry) => entry);
   }
 
+  function updateAvatarEditorConstraints() {
+    if (!game?.character || !ui.avatarBeardSelect) return;
+    const canBeard = game.character.sex === "Homme" && game.character.age >= 16;
+    ui.avatarBeardSelect.disabled = !canBeard;
+    if (!canBeard) {
+      ui.avatarBeardSelect.value = "aucune";
+    }
+  }
+
   function avatarFromEditorInputs() {
     const c = game.character;
     return normalizedAvatarConfig(c.sex, {
@@ -2666,6 +2679,7 @@
     ui.avatarBeardSelect.value = avatar.beard;
     ui.avatarOutfitSelect.value = avatar.outfit;
     ui.avatarAccessorySelect.value = avatar.accessory;
+    updateAvatarEditorConstraints();
   }
 
   function renderAvatarEditorPreview() {
@@ -2676,6 +2690,7 @@
 
   function openAvatarEditor() {
     if (!game?.character) return;
+    isCharacterModalOpen = false;
     ensureAvatarEditorOptions();
     syncEditorInputsFromAvatar(normalizedAvatarConfig(game.character.sex, game.character.avatar));
     isAvatarEditorOpen = true;
@@ -2693,6 +2708,20 @@
     game.character.avatar = avatarFromEditorInputs();
     closeAvatarEditor();
     render();
+  }
+
+  function randomizeAvatarFromEditor() {
+    if (!game?.character) return;
+    const randomized = randomAvatarConfig(game.character.sex);
+    syncEditorInputsFromAvatar(randomized);
+    renderAvatarEditorPreview();
+  }
+
+  function resetAvatarFromEditor() {
+    if (!game?.character) return;
+    const baseline = normalizedAvatarConfig(game.character.sex, null);
+    syncEditorInputsFromAvatar(baseline);
+    renderAvatarEditorPreview();
   }
 
   function render() {
@@ -2756,6 +2785,15 @@
   if (ui.openAvatarEditorBtn) {
     ui.openAvatarEditorBtn.addEventListener("click", openAvatarEditor);
   }
+  if (ui.openAvatarEditorInlineBtn) {
+    ui.openAvatarEditorInlineBtn.addEventListener("click", (event) => {
+      event.stopPropagation();
+      openAvatarEditor();
+    });
+  }
+  if (ui.characterEditAvatarBtn) {
+    ui.characterEditAvatarBtn.addEventListener("click", openAvatarEditor);
+  }
   [ui.avatarSkinSelect, ui.avatarHairStyleSelect, ui.avatarHairColorSelect, ui.avatarEyeColorSelect, ui.avatarBeardSelect, ui.avatarOutfitSelect, ui.avatarAccessorySelect].forEach(
     (selectElement) => {
       if (selectElement) {
@@ -2771,6 +2809,12 @@
   }
   if (ui.avatarEditorSaveBtn) {
     ui.avatarEditorSaveBtn.addEventListener("click", saveAvatarFromEditor);
+  }
+  if (ui.avatarEditorRandomBtn) {
+    ui.avatarEditorRandomBtn.addEventListener("click", randomizeAvatarFromEditor);
+  }
+  if (ui.avatarEditorResetBtn) {
+    ui.avatarEditorResetBtn.addEventListener("click", resetAvatarFromEditor);
   }
   if (ui.avatarEditorModal) {
     ui.avatarEditorModal.addEventListener("click", (event) => {

@@ -607,6 +607,20 @@ body {
   font-weight: 700;
 }
 
+.mini-avatar-btn {
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  border: 1px solid #b59358;
+  background: #f3e3bf;
+  color: #4b3418;
+  font-size: 12px;
+  line-height: 1;
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+
 .profile-sub {
   color: #d8c7a6;
   font-size: 0.72rem;
@@ -1046,6 +1060,23 @@ body {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 0.6rem;
+}
+
+.character-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.character-edit-btn {
+  min-height: 34px;
+  border-radius: 10px;
+  border: 1px solid #b99d72;
+  background: #f7ecd4;
+  color: #3a2a16;
+  font-family: inherit;
+  font-size: 0.62rem;
+  padding: 0 0.45rem;
 }
 
 .character-head h2 {
