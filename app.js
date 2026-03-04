@@ -64,7 +64,6 @@ const els = {
   historyList: document.querySelector("#historyList"),
 
   // Images
-  btnImgToSearch: document.querySelector("#btnImgToSearch"),
   imgQ: document.querySelector("#imgQ"),
   imgSrcWiki: document.querySelector("#imgSrcWiki"),
   imgSrcCommons: document.querySelector("#imgSrcCommons"),
@@ -1895,7 +1894,6 @@ els.btnAiAsk?.addEventListener("click", async () => {
 });
 
 // Images view
-els.btnImgToSearch?.addEventListener("click", () => setView("search"));
 els.btnImgClear?.addEventListener("click", () => {
   if (els.imgQ) els.imgQ.value = "";
   if (els.imgUrl) els.imgUrl.value = "";
@@ -2267,7 +2265,7 @@ if (
 ) {
   setView(initialView);
 } else {
-  setView("search");
+  setView("images");
 }
 
 setAiMode("questions");

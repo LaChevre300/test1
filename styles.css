@@ -1,19 +1,19 @@
 :root {
   color-scheme: light;
-  --bg: #f2f7ff;
+  --bg: #eef5ff;
   --panel: rgba(255, 255, 255, 0.86);
   --panel2: rgba(250, 253, 255, 0.9);
   --text: rgba(6, 16, 38, 0.95);
   --muted: rgba(6, 16, 38, 0.66);
-  --border: rgba(11, 42, 122, 0.18);
-  --accent: #0b2a7a;
-  --accent2: #0b58d1;
+  --border: rgba(6, 26, 77, 0.20);
+  --accent: #061a4d;
+  --accent2: #0a3aa8;
   --danger: #d0163a;
   --ok: #0a8f5a;
   --shadow: 0 24px 90px rgba(6, 16, 38, 0.16);
   --r: 16px;
-  --ring: rgba(11, 42, 122, 0.24);
-  --ring2: rgba(11, 88, 209, 0.20);
+  --ring: rgba(6, 26, 77, 0.26);
+  --ring2: rgba(10, 58, 168, 0.22);
 }
 
 * {
@@ -25,9 +25,9 @@ body {
   height: 100%;
   margin: 0;
   background:
-    radial-gradient(1200px 720px at 10% 0%, rgba(11, 42, 122, 0.20), transparent 60%),
-    radial-gradient(900px 520px at 72% 0%, rgba(11, 88, 209, 0.16), transparent 60%),
-    radial-gradient(900px 620px at 90% 85%, rgba(11, 42, 122, 0.10), transparent 62%),
+    radial-gradient(1200px 720px at 10% 0%, rgba(6, 26, 77, 0.24), transparent 60%),
+    radial-gradient(900px 520px at 72% 0%, rgba(10, 58, 168, 0.18), transparent 60%),
+    radial-gradient(900px 620px at 90% 85%, rgba(6, 26, 77, 0.12), transparent 62%),
     var(--bg);
   color: var(--text);
   font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
@@ -49,7 +49,7 @@ a:hover {
   padding: 16px 18px 10px;
   backdrop-filter: blur(12px);
   background: linear-gradient(to bottom, rgba(242, 247, 255, 0.92), rgba(242, 247, 255, 0.72));
-  border-bottom: 1px solid rgba(11, 42, 122, 0.14);
+  border-bottom: 1px solid rgba(6, 26, 77, 0.16);
 }
 
 .bubbleBar {
@@ -66,8 +66,8 @@ a:hover {
   gap: 8px;
   padding: 9px 12px;
   border-radius: 999px;
-  border: 1px solid rgba(11, 42, 122, 0.20);
-  background: linear-gradient(135deg, rgba(11, 42, 122, 0.06), rgba(11, 88, 209, 0.06));
+  border: 1px solid rgba(6, 26, 77, 0.22);
+  background: linear-gradient(135deg, rgba(6, 26, 77, 0.08), rgba(10, 58, 168, 0.08));
   box-shadow: 0 16px 60px rgba(6, 16, 38, 0.10);
   font-weight: 820;
   font-size: 12.5px;
@@ -78,14 +78,14 @@ a:hover {
   display: inline-grid;
   place-items: center;
   border-radius: 999px;
-  background: rgba(11, 42, 122, 0.10);
-  border: 1px solid rgba(11, 42, 122, 0.14);
+  background: rgba(6, 26, 77, 0.12);
+  border: 1px solid rgba(6, 26, 77, 0.16);
   color: rgba(6, 16, 38, 0.86);
   font-size: 12px;
 }
 .bubble.active {
-  border-color: rgba(11, 42, 122, 0.34);
-  background: linear-gradient(135deg, rgba(11, 42, 122, 0.16), rgba(11, 88, 209, 0.16));
+  border-color: rgba(6, 26, 77, 0.38);
+  background: linear-gradient(135deg, rgba(6, 26, 77, 0.18), rgba(10, 58, 168, 0.18));
 }
 
 .brand {
