@@ -188,6 +188,14 @@
                   <input id="imgSrcCommons" type="checkbox" checked />
                   <label for="imgSrcCommons">Wikimedia Commons</label>
                 </div>
+                <div class="chip">
+                  <input id="imgSrcOpenverse" type="checkbox" />
+                  <label for="imgSrcOpenverse">Openverse</label>
+                </div>
+                <div class="chip">
+                  <input id="imgSrcLoC" type="checkbox" />
+                  <label for="imgSrcLoC">Library of Congress</label>
+                </div>
                 <div class="miniField" style="min-width:220px;">
                   <label for="imgPerPage">Résultats</label>
                   <select id="imgPerPage">
@@ -215,11 +223,14 @@
                   </div>
                   <div class="miniField">
                     <label for="imgFile">Fichier (local)</label>
-                    <input id="imgFile" type="file" accept="image/*" />
+                    <form id="tineyeForm" action="https://tineye.com/search/upload" method="POST" enctype="multipart/form-data" target="_blank">
+                      <input id="imgFile" name="image" type="file" accept="image/*" />
+                    </form>
                   </div>
                 </div>
                 <div class="aiRow">
                   <button id="btnImgReverse" class="primary" type="button">Ouvrir la recherche inversée</button>
+                  <button id="btnTinEyeUpload" class="ghost" type="button">TinEye (upload fichier)</button>
                   <div id="imgReverseLinks" class="kws"></div>
                 </div>
                 <div id="imgPreview" class="imgPreview" style="display:none;"></div>

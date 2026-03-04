@@ -68,6 +68,8 @@ const els = {
   imgQ: document.querySelector("#imgQ"),
   imgSrcWiki: document.querySelector("#imgSrcWiki"),
   imgSrcCommons: document.querySelector("#imgSrcCommons"),
+  imgSrcOpenverse: document.querySelector("#imgSrcOpenverse"),
+  imgSrcLoC: document.querySelector("#imgSrcLoC"),
   imgPerPage: document.querySelector("#imgPerPage"),
   btnImgSearch: document.querySelector("#btnImgSearch"),
   btnImgClear: document.querySelector("#btnImgClear"),
@@ -76,8 +78,10 @@ const els = {
   imgUrl: document.querySelector("#imgUrl"),
   imgFile: document.querySelector("#imgFile"),
   btnImgReverse: document.querySelector("#btnImgReverse"),
+  btnTinEyeUpload: document.querySelector("#btnTinEyeUpload"),
   imgReverseLinks: document.querySelector("#imgReverseLinks"),
   imgPreview: document.querySelector("#imgPreview"),
+  tineyeForm: document.querySelector("#tineyeForm"),
 };
 
 /** @typedef {"wikipedia"|"openalex"|"crossref"} Source */
@@ -94,6 +98,8 @@ const state = {
   aiMode: /** @type {"questions"|"extraits"} */ ("questions"),
   img: {
     results: /** @type {Array<any>} */ ([]),
+    query: "",
+    fileHash: "",
   },
 };
 
@@ -997,6 +1003,63 @@ function setImgStatus(text) {
   if (els.imgStatus) els.imgStatus.textContent = text;
 }
 
+function hamming(a, b) {
+  if (!a || !b || a.length !== b.length) return 1e9;
+  let d = 0;
+  for (let i = 0; i < a.length; i++) if (a[i] !== b[i]) d++;
+  return d;
+}
+
+function computeDHashFromCanvas(ctx, w, h) {
+  // dHash: 9x8 grayscale compare adjacent columns -> 64 bits
+  const img = ctx.getImageData(0, 0, w, h).data;
+  const gray = [];
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const i = (y * w + x) * 4;
+      const r = img[i];
+      const g = img[i + 1];
+      const b = img[i + 2];
+      gray.push(r * 0.2126 + g * 0.7152 + b * 0.0722);
+    }
+  }
+  let bits = "";
+  for (let y = 0; y < 8; y++) {
+    for (let x = 0; x < 8; x++) {
+      const left = gray[y * 9 + x];
+      const right = gray[y * 9 + x + 1];
+      bits += left < right ? "1" : "0";
+    }
+  }
+  return bits;
+}
+
+async function dhashFromImageSrc(src) {
+  const img = new Image();
+  img.crossOrigin = "anonymous";
+  img.decoding = "async";
+  img.referrerPolicy = "no-referrer";
+  img.src = src;
+  await img.decode();
+  const canvas = document.createElement("canvas");
+  canvas.width = 9;
+  canvas.height = 8;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(img, 0, 0, 9, 8);
+  return computeDHashFromCanvas(ctx, 9, 8);
+}
+
+async function dhashFromFile(file) {
+  const bmp = await createImageBitmap(file);
+  const canvas = document.createElement("canvas");
+  canvas.width = 9;
+  canvas.height = 8;
+  const ctx = canvas.getContext("2d", { willReadFrequently: true });
+  ctx.drawImage(bmp, 0, 0, 9, 8);
+  bmp.close?.();
+  return computeDHashFromCanvas(ctx, 9, 8);
+}
+
 function renderImageResults() {
   if (!els.imgResults) return;
   const list = state.img?.results || [];
@@ -1008,9 +1071,17 @@ function renderImageResults() {
 
   els.imgResults.innerHTML = list
     .map((it) => {
-      const srcBadge = it.source === "commons" ? `<span class="badge">Commons</span>` : `<span class="badge ok">Wikipedia</span>`;
+      const srcBadge =
+        it.source === "commons"
+          ? `<span class="badge">Commons</span>`
+          : it.source === "openverse"
+            ? `<span class="badge">Openverse</span>`
+            : it.source === "loc"
+              ? `<span class="badge">LoC</span>`
+              : `<span class="badge ok">Wikipedia</span>`;
       const title = it.title || "Sans titre";
-      const sub = [it.pageTitle, it.licenseShort].filter(Boolean).join(" · ");
+      const sim = Number.isFinite(it.simDist) ? `Sim: ${it.simDist}` : "";
+      const sub = [it.pageTitle, it.creator, it.licenseShort, sim].filter(Boolean).join(" · ");
       const thumb = it.thumb || "";
       const openUrl = it.openUrl || it.url || "";
       return `
@@ -1093,6 +1164,41 @@ async function searchCommonsImages(query, limit, signal) {
     .filter((x) => x.thumb);
 }
 
+async function searchOpenverseImages(query, limit, signal) {
+  const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(query)}&page_size=${limit}`;
+  const data = await fetchJson(url, signal);
+  const items = (data?.results || []).map((r) => ({
+    source: "openverse",
+    title: r?.title || r?.id || "Image",
+    pageTitle: r?.source || "",
+    creator: r?.creator || "",
+    thumb: r?.thumbnail || r?.url || "",
+    openUrl: r?.foreign_landing_url || r?.url || "",
+    licenseShort: r?.license ? String(r.license).toUpperCase() : "",
+    raw: r,
+  }));
+  return items.filter((x) => x.thumb && x.openUrl);
+}
+
+async function searchLocImages(query, limit, signal) {
+  // Library of Congress Pictures search (JSON)
+  const url = `https://www.loc.gov/pictures/search/?q=${encodeURIComponent(query)}&fo=json&c=${limit}`;
+  const res = await fetch(url, { signal, headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const data = await res.json();
+  const items = (data?.results || []).map((r) => ({
+    source: "loc",
+    title: r?.title || "LoC item",
+    pageTitle: r?.created_published_date || "",
+    creator: r?.creator || "",
+    thumb: r?.image?.thumb || r?.image?.square || "",
+    openUrl: r?.links?.item || r?.url || "",
+    licenseShort: "",
+    raw: r,
+  }));
+  return items.filter((x) => x.thumb && x.openUrl);
+}
+
 function renderReverseLinks() {
   if (!els.imgReverseLinks) return;
   const u = normalizeSpace(els.imgUrl?.value || "");
@@ -1112,6 +1218,28 @@ function renderReverseLinks() {
   els.imgReverseLinks.innerHTML = links
     .map((l) => `<a class="kw" href="${escapeHtml(l.url)}" target="_blank" rel="noopener">${escapeHtml(l.name)}</a>`)
     .join("");
+}
+
+async function applyLocalSimilarityIfPossible() {
+  const fileHash = state.img.fileHash;
+  if (!fileHash) return;
+  const list = state.img.results || [];
+  // Compute hashes for up to 24 thumbs (best effort; CORS may block some sources)
+  const slice = list.slice(0, 24);
+  await Promise.allSettled(
+    slice.map(async (it) => {
+      if (!it.thumb) return;
+      try {
+        const h = await dhashFromImageSrc(it.thumb);
+        it.simDist = hamming(fileHash, h);
+      } catch {
+        it.simDist = undefined;
+      }
+    })
+  );
+  list.sort((a, b) => (Number.isFinite(a.simDist) ? a.simDist : 1e9) - (Number.isFinite(b.simDist) ? b.simDist : 1e9));
+  state.img.results = list;
+  renderImageResults();
 }
 
 async function searchWikipedia(query, lang, limit, signal) {
@@ -1790,6 +1918,7 @@ els.imgFile?.addEventListener("change", async () => {
   if (!f) {
     els.imgPreview.style.display = "none";
     els.imgPreview.innerHTML = "";
+    state.img.fileHash = "";
     return;
   }
   const url = URL.createObjectURL(f);
@@ -1797,6 +1926,18 @@ els.imgFile?.addEventListener("change", async () => {
   els.imgPreview.innerHTML = `<img src="${escapeHtml(url)}" alt="Aperçu" /><div class="rMeta">Fichier local: ${escapeHtml(
     f.name
   )}<br/>Astuce: pour retrouver l’origine/similaires, il faut une URL publique (ex: la page Wikipedia/Commons où tu as trouvé l’image).</div>`;
+
+  // Local similarity (best effort)
+  try {
+    state.img.fileHash = await dhashFromFile(f);
+    if (state.img.results?.length) {
+      setImgStatus("Analyse visuelle locale…");
+      await applyLocalSimilarityIfPossible();
+      setImgStatus(`Images: ${state.img.results.length} (triées par similarité locale quand possible)`);
+    }
+  } catch {
+    state.img.fileHash = "";
+  }
 });
 
 els.btnImgReverse?.addEventListener("click", () => {
@@ -1807,6 +1948,18 @@ els.btnImgReverse?.addEventListener("click", () => {
   window.open(`https://tineye.com/search?url=${encodeURIComponent(u)}`, "_blank", "noopener");
 });
 
+els.btnTinEyeUpload?.addEventListener("click", () => {
+  const f = els.imgFile?.files?.[0];
+  if (!f) return toast("Choisis un fichier image d’abord.");
+  // Submit the form to TinEye in a new tab (no API)
+  try {
+    els.tineyeForm?.requestSubmit?.();
+  } catch {
+    // fallback
+    els.tineyeForm?.submit?.();
+  }
+});
+
 els.btnImgSearch?.addEventListener("click", async () => {
   const settings = getSettings();
   const q = normalizeSpace(els.imgQ?.value || "");
@@ -1814,7 +1967,9 @@ els.btnImgSearch?.addEventListener("click", async () => {
   const limit = clampInt(parseInt(els.imgPerPage?.value || "12", 10), 6, 60, 12);
   const useWiki = !!els.imgSrcWiki?.checked;
   const useCommons = !!els.imgSrcCommons?.checked;
-  if (!useWiki && !useCommons) return toast("Active au moins une source d’images.");
+  const useOpenverse = !!els.imgSrcOpenverse?.checked;
+  const useLoc = !!els.imgSrcLoC?.checked;
+  if (!useWiki && !useCommons && !useOpenverse && !useLoc) return toast("Active au moins une source d’images.");
 
   setImgStatus("Recherche d’images…");
   els.btnImgSearch.disabled = true;
@@ -1823,6 +1978,8 @@ els.btnImgSearch?.addEventListener("click", async () => {
   const tasks = [];
   if (useWiki) tasks.push(searchWikipediaImages(q, settings.lang, limit, controller.signal));
   if (useCommons) tasks.push(searchCommonsImages(q, limit, controller.signal));
+  if (useOpenverse) tasks.push(searchOpenverseImages(q, limit, controller.signal));
+  if (useLoc) tasks.push(searchLocImages(q, limit, controller.signal));
 
   const settled = await Promise.allSettled(tasks);
   const out = [];
@@ -1836,6 +1993,12 @@ els.btnImgSearch?.addEventListener("click", async () => {
   renderImageResults();
   setImgStatus(errs.length ? `Images: ${out.length} (certains échecs: ${errs.join(", ")})` : `Images: ${out.length}`);
   els.btnImgSearch.disabled = false;
+
+  if (state.img.fileHash) {
+    setImgStatus("Analyse visuelle locale…");
+    await applyLocalSimilarityIfPossible();
+    setImgStatus(errs.length ? `Images: ${state.img.results.length} (certains échecs: ${errs.join(", ")})` : `Images: ${state.img.results.length}`);
+  }
 });
 
 els.aiModeQuestions?.addEventListener("click", () => setAiMode("questions"));
