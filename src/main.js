@@ -32,7 +32,8 @@ window.addEventListener("unhandledrejection", (ev) => {
   ui.showError(`Promise rejetée:\n${formatErr(ev?.reason)}`);
 });
 
-const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
+// Antialiasing coûte cher (surtout sur mobile). On privilégie la fluidité.
+const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: "high-performance" });
 // Cap pixel ratio pour garder du FPS sur téléphones/écrans retina
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -88,6 +89,39 @@ mirrorStand.castShadow = true;
 scene.add(mirrorStand);
 world.colliders.push(mirrorStand);
 
+// --- Accélération collisions (grille spatiale) ---
+function buildColliderGrid(colliders, cellSize = 8) {
+  /** @type {Map<string, any[]>} */
+  const grid = new Map();
+  for (const c of colliders) {
+    const bb = aabbForCollider(c);
+    if (!bb) continue;
+    const x0 = Math.floor(bb.minX / cellSize);
+    const x1 = Math.floor(bb.maxX / cellSize);
+    const z0 = Math.floor(bb.minZ / cellSize);
+    const z1 = Math.floor(bb.maxZ / cellSize);
+    for (let gx = x0; gx <= x1; gx++) {
+      for (let gz = z0; gz <= z1; gz++) {
+        const key = `${gx},${gz}`;
+        let arr = grid.get(key);
+        if (!arr) {
+          arr = [];
+          grid.set(key, arr);
+        }
+        arr.push(c);
+      }
+    }
+  }
+  return { grid, cellSize };
+}
+
+let colliderGrid = null;
+let gridMark = 1;
+function rebuildColliderGrid() {
+  colliderGrid = buildColliderGrid(world.colliders, 8);
+}
+rebuildColliderGrid();
+
 const baldHead = new THREE.Mesh(
   new THREE.SphereGeometry(0.28, 24, 18),
   new THREE.MeshStandardMaterial({ color: 0xf1d9c0, roughness: 0.18, metalness: 0.02 })
@@ -129,6 +163,8 @@ function resetGame() {
   dog.state.mode = "patrol";
   dog.state.currentWp = 0;
   dog.state.lastSeenT = -999;
+  dog.state.losT = -999;
+  dog.state.los = false;
   dog.setYaw(0);
 
   ui.setStatus("Laboratoire 4512 — Reste discret.");
@@ -150,7 +186,28 @@ function aabbForCollider(m) {
 
 function resolveCollisions(pos, radius) {
   // Approximate player as a vertical capsule with radius; resolve against AABBs by pushing out in XZ.
-  for (const m of world.colliders) {
+  const list = [];
+  if (colliderGrid) {
+    const { grid, cellSize } = colliderGrid;
+    const cx = Math.floor(pos.x / cellSize);
+    const cz = Math.floor(pos.z / cellSize);
+    const mark = gridMark++;
+    for (let dx = -1; dx <= 1; dx++) {
+      for (let dz = -1; dz <= 1; dz++) {
+        const arr = grid.get(`${cx + dx},${cz + dz}`);
+        if (!arr) continue;
+        for (const m of arr) {
+          if (m.userData._gridMark === mark) continue;
+          m.userData._gridMark = mark;
+          list.push(m);
+        }
+      }
+    }
+  } else {
+    list.push(...world.colliders);
+  }
+
+  for (const m of list) {
     const bb = aabbForCollider(m);
     if (!bb) continue;
 
@@ -182,7 +239,8 @@ function hasLineOfSight(from, to) {
   dir.normalize();
   raycaster.set(from, dir);
   raycaster.far = dist - 0.2;
-  const hits = raycaster.intersectObjects(world.colliders, false);
+  const blockers = world.losColliders ?? world.colliders;
+  const hits = raycaster.intersectObjects(blockers, false);
   return hits.length === 0;
 }
 
@@ -193,7 +251,21 @@ function updateDog(dt, tNow) {
   // Awareness
   const toPlayer = tmpVec3.copy(playerPos).sub(dogPos);
   const dist = toPlayer.length();
-  const los = dist < 13 && hasLineOfSight(dogPos.clone().add(new THREE.Vector3(0, 0.4, 0)), playerPos.clone().add(new THREE.Vector3(0, 1.0, 0)));
+  // Line of sight est coûteux (raycast). On le calcule moins souvent.
+  if (dog.state.losT === undefined) {
+    dog.state.losT = -999;
+    dog.state.los = false;
+  }
+  if (dist < 13 && tNow - dog.state.losT > 0.18) {
+    dog.state.losT = tNow;
+    dog.state.los = hasLineOfSight(
+      dogPos.clone().add(new THREE.Vector3(0, 0.4, 0)),
+      playerPos.clone().add(new THREE.Vector3(0, 1.0, 0))
+    );
+  } else if (dist >= 13) {
+    dog.state.los = false;
+  }
+  const los = dog.state.los;
 
   if (los) {
     dog.state.mode = "chase";

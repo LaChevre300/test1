@@ -31,7 +31,14 @@ function setInstance(mesh, i, position, rotY = 0, scale = 1) {
   mesh.setMatrixAt(i, m);
 }
 
-function addColliderBox(group, colliders, size, position, name = "collider") {
+function setInstanceScale(mesh, i, position, rotY, scaleVec3) {
+  const m = new THREE.Matrix4();
+  const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0));
+  m.compose(position, q, scaleVec3);
+  mesh.setMatrixAt(i, m);
+}
+
+function addColliderBox(group, colliders, losColliders, size, position, name = "collider", los = true) {
   const geo = new THREE.BoxGeometry(size.x, size.y, size.z);
   const mat = new THREE.MeshBasicMaterial({ color: 0x00ff00, transparent: true, opacity: 0.0 });
   const mesh = new THREE.Mesh(geo, mat);
@@ -40,6 +47,7 @@ function addColliderBox(group, colliders, size, position, name = "collider") {
   mesh.visible = false;
   group.add(mesh);
   colliders.push(mesh);
+  if (los) losColliders.push(mesh);
   cacheWorldAabb(mesh);
   return mesh;
 }
@@ -49,6 +57,7 @@ export function createLabWorld() {
   group.name = "bigLab";
 
   const colliders = [];
+  const losColliders = [];
   const lights = [];
   const rand = makeRng(4512);
 
@@ -125,6 +134,7 @@ export function createLabWorld() {
     wall.receiveShadow = true;
     group.add(wall);
     colliders.push(wall);
+    losColliders.push(wall);
     cacheWorldAabb(wall);
   };
   wallLong(half * 2, 0, -half, 0);
@@ -179,6 +189,31 @@ export function createLabWorld() {
   group.add(pillars);
   pillars.instanceMatrix.needsUpdate = true;
 
+  // Plinthes (baseboards) instanciées: beaucoup moins de draw calls
+  const baseMat = new THREE.MeshStandardMaterial({ color: 0x0a0d14, roughness: 0.6, metalness: 0.25 });
+  const baseGeo = new THREE.BoxGeometry(1, 0.22, 0.12);
+  const baseboards = new THREE.InstancedMesh(baseGeo, baseMat, 360);
+  baseboards.castShadow = false;
+  baseboards.receiveShadow = false;
+  let bbI = 0;
+  const yBase = -0.5 + 0.11;
+  const inward = wallT / 2 - 0.06;
+  const yAxis = new THREE.Vector3(0, 1, 0);
+  const tmpOff = new THREE.Vector3();
+
+  function addBaseboard(x, z, rotY, length) {
+    if (bbI >= baseboards.count) return;
+    tmpOff.set(0, 0, inward).applyAxisAngle(yAxis, rotY);
+    setInstanceScale(
+      baseboards,
+      bbI,
+      new THREE.Vector3(x + tmpOff.x, yBase, z + tmpOff.z),
+      rotY,
+      new THREE.Vector3(length, 1, 1)
+    );
+    bbI++;
+  }
+
   // Helper: murs intérieurs (visuel + collider)
   function addWallBox(sizeX, sizeZ, x, z) {
     const mesh = new THREE.Mesh(new THREE.BoxGeometry(sizeX, wallH - 1.2, wallT), wallMat);
@@ -187,15 +222,9 @@ export function createLabWorld() {
     mesh.receiveShadow = true;
     group.add(mesh);
     colliders.push(mesh);
+    losColliders.push(mesh);
     cacheWorldAabb(mesh);
-
-    // Plinthe (visuelle) au pied du mur
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x0a0d14, roughness: 0.6, metalness: 0.25 });
-    const base = new THREE.Mesh(new THREE.BoxGeometry(sizeX, 0.22, 0.12), baseMat);
-    base.position.set(x, -0.5 + 0.11, z + wallT / 2 - 0.06);
-    base.castShadow = false;
-    base.receiveShadow = false;
-    group.add(base);
+    addBaseboard(x, z, 0, sizeX);
 
     return mesh;
   }
@@ -208,16 +237,9 @@ export function createLabWorld() {
     mesh.receiveShadow = true;
     group.add(mesh);
     colliders.push(mesh);
+    losColliders.push(mesh);
     cacheWorldAabb(mesh);
-
-    const baseMat = new THREE.MeshStandardMaterial({ color: 0x0a0d14, roughness: 0.6, metalness: 0.25 });
-    const base = new THREE.Mesh(new THREE.BoxGeometry(sizeX, 0.22, 0.12), baseMat);
-    base.position.set(0, -0.5 + 0.11, wallT / 2 - 0.06);
-    base.rotation.y = rotY;
-    base.position.applyMatrix4(new THREE.Matrix4().makeRotationY(rotY)).add(new THREE.Vector3(x, 0, z));
-    base.castShadow = false;
-    base.receiveShadow = false;
-    group.add(base);
+    addBaseboard(x, z, rotY, sizeX);
 
     return mesh;
   }
@@ -304,9 +326,33 @@ export function createLabWorld() {
       // Colliders seulement pour le cadre (pas le battant entrouvert)
       const worldPos = new THREE.Vector3(x, y0 + height / 2, z);
       const frameColliderW = width + 0.5;
-      addColliderBox(group, colliders, new THREE.Vector3(jambW, height, 0.35), worldPos.clone().add(new THREE.Vector3(-width / 2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY)), "doorFrameCollider");
-      addColliderBox(group, colliders, new THREE.Vector3(jambW, height, 0.35), worldPos.clone().add(new THREE.Vector3(width / 2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY)), "doorFrameCollider");
-      addColliderBox(group, colliders, new THREE.Vector3(frameColliderW, jambW, 0.35), new THREE.Vector3(x, y0 + height + jambW / 2, z), "doorTopCollider");
+      addColliderBox(
+        group,
+        colliders,
+        losColliders,
+        new THREE.Vector3(jambW, height, 0.35),
+        worldPos.clone().add(new THREE.Vector3(-width / 2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY)),
+        "doorFrameCollider",
+        true
+      );
+      addColliderBox(
+        group,
+        colliders,
+        losColliders,
+        new THREE.Vector3(jambW, height, 0.35),
+        worldPos.clone().add(new THREE.Vector3(width / 2, 0, 0).applyAxisAngle(new THREE.Vector3(0, 1, 0), rotY)),
+        "doorFrameCollider",
+        true
+      );
+      addColliderBox(
+        group,
+        colliders,
+        losColliders,
+        new THREE.Vector3(frameColliderW, jambW, 0.35),
+        new THREE.Vector3(x, y0 + height + jambW / 2, z),
+        "doorTopCollider",
+        true
+      );
     };
   })();
 
@@ -409,7 +455,7 @@ export function createLabWorld() {
   glass.receiveShadow = true;
   group.add(glass);
   // collision fine: même dimensions que le verre (évite murs invisibles)
-  addColliderBox(group, colliders, new THREE.Vector3(glassW, glassH, glassT + 0.25), glass.position.clone(), "glassWallCollider");
+  addColliderBox(group, colliders, losColliders, new THREE.Vector3(glassW, glassH, glassT + 0.25), glass.position.clone(), "glassWallCollider", true);
 
   // Signalétique (panneaux)
   const signTex = (() => {
@@ -565,9 +611,11 @@ export function createLabWorld() {
       addColliderBox(
         group,
         colliders,
+        losColliders,
         new THREE.Vector3(blockWidth, 1.55, blockDepth),
         new THREE.Vector3(x + spacingX * 0.5, 0.78, z),
-        "deskBlockCollider"
+        "deskBlockCollider",
+        false
       );
     }
   }
@@ -601,9 +649,11 @@ export function createLabWorld() {
       addColliderBox(
         group,
         colliders,
+        losColliders,
         new THREE.Vector3(classSpacingX * 2 - 1.6, 1.55, blockDepth),
         new THREE.Vector3(x + classSpacingX * 0.5, 0.78, z),
-        "classDeskBlockCollider"
+        "classDeskBlockCollider",
+        false
       );
     }
   }
@@ -624,7 +674,7 @@ export function createLabWorld() {
   // Collider racks rows (gros blocs)
   for (let rz = 0; rz < rackRows; rz++) {
     const z = server.minZ + 7 + rz * 3.8;
-    addColliderBox(group, colliders, new THREE.Vector3(20, 3.5, 1.6), new THREE.Vector3(server.minX + 16, 1.6, z), "rackRowCollider");
+    addColliderBox(group, colliders, losColliders, new THREE.Vector3(20, 3.5, 1.6), new THREE.Vector3(server.minX + 16, 1.6, z), "rackRowCollider", true);
   }
 
   // Stockage: cartons empilés
@@ -640,7 +690,7 @@ export function createLabWorld() {
   for (let i = 0; i < 14; i++) {
     const x = storage.minX + 8 + rand() * (storage.maxX - storage.minX - 16);
     const z = storage.minZ + 8 + rand() * (storage.maxZ - storage.minZ - 16);
-    addColliderBox(group, colliders, new THREE.Vector3(2.4, 1.6, 2.4), new THREE.Vector3(x, 0.8, z), "boxPileCollider");
+    addColliderBox(group, colliders, losColliders, new THREE.Vector3(2.4, 1.6, 2.4), new THREE.Vector3(x, 0.8, z), "boxPileCollider", true);
   }
 
   // Néons plafond (visuels) + lumières
@@ -727,7 +777,8 @@ export function createLabWorld() {
   const dogStart = new THREE.Vector3(server.minX + 10, 0.55, server.minZ + 10);
 
   // Ajoute tout au groupe
-  group.add(desks, chairsSeat, chairsBack, pcs, screens, keyboards, racks, boxes, neons);
+  group.add(baseboards, desks, chairsSeat, chairsBack, pcs, screens, keyboards, racks, boxes, neons);
+  baseboards.instanceMatrix.needsUpdate = true;
   desks.instanceMatrix.needsUpdate = true;
   chairsSeat.instanceMatrix.needsUpdate = true;
   chairsBack.instanceMatrix.needsUpdate = true;
@@ -738,6 +789,6 @@ export function createLabWorld() {
   boxes.instanceMatrix.needsUpdate = true;
   neons.instanceMatrix.needsUpdate = true;
 
-  return { group, colliders, lights, waypoints, playerStart, dogStart, flickerLight, bounds };
+  return { group, colliders, losColliders, lights, waypoints, playerStart, dogStart, flickerLight, bounds };
 }
 
