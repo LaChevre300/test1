@@ -188,6 +188,93 @@
     "Legacy multi-générationnel avec incarnation d'un enfant."
   ];
 
+  const ACTION_FOLLOWUP_EVENTS = {
+    Famille: [
+      { text: "Un oncle demande une aide urgente.", tone: "warn", run: () => { changeMoney(-rnd(2, 14)); changeStat("reputation", 2); } },
+      { text: "Un repas de famille apaise les tensions.", tone: "good", run: () => { changeStat("happiness", rnd(2, 8)); changeStat("sanity", 2); } },
+      { text: "Un proche critique tes choix de vie.", tone: "bad", run: () => { changeStat("happiness", -5); changeStat("sanity", -2); } },
+      { text: "Tu reçois un petit héritage inattendu.", tone: "good", run: () => { changeMoney(rnd(4, 35)); } },
+      { text: "Une querelle familiale éclate.", tone: "warn", run: () => { changeStat("happiness", -4); changeStat("reputation", -2); } },
+      { text: "Un parent te confie une relique.", tone: "good", run: () => { game.character.inventory.push("relique familiale"); changeStat("happiness", 4); } },
+      { text: "Un cousin disparaît avec une dette commune.", tone: "bad", run: () => { game.character.debt += rnd(2, 18); } },
+      { text: "Une lettre chaleureuse renforce vos liens.", tone: "good", run: () => { changeStat("sanity", 3); changeStat("happiness", 3); } },
+      { text: "Un conflit d'héritage t'atteint.", tone: "warn", run: () => { changeStat("reputation", -3); changeStat("happiness", -3); } },
+      { text: "Réconciliation familiale autour d'un feu.", tone: "good", run: () => { changeStat("happiness", 6); } }
+    ],
+    "École & carrière": [
+      { text: "Un mentor remarque ton potentiel.", tone: "good", minAge: 10, run: () => { changeStat("intelligence", 4); changeStat("reputation", 3); } },
+      { text: "Une erreur administrative complique ton parcours.", tone: "warn", minAge: 12, run: () => { changeStat("happiness", -3); } },
+      { text: "Ton supérieur t'impose une charge lourde.", tone: "bad", minAge: 16, run: () => { changeStat("sanity", -4); } },
+      { text: "Un contrat rentable est signé.", tone: "good", minAge: 16, run: () => { changeMoney(rnd(8, 40)); } },
+      { text: "Un outil de travail se casse.", tone: "warn", minAge: 14, run: () => { changeMoney(-rnd(3, 15)); } },
+      { text: "Une bourse d'étude réduit tes frais.", tone: "good", minAge: 14, run: () => { game.character.universityDebt = Math.max(0, game.character.universityDebt - rnd(5, 35)); } },
+      { text: "Un collègue propage une rumeur.", tone: "bad", minAge: 16, run: () => { changeStat("reputation", -5); } },
+      { text: "Tu apprends une technique rare.", tone: "good", minAge: 12, run: () => { changeStat("intelligence", 3); changeStat("strength", 2); } },
+      { text: "Un contrôle des comptes t'inquiète.", tone: "warn", minAge: 16, run: () => { changeStat("sanity", -2); if (chance(0.35)) changeMoney(-rnd(4, 18)); } },
+      { text: "Ton nom circule parmi les recruteurs.", tone: "good", minAge: 14, run: () => { changeStat("reputation", 4); } }
+    ],
+    "Santé & mental": [
+      { text: "Une tisane monastique te soulage.", tone: "good", run: () => { changeStat("health", 5); } },
+      { text: "Nuit agitée, sommeil insuffisant.", tone: "warn", run: () => { changeStat("sanity", -3); changeStat("happiness", -2); } },
+      { text: "Une épidémie locale te fragilise.", tone: "bad", run: () => { addCondition("illnesses", pick(ILLNESSES)); changeStat("health", -6); } },
+      { text: "Exercices respiratoires bénéfiques.", tone: "good", run: () => { changeStat("sanity", 5); } },
+      { text: "Une vieille douleur réapparaît.", tone: "warn", run: () => { changeStat("health", -4); } },
+      { text: "Le guérisseur retire une infection.", tone: "good", run: () => { clearCondition("illnesses"); changeStat("health", 4); } },
+      { text: "Excès à table.", tone: "bad", run: () => { changeStat("health", -3); changeStat("happiness", 2); } },
+      { text: "Balade matinale régénérante.", tone: "good", run: () => { changeStat("health", 3); changeStat("happiness", 3); } },
+      { text: "Une chute te laisse courbaturé(e).", tone: "warn", run: () => { addCondition("injuries", pick(INJURIES)); changeStat("health", -5); } },
+      { text: "Moment de clarté mentale.", tone: "good", run: () => { clearCondition("mental"); changeStat("sanity", 4); } }
+    ],
+    "Relations & amour": [
+      { text: "Une personne charmante te remarque.", tone: "good", minAge: 14, run: () => { changeStat("happiness", 5); changeStat("looks", 1); } },
+      { text: "Un ami se sent trahi.", tone: "bad", minAge: 10, run: () => { changeStat("reputation", -3); changeStat("happiness", -3); } },
+      { text: "Un voisin te rend service.", tone: "good", minAge: 8, run: () => { changeStat("happiness", 3); changeMoney(rnd(1, 8)); } },
+      { text: "Rivalité amoureuse naissante.", tone: "warn", minAge: 14, run: () => { changeStat("sanity", -2); } },
+      { text: "Invitation à une célébration.", tone: "good", minAge: 12, run: () => { changeStat("reputation", 3); } },
+      { text: "Un message ambigu sème le doute.", tone: "warn", minAge: 14, run: () => { changeStat("happiness", -2); changeStat("sanity", -2); } },
+      { text: "Un enfant de la famille te rend fier/fière.", tone: "good", run: () => { changeStat("happiness", 4); } },
+      { text: "Une dispute publique éclate.", tone: "bad", minAge: 12, run: () => { changeStat("reputation", -4); } },
+      { text: "Un ancien ennemi se calme.", tone: "good", minAge: 12, run: () => { changeStat("sanity", 2); changeStat("reputation", 2); } },
+      { text: "Une rencontre change ton regard sur l'amour.", tone: "good", minAge: 14, run: () => { changeStat("happiness", 6); } }
+    ],
+    "Argent & biens": [
+      { text: "Le marché local monte soudainement.", tone: "good", minAge: 12, run: () => { changeMoney(rnd(5, 28)); } },
+      { text: "Un impôt exceptionnel est levé.", tone: "bad", minAge: 12, run: () => { changeMoney(-rnd(4, 24)); } },
+      { text: "Une bonne affaire au comptoir.", tone: "good", minAge: 10, run: () => { changeMoney(rnd(2, 16)); } },
+      { text: "Un objet de valeur est abîmé.", tone: "warn", minAge: 10, run: () => { if (game.character.inventory.length) removeRandom(game.character.inventory); changeStat("happiness", -2); } },
+      { text: "Ton animal attire des acheteurs.", tone: "good", minAge: 8, run: () => { if (game.character.animals.length && chance(0.4)) { removeRandom(game.character.animals); changeMoney(rnd(6, 24)); } } },
+      { text: "Frais de réparation imprévus.", tone: "warn", minAge: 12, run: () => { changeMoney(-rnd(3, 20)); } },
+      { text: "Un prêt peut être renégocié.", tone: "good", minAge: 16, run: () => { game.character.debt = Math.max(0, game.character.debt - rnd(4, 30)); } },
+      { text: "Un voleur rôde dans le quartier.", tone: "bad", minAge: 10, run: () => { changeMoney(-rnd(2, 15)); } },
+      { text: "Un marchand te récompense pour ta fidélité.", tone: "good", minAge: 10, run: () => { changeMoney(rnd(3, 18)); changeStat("reputation", 1); } },
+      { text: "Une dette oubliée refait surface.", tone: "warn", minAge: 14, run: () => { game.character.debt += rnd(3, 16); } }
+    ],
+    "Crime & prison": [
+      { text: "La garde renforce les patrouilles.", tone: "warn", minAge: 12, run: () => { changeStat("sanity", -2); } },
+      { text: "Un indic te souffle une opportunité.", tone: "good", minAge: 14, run: () => { changeMoney(rnd(4, 22)); game.character.notoriety = clamp(game.character.notoriety + 3, -100, 100); } },
+      { text: "Un complice te trahit.", tone: "bad", minAge: 14, run: () => { game.character.criminal.record += 1; changeStat("reputation", -6); } },
+      { text: "Un geôlier ferme les yeux contre paiement.", tone: "warn", when: (c) => c.criminal.inPrison, run: () => { changeMoney(-rnd(3, 14)); if (chance(0.35)) game.character.criminal.yearsLeft = Math.max(0, game.character.criminal.yearsLeft - 1); } },
+      { text: "Tu gagnes du respect en milieu hostile.", tone: "good", minAge: 14, run: () => { changeStat("strength", 3); game.character.notoriety = clamp(game.character.notoriety + 4, -100, 100); } },
+      { text: "Une fouille surprise te pénalise.", tone: "bad", minAge: 12, run: () => { changeMoney(-rnd(2, 12)); changeStat("happiness", -3); } },
+      { text: "Un dossier se perd mystérieusement.", tone: "good", minAge: 14, run: () => { game.character.criminal.record = Math.max(0, game.character.criminal.record - 1); } },
+      { text: "Confrontation violente en ruelle.", tone: "warn", minAge: 14, run: () => { addCondition("injuries", pick(INJURIES)); changeStat("health", -5); } },
+      { text: "Un magistrat durcit les peines.", tone: "bad", minAge: 14, run: () => { if (game.character.criminal.inPrison) game.character.criminal.yearsLeft += 1; } },
+      { text: "Un marchand corrompu te verse une prime.", tone: "good", minAge: 16, run: () => { changeMoney(rnd(5, 26)); } }
+    ],
+    "Loisirs & spiritualité": [
+      { text: "Une fête de village te ressource.", tone: "good", minAge: 10, run: () => { changeStat("happiness", 5); } },
+      { text: "Une prière te calme profondément.", tone: "good", minAge: 8, run: () => { changeStat("sanity", 4); } },
+      { text: "Un pari tourne mal.", tone: "bad", minAge: 14, run: () => { changeMoney(-rnd(2, 14)); changeStat("happiness", -2); } },
+      { text: "Tu gagnes un petit tournoi local.", tone: "good", minAge: 12, run: () => { changeMoney(rnd(4, 20)); changeStat("reputation", 3); } },
+      { text: "Un spectacle te donne des idées.", tone: "good", minAge: 10, run: () => { changeStat("intelligence", 2); } },
+      { text: "Une chasse frustrante te fatigue.", tone: "warn", minAge: 12, run: () => { changeStat("health", -3); changeStat("happiness", -2); } },
+      { text: "Tu rencontres un vieux sage.", tone: "good", minAge: 10, run: () => { changeStat("sanity", 3); changeStat("intelligence", 2); } },
+      { text: "Tu dépenses trop en divertissements.", tone: "warn", minAge: 10, run: () => { changeMoney(-rnd(2, 10)); } },
+      { text: "Un pèlerin te remet un talisman.", tone: "good", minAge: 10, run: () => { addUnique(game.character.inventory, "talisman gravé"); changeStat("happiness", 2); } },
+      { text: "Une soirée agitée finit en chaos.", tone: "bad", minAge: 12, run: () => { addCondition("injuries", pick(INJURIES)); changeStat("health", -4); } }
+    ]
+  };
+
   const ui = {
     newLifeBtn: document.getElementById("new-life-btn"),
     topSettingsBtn: document.getElementById("top-settings-btn"),
@@ -244,13 +331,19 @@
     avatarEyeColorSelect: document.getElementById("avatar-eye-color-select"),
     avatarBeardSelect: document.getElementById("avatar-beard-select"),
     avatarOutfitSelect: document.getElementById("avatar-outfit-select"),
-    avatarAccessorySelect: document.getElementById("avatar-accessory-select")
+    avatarAccessorySelect: document.getElementById("avatar-accessory-select"),
+    actionResultModal: document.getElementById("action-result-modal"),
+    actionResultTitle: document.getElementById("action-result-title"),
+    actionResultText: document.getElementById("action-result-text"),
+    actionResultDetails: document.getElementById("action-result-details"),
+    actionResultCloseBtn: document.getElementById("action-result-close-btn")
   };
 
   let game = null;
   let activeTab = "home";
   let isCharacterModalOpen = false;
   let isAvatarEditorOpen = false;
+  let actionResultState = null;
 
   function rnd(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -2210,6 +2303,98 @@
     render();
   }
 
+  function snapshotCharacter() {
+    const c = game.character;
+    return {
+      money: c.money,
+      debt: getTotalDebt(),
+      notoriety: c.notoriety,
+      record: c.criminal.record,
+      stats: { ...c.stats },
+      logLen: game.log.length
+    };
+  }
+
+  function triggerActionFollowUp(categoryName, actionLabel) {
+    const c = game.character;
+    const pool = ACTION_FOLLOWUP_EVENTS[categoryName] || [];
+    const candidates = pool.filter((event) => {
+      if (event.minAge && c.age < event.minAge) return false;
+      if (event.maxAge && c.age > event.maxAge) return false;
+      if (event.when && !event.when(c)) return false;
+      return true;
+    });
+    if (!candidates.length || !chance(0.7)) {
+      return null;
+    }
+    const event = pick(candidates);
+    event.run(c, actionLabel);
+    addLog(`Conséquence: ${event.text}`, event.tone || "neutral");
+    return event.text;
+  }
+
+  function buildActionResult(actionLabel, before, followUpText = null) {
+    const c = game.character;
+    const statNames = {
+      health: "Santé",
+      happiness: "Bonheur",
+      intelligence: "Intelligence",
+      looks: "Apparence",
+      strength: "Force",
+      sanity: "Mental",
+      reputation: "Réputation"
+    };
+    const details = [];
+    Object.entries(statNames).forEach(([key, label]) => {
+      const diff = c.stats[key] - before.stats[key];
+      if (diff !== 0) {
+        details.push(`${label}: ${diff > 0 ? "+" : ""}${diff}`);
+      }
+    });
+    const moneyDiff = Math.round((c.money - before.money) * 100) / 100;
+    if (moneyDiff !== 0) {
+      details.push(`Argent: ${moneyDiff > 0 ? "+" : ""}${Math.round(moneyDiff)}`);
+    }
+    const debtDiff = Math.round((getTotalDebt() - before.debt) * 100) / 100;
+    if (debtDiff !== 0) {
+      details.push(`Dettes: ${debtDiff > 0 ? "+" : ""}${Math.round(debtDiff)}`);
+    }
+    if (c.criminal.record !== before.record) {
+      const diff = c.criminal.record - before.record;
+      details.push(`Casier: ${diff > 0 ? "+" : ""}${diff}`);
+    }
+    if (c.notoriety !== before.notoriety) {
+      const diff = c.notoriety - before.notoriety;
+      details.push(`Notoriété: ${diff > 0 ? "+" : ""}${Math.round(diff)}`);
+    }
+    const newLogCount = Math.max(0, game.log.length - before.logLen);
+    const recentLogs = newLogCount ? game.log.slice(0, Math.min(3, newLogCount)).map((entry) => entry.text) : [];
+    recentLogs.forEach((line) => details.push(line));
+    if (!details.length) {
+      details.push("Aucun changement notable.");
+    }
+    return {
+      title: `Action effectuée: ${actionLabel}`,
+      text: followUpText
+        ? `Tu as réalisé "${actionLabel}". Événement lié: ${followUpText}`
+        : `Tu as réalisé "${actionLabel}".`,
+      details
+    };
+  }
+
+  function executeActionWithFeedback(categoryName, action) {
+    const before = snapshotCharacter();
+    action.run();
+    if (!game.character.alive) {
+      actionResultState = null;
+      render();
+      return;
+    }
+    const followUpText = triggerActionFollowUp(categoryName, action.label);
+    actionResultState = buildActionResult(action.label, before, followUpText);
+    render();
+  }
+
   function renderStatus() {
     const c = game.character;
     const energy = clamp(Math.round((c.stats.strength * 0.55 + c.stats.sanity * 0.45)));
@@ -2499,8 +2684,7 @@
         btn.textContent = action.label;
         btn.disabled = !c.alive;
         btn.addEventListener("click", () => {
-          action.run();
-          render();
+          executeActionWithFeedback(categoryName, action);
         });
         buttons.append(btn);
       });
@@ -2629,6 +2813,22 @@
     ui.characterModal.classList.add("show");
   }
 
+  function renderActionResultModal() {
+    if (!actionResultState) {
+      ui.actionResultModal.classList.remove("show");
+      return;
+    }
+    ui.actionResultTitle.textContent = actionResultState.title;
+    ui.actionResultText.textContent = actionResultState.text;
+    ui.actionResultDetails.innerHTML = "";
+    actionResultState.details.slice(0, 8).forEach((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      ui.actionResultDetails.append(li);
+    });
+    ui.actionResultModal.classList.add("show");
+  }
+
   function fillSelect(selectElement, entries, mapLabel = (v) => v, mapValue = (v) => v) {
     if (!selectElement || selectElement.options.length) return;
     entries.forEach((entry) => {
@@ -2691,6 +2891,7 @@
   function openAvatarEditor() {
     if (!game?.character) return;
     isCharacterModalOpen = false;
+    actionResultState = null;
     ensureAvatarEditorOptions();
     syncEditorInputsFromAvatar(normalizedAvatarConfig(game.character.sex, game.character.avatar));
     isAvatarEditorOpen = true;
@@ -2739,6 +2940,7 @@
     renderBadges();
     renderDeathModal();
     renderCharacterModal();
+    renderActionResultModal();
     if (!isAvatarEditorOpen) {
       ui.avatarEditorModal?.classList.remove("show");
     }
@@ -2750,6 +2952,7 @@
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {
       isCharacterModalOpen = false;
+      actionResultState = null;
       activeTab = "settings";
       render();
     });
@@ -2757,6 +2960,7 @@
   if (ui.profileTrigger) {
     const openProfile = () => {
       isAvatarEditorOpen = false;
+      actionResultState = null;
       isCharacterModalOpen = true;
       renderCharacterModal();
     };
@@ -2779,6 +2983,20 @@
       if (event.target === ui.characterModal) {
         isCharacterModalOpen = false;
         renderCharacterModal();
+      }
+    });
+  }
+  if (ui.actionResultCloseBtn) {
+    ui.actionResultCloseBtn.addEventListener("click", () => {
+      actionResultState = null;
+      renderActionResultModal();
+    });
+  }
+  if (ui.actionResultModal) {
+    ui.actionResultModal.addEventListener("click", (event) => {
+      if (event.target === ui.actionResultModal) {
+        actionResultState = null;
+        renderActionResultModal();
       }
     });
   }
@@ -2830,6 +3048,7 @@
         return;
       }
       if (button.dataset.tab) {
+        actionResultState = null;
         activeTab = button.dataset.tab;
         render();
       }

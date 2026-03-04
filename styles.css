@@ -1055,6 +1055,14 @@ body {
   overflow: auto;
 }
 
+#action-result-text {
+  margin: 0 0 0.55rem;
+}
+
+#action-result-details li {
+  font-size: 0.72rem;
+}
+
 .character-head {
   display: flex;
   align-items: center;
