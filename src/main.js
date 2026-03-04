@@ -33,10 +33,11 @@ window.addEventListener("unhandledrejection", (ev) => {
 });
 
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
-renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+// Cap pixel ratio pour garder du FPS sur téléphones/écrans retina
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
 renderer.setSize(window.innerWidth, window.innerHeight);
-renderer.shadowMap.enabled = true;
-renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+// Les ombres temps réel coûtent très cher avec un gros décor => off par défaut (beaucoup plus fluide)
+renderer.shadowMap.enabled = false;
 renderer.physicallyCorrectLights = true;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
@@ -50,7 +51,11 @@ scene.fog = new THREE.Fog(0x070914, 10, 160);
 
 // Environnement de type “pièce” => reflets/éclairage plus crédibles sur les matériaux.
 const pmrem = new THREE.PMREMGenerator(renderer);
-scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.04).texture;
+{
+  const envRT = pmrem.fromScene(new RoomEnvironment(), 0.04);
+  scene.environment = envRT.texture;
+  pmrem.dispose();
+}
 
 const camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.05, 220);
 camera.position.set(0, 1.7, 14);
@@ -69,9 +74,7 @@ for (const l of world.lights) scene.add(l);
 
 // Lampe torche (évite le “tout noir” et garde l’ambiance horreur)
 const flashlight = new THREE.SpotLight(0xfff2e0, 260, 26, Math.PI / 9, 0.55, 1.9);
-flashlight.castShadow = true;
-flashlight.shadow.mapSize.set(1024, 1024);
-flashlight.shadow.bias = -0.0002;
+flashlight.castShadow = false;
 scene.add(flashlight);
 scene.add(flashlight.target);
 

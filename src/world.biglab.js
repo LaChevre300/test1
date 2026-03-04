@@ -349,31 +349,31 @@ export function createLabWorld() {
   const neonCount = 72;
 
   const desks = new THREE.InstancedMesh(deskGeo, deskMat, deskCount);
-  desks.castShadow = true;
+  desks.castShadow = false;
   desks.receiveShadow = true;
 
   const chairsSeat = new THREE.InstancedMesh(chairSeatGeo, chairMat, chairCount);
-  chairsSeat.castShadow = true;
+  chairsSeat.castShadow = false;
   chairsSeat.receiveShadow = true;
   const chairsBack = new THREE.InstancedMesh(chairBackGeo, chairMat, chairCount);
-  chairsBack.castShadow = true;
+  chairsBack.castShadow = false;
   chairsBack.receiveShadow = true;
 
   const pcs = new THREE.InstancedMesh(pcGeo, plasticMat, pcCount);
-  pcs.castShadow = true;
+  pcs.castShadow = false;
   pcs.receiveShadow = true;
   const screens = new THREE.InstancedMesh(screenGeo, screenMat, screenCount);
   screens.castShadow = false;
   const keyboards = new THREE.InstancedMesh(kbGeo, plasticMat, kbCount);
-  keyboards.castShadow = true;
+  keyboards.castShadow = false;
   keyboards.receiveShadow = true;
 
   const racks = new THREE.InstancedMesh(rackGeo, rackMat, rackCount);
-  racks.castShadow = true;
+  racks.castShadow = false;
   racks.receiveShadow = true;
 
   const boxes = new THREE.InstancedMesh(boxGeo, boxMat, boxCount);
-  boxes.castShadow = true;
+  boxes.castShadow = false;
   boxes.receiveShadow = true;
 
   const neons = new THREE.InstancedMesh(neonGeo, neonMat, neonCount);
@@ -539,11 +539,7 @@ export function createLabWorld() {
     if (rand() < 0.18) continue;
     if (pa >= panels.count) break;
     setInstance(panels, pa, new THREE.Vector3(x, wallH - 0.85, z), rand() > 0.5 ? 0 : Math.PI / 2, 1);
-    // Light aligned with the panel
-    const l = new THREE.PointLight(0xd7f1ff, 2.4, 22, 2.0);
-    l.position.set(x, wallH - 1.25, z);
-    l.castShadow = false;
-    lights.push(l);
+    // Les panneaux sont émissifs: on évite de créer une light par panneau (très cher).
     pa++;
   }
   group.add(panels);
@@ -558,11 +554,11 @@ export function createLabWorld() {
     return l;
   };
 
-  // Open-space lights grid
-  for (let i = 0; i < 18; i++) {
+  // Quelques lights seulement (trop de point lights = très cher en forward rendering)
+  for (let i = 0; i < 8; i++) {
     const x = openMinX + 6 + rand() * (openMaxX - openMinX - 12);
     const z = openMinZ + 6 + rand() * (openMaxZ - openMinZ - 12);
-    mkLight(x, z, 0xbdd9ff, 1.45 + rand() * 0.85, 18);
+    mkLight(x, z, 0xbdd9ff, 1.25 + rand() * 0.55, 20);
   }
   // Hallway (flicker)
   const flickerLight = mkLight(0, (corridorZ0 + corridorZ1) / 2, 0xbdd9ff, 2.6, 22);
