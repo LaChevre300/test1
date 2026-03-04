@@ -11,6 +11,8 @@ const els = {
   btnClear: document.querySelector("#btnClear"),
   status: document.querySelector("#status"),
   results: document.querySelector("#results"),
+  suggestBox: document.querySelector("#suggestBox"),
+  suggestions: document.querySelector("#suggestions"),
   detail: document.querySelector("#detail"),
   btnCopyApa: document.querySelector("#btnCopyApa"),
   btnCopyNotes: document.querySelector("#btnCopyNotes"),
@@ -299,6 +301,11 @@ function tokenize(text) {
   return t.split(/\s+/).filter(Boolean);
 }
 
+function tokenizeForSearch(text, lang) {
+  const stop = lang === "en" ? STOP_EN : STOP_FR;
+  return tokenize(text).filter((w) => w.length >= 3 && !stop.has(w));
+}
+
 function keywordCandidates(text, lang) {
   const stop = lang === "en" ? STOP_EN : STOP_FR;
   const tokens = tokenize(text).filter((w) => w.length >= 4 && !stop.has(w));
@@ -458,6 +465,113 @@ function formatRetrievedToday() {
   const m = d.toLocaleString("fr-FR", { month: "long" });
   const day = d.getDate();
   return `${day} ${m} ${yyyy}`;
+}
+
+function normalizeUrlForDedup(url) {
+  const u = String(url || "").trim();
+  if (!u) return "";
+  try {
+    const parsed = new URL(u);
+    parsed.hash = "";
+    if ((parsed.protocol === "http:" && parsed.port === "80") || (parsed.protocol === "https:" && parsed.port === "443")) {
+      parsed.port = "";
+    }
+    const drop = ["utm_source", "utm_medium", "utm_campaign", "utm_term", "utm_content", "gclid", "fbclid"];
+    for (const k of drop) parsed.searchParams.delete(k);
+    return parsed.toString();
+  } catch {
+    return u.replace(/#.*$/, "");
+  }
+}
+
+function normTitleKey(title) {
+  return normalizeSpace(String(title || ""))
+    .toLowerCase()
+    .replace(/[\u2019']/g, "")
+    .replace(/[^a-zàâçéèêëîïôùûüÿñæœ0-9\s-]/gi, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function scoreResult(r, queryTokens) {
+  const title = String(r.title || "");
+  const text = String(r.abstract || r.extract || r.snippet || "");
+  const tt = tokenize(title).join(" ");
+  const tx = tokenize(text).join(" ");
+
+  let tHits = 0;
+  let xHits = 0;
+  for (const q of queryTokens) {
+    if (tt.includes(q)) tHits++;
+    if (tx.includes(q)) xHits++;
+  }
+
+  const hasRichText = text && text.length >= 700 ? 1 : text && text.length >= 250 ? 0.5 : 0;
+  const hasDoi = r.doi ? 1 : 0;
+  const hasYear = r.year ? 1 : 0;
+  const year = r.year ? parseInt(r.year, 10) : 0;
+  const recency = year ? Math.max(0, Math.min(1, (year - 1990) / 40)) : 0;
+
+  const sourceBoost = r.source === "openalex" ? 0.35 : r.source === "crossref" ? 0.25 : 0.0;
+
+  return tHits * 2.4 + xHits * 1.0 + hasRichText * 1.2 + hasDoi * 0.7 + hasYear * 0.2 + recency * 0.6 + sourceBoost;
+}
+
+function computeSuggestedKeywords(results, lang, limit = 12) {
+  const stop = lang === "en" ? STOP_EN : STOP_FR;
+  const freq = new Map();
+  for (const r of results) {
+    const base = `${r.title || ""}\n${r.abstract || r.extract || r.snippet || ""}`;
+    for (const w of tokenize(base)) {
+      if (w.length < 4 || stop.has(w)) continue;
+      freq.set(w, (freq.get(w) || 0) + 1);
+    }
+  }
+  const ranked = [...freq.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([w]) => w);
+  const out = [];
+  for (const w of ranked) {
+    if (out.includes(w)) continue;
+    out.push(w);
+    if (out.length >= limit) break;
+  }
+  return out;
+}
+
+function renderSuggestions(query, results, settings) {
+  if (!els.suggestBox || !els.suggestions) return;
+  const qTokens = new Set(tokenizeForSearch(query, settings.lang));
+  const kws = computeSuggestedKeywords(results, settings.lang, 14).filter((k) => !qTokens.has(k));
+
+  if (!kws.length) {
+    els.suggestBox.style.display = "none";
+    els.suggestions.innerHTML = "";
+    return;
+  }
+
+  els.suggestBox.style.display = "";
+  els.suggestions.innerHTML = kws
+    .slice(0, 12)
+    .map(
+      (k) =>
+        `<button class="kw" type="button" data-kw="${escapeHtml(k)}" title="Ajouter à la recherche">${escapeHtml(k)}</button>`
+    )
+    .join("");
+}
+
+if (els.suggestions) {
+  els.suggestions.addEventListener("click", (e) => {
+    const b = e.target.closest("[data-kw]");
+    if (!b) return;
+    const kw = String(b.dataset.kw || "").trim();
+    if (!kw) return;
+    const cur = normalizeSpace(els.q.value);
+    const next = normalizeSpace(`${cur} ${kw}`);
+    if (next === cur) return;
+    els.q.value = next;
+    runSearch();
+  });
 }
 
 function apaForWebPage({ author, year, title, siteName, url, retrieved }) {
@@ -897,6 +1011,7 @@ els.btnClear.addEventListener("click", () => {
   setStatus("Prêt.");
   renderResults();
   renderDetail(null, getSettings());
+  renderSuggestions("", [], getSettings());
   els.q.focus();
 });
 
@@ -950,6 +1065,7 @@ async function runSearch(opts = {}) {
   state.results = [];
   renderResults();
   renderDetail(null, settings);
+  renderSuggestions("", [], settings);
 
   setStatus("Recherche…");
   els.btnSearch.disabled = true;
@@ -978,18 +1094,39 @@ async function runSearch(opts = {}) {
     else errors.push(s.reason?.message || "Erreur");
   }
 
-  // Simple sort: prefer items with year, then title.
-  next.sort((a, b) => {
+  // Dédoublonnage (DOI/URL/titre+année) + tri par pertinence.
+  const seen = new Set();
+  const deduped = [];
+  for (const r of next) {
+    const doiKey = r.doi ? `doi:${String(r.doi).toLowerCase()}` : "";
+    const urlKey = r.url ? `url:${normalizeUrlForDedup(r.url).toLowerCase()}` : "";
+    const titleKey = `t:${normTitleKey(r.title)}|y:${String(r.year || "")}`;
+    const key = doiKey || urlKey || titleKey;
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    deduped.push(r);
+  }
+
+  const qTokens = tokenizeForSearch(query, settings.lang);
+  deduped.sort((a, b) => {
+    const sb = scoreResult(b, qTokens);
+    const sa = scoreResult(a, qTokens);
+    if (sb !== sa) return sb - sa;
     const ay = a.year ? parseInt(a.year, 10) : 0;
     const by = b.year ? parseInt(b.year, 10) : 0;
     if (by !== ay) return by - ay;
     return String(a.title || "").localeCompare(String(b.title || ""), "fr");
   });
 
-  state.results = next;
-  setStatus(errors.length ? `Résultats: ${next.length} (certains échecs: ${errors.join(", ")})` : `Résultats: ${next.length}`);
+  state.results = deduped;
+  setStatus(
+    errors.length
+      ? `Résultats: ${deduped.length} (certains échecs: ${errors.join(", ")})`
+      : `Résultats: ${deduped.length}`
+  );
   els.btnSearch.disabled = false;
   renderResults();
+  renderSuggestions(query, state.results, settings);
 
   putRecent(query);
 

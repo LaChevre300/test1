@@ -17,7 +17,7 @@
         <img class="logo" src="./assets/logo.svg" alt="Logo MuguetEye" />
         <div>
           <div class="title">MuguetEye</div>
-          <div class="subtitle">Recherche & aide à l’analyse — bleu & blanc, sans clé API</div>
+          <div class="subtitle">L’œil de l’internet</div>
         </div>
       </div>
 
@@ -89,6 +89,12 @@
             <button class="tab" data-tab="wikipedia" role="tab">Wikipedia</button>
             <button class="tab" data-tab="openalex" role="tab">OpenAlex</button>
             <button class="tab" data-tab="crossref" role="tab">Crossref</button>
+          </div>
+
+          <div id="suggestBox" class="suggestBox" style="display:none;">
+            <div class="suggestTitle">Affiner la recherche</div>
+            <div class="suggestText">Clique un mot-clé pour relancer une recherche plus précise.</div>
+            <div id="suggestions" class="kws" aria-label="Mots-clés suggérés"></div>
           </div>
 
           <div id="results" class="results" aria-live="polite"></div>
