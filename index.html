@@ -33,34 +33,40 @@
           <h2>Activités</h2>
           <div id="activity-root"></div>
         </article>
-      </section>
-
-      <section id="screen-crime" class="screen">
         <article class="card">
           <h2>Crime & prison</h2>
           <div id="crime-root"></div>
         </article>
       </section>
 
-      <section id="screen-stats" class="screen">
+      <section id="screen-assets" class="screen">
         <article class="card">
           <h2>Détails</h2>
           <ul id="detail-menu" class="detail-list"></ul>
         </article>
 
         <article class="card">
-          <h2>Ressources</h2>
+          <h2>Assets</h2>
           <ul id="resources-list" class="compact-list"></ul>
           <h3>Conditions</h3>
           <ul id="conditions-list" class="compact-list"></ul>
-          <h3>Relations proches</h3>
-          <ul id="relations-list" class="compact-list"></ul>
           <h3>Inventaire</h3>
           <ul id="inventory-list" class="compact-list"></ul>
           <h3>Animaux</h3>
           <ul id="animals-list" class="compact-list"></ul>
+        </article>
+      </section>
+
+      <section id="screen-relationships" class="screen">
+        <article class="card">
+          <h2>Relationships</h2>
+          <ul id="relations-list" class="compact-list"></ul>
           <h3>Descendance</h3>
           <ul id="children-list" class="compact-list"></ul>
+        </article>
+        <article class="card">
+          <h2>Interactions sociales</h2>
+          <div id="relation-root"></div>
         </article>
       </section>
 
@@ -76,27 +82,30 @@
 
       <section class="stats-bar" id="status-strip"></section>
 
-      <section class="bottom-actions" id="bottom-actions">
-        <button id="bottom-btn-1" class="btn btn-green"></button>
-        <button id="bottom-btn-2" class="btn btn-orange"></button>
-        <button id="bottom-btn-3" class="btn btn-gray"></button>
-      </section>
-
       <nav class="tabbar" id="tabbar">
-        <button class="tab-btn is-active" data-tab="home" data-accent="green" aria-label="Accueil">
-          🏠<span class="badge" id="badge-home"></span>
+        <button class="tab-btn is-active" data-tab="home" data-accent="green" aria-label="Infant">
+          <span class="tab-icon">👶</span>
+          <span class="tab-label">Infant</span>
+          <span class="badge" id="badge-home"></span>
         </button>
-        <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Activité">
-          🎯<span class="badge" id="badge-activity"></span>
+        <button class="tab-btn" data-tab="assets" data-accent="gray" aria-label="Assets">
+          <span class="tab-icon">🏠</span>
+          <span class="tab-label">Assets</span>
+          <span class="badge" id="badge-assets"></span>
         </button>
-        <button class="tab-btn tab-orange" data-tab="crime" data-accent="orange" aria-label="Crime">
-          🔪<span class="badge" id="badge-crime"></span>
+        <button class="tab-btn age-tab" id="age-tab-btn" data-action="age" aria-label="Age">
+          <span class="age-plus">＋</span>
+          <span class="tab-label">Age</span>
         </button>
-        <button class="tab-btn" data-tab="stats" data-accent="blue" aria-label="Stats">
-          📊<span class="badge" id="badge-stats"></span>
+        <button class="tab-btn" data-tab="relationships" data-accent="blue" aria-label="Relationships">
+          <span class="tab-icon">🤍</span>
+          <span class="tab-label">Relationships</span>
+          <span class="badge" id="badge-relationships"></span>
         </button>
-        <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Activité">
-          🎲<span class="badge" id="badge-activity-2"></span>
+        <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Activities">
+          <span class="tab-icon">🎯</span>
+          <span class="tab-label">Activities</span>
+          <span class="badge" id="badge-activities"></span>
         </button>
       </nav>
 

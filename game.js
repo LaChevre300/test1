@@ -176,21 +176,15 @@
     inventoryList: document.getElementById("inventory-list"),
     animalsList: document.getElementById("animals-list"),
     childrenList: document.getElementById("children-list"),
+    relationRoot: document.getElementById("relation-root"),
     actionCategoryTemplate: document.getElementById("action-category-template"),
-    bottomActions: document.getElementById("bottom-actions"),
-    bottomButtons: [
-      document.getElementById("bottom-btn-1"),
-      document.getElementById("bottom-btn-2"),
-      document.getElementById("bottom-btn-3")
-    ],
     tabButtons: document.querySelectorAll(".tab-btn"),
     screens: document.querySelectorAll(".screen"),
     badges: {
       home: document.getElementById("badge-home"),
-      activity: document.getElementById("badge-activity"),
-      activity2: document.getElementById("badge-activity-2"),
-      crime: document.getElementById("badge-crime"),
-      stats: document.getElementById("badge-stats")
+      assets: document.getElementById("badge-assets"),
+      relationships: document.getElementById("badge-relationships"),
+      activities: document.getElementById("badge-activities")
     },
     deathModal: document.getElementById("death-modal"),
     deathTitle: document.getElementById("death-title"),
@@ -2276,10 +2270,26 @@
       return;
     }
     ui.eventText.textContent = game.pendingEvent.text;
-    ui.eventChoices.innerHTML = game.pendingEvent.choices
-      .slice(0, 3)
-      .map((choice) => `<span class="compact-tag">${choice.label}</span>`)
-      .join(" ");
+    const classes = ["choice-accept", "choice-refuse", "choice-skip"];
+    ui.eventChoices.innerHTML = "";
+    game.pendingEvent.choices.slice(0, 3).forEach((choice, index) => {
+      const btn = document.createElement("button");
+      btn.className = `event-choice-btn ${classes[index] || "choice-skip"}`;
+      btn.textContent = choice.label;
+      btn.addEventListener("click", () => executeEventChoice(index));
+      ui.eventChoices.append(btn);
+    });
+    if (game.pendingEvent.choices.length < 3) {
+      const passBtn = document.createElement("button");
+      passBtn.className = "event-choice-btn choice-skip";
+      passBtn.textContent = "Passer";
+      passBtn.addEventListener("click", () => {
+        game.pendingEvent = null;
+        addLog("Tu décides de passer cet événement.", "warn");
+        render();
+      });
+      ui.eventChoices.append(passBtn);
+    }
   }
 
   function renderLog() {
@@ -2326,9 +2336,15 @@
   function renderActions() {
     const categories = Object.entries(getActionsByCategory());
     const crimeEntries = categories.filter(([name]) => name === "Crime & prison");
-    const activityEntries = categories.filter(([name]) => name !== "Crime & prison");
+    const relationEntries = categories.filter(
+      ([name]) => name === "Famille" || name === "Relations & amour"
+    );
+    const activityEntries = categories.filter(
+      ([name]) => name !== "Crime & prison" && name !== "Famille" && name !== "Relations & amour"
+    );
     renderActionCategories(ui.activityRoot, activityEntries);
     renderActionCategories(ui.crimeRoot, crimeEntries);
+    renderActionCategories(ui.relationRoot, relationEntries);
   }
 
   function renderCollections() {
@@ -2358,86 +2374,13 @@
     );
   }
 
-  function setBottomButton(button, config) {
-    button.style.display = config ? "block" : "none";
-    if (!config) {
-      button.onclick = null;
-      return;
-    }
-    button.textContent = config.label;
-    button.className = `btn ${config.tone}`;
-    button.disabled = !!config.disabled;
-    button.onclick = config.onClick;
-  }
-
-  function renderBottomActions() {
-    const [btn1, btn2, btn3] = ui.bottomButtons;
-    const c = game.character;
-
-    if (!c.alive) {
-      ui.bottomActions.style.display = "none";
-      return;
-    }
-    ui.bottomActions.style.display = "grid";
-    ui.bottomActions.classList.remove("single");
-    ui.bottomActions.classList.remove("stacked");
-
-    if (activeTab === "stats") {
-      ui.bottomActions.classList.add("single");
-      setBottomButton(btn1, { label: "Vieillir", tone: "btn-green", onClick: nextYear });
-      setBottomButton(btn2, null);
-      setBottomButton(btn3, null);
-      return;
-    }
-
-    if (activeTab === "home" && game.pendingEvent) {
-      ui.bottomActions.classList.add("stacked");
-      const tones = ["btn-green", "btn-gray", "btn-blue"];
-      for (let i = 0; i < 3; i += 1) {
-        const option = game.pendingEvent.choices[i];
-        if (option) {
-          setBottomButton(ui.bottomButtons[i], {
-            label: option.label,
-            tone: tones[i],
-            onClick: () => executeEventChoice(i)
-          });
-        } else if (i === 2) {
-          setBottomButton(ui.bottomButtons[i], {
-            label: "Passer",
-            tone: "btn-blue",
-            onClick: () => {
-              game.pendingEvent = null;
-              addLog("Tu décides de passer ton tour.", "warn");
-              render();
-            }
-          });
-        } else {
-          setBottomButton(ui.bottomButtons[i], null);
-        }
-      }
-      return;
-    }
-
-    setBottomButton(btn1, { label: "Vieillir", tone: "btn-green", onClick: nextYear });
-    setBottomButton(btn2, {
-      label: "Actions",
-      tone: "btn-orange",
-      onClick: () => {
-        activeTab = "activity";
-        render();
-      }
-    });
-    setBottomButton(btn3, { label: "Nouvelle vie", tone: "btn-gray", onClick: () => bootstrapGame() });
-  }
-
   function renderBadges() {
     const c = game.character;
     const badgeState = {
       home: !!game.pendingEvent,
-      activity: false,
-      activity2: false,
-      crime: c.criminal.inPrison || c.criminal.record > 0,
-      stats: c.conditions.illnesses.length + c.conditions.mental.length + c.conditions.injuries.length > 0
+      assets: c.money < 0 || getTotalDebt() > 0,
+      relationships: !c.family.spouse || aliveChildren().length === 0,
+      activities: c.criminal.inPrison || c.criminal.record > 0
     };
     Object.entries(ui.badges).forEach(([key, badge]) => {
       if (badgeState[key]) {
@@ -2495,7 +2438,6 @@
     renderActions();
     renderCollections();
     renderTabs();
-    renderBottomActions();
     renderBadges();
     renderDeathModal();
   }
@@ -2511,8 +2453,14 @@
   }
   ui.tabButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      activeTab = button.dataset.tab;
-      render();
+      if (button.dataset.action === "age") {
+        nextYear();
+        return;
+      }
+      if (button.dataset.tab) {
+        activeTab = button.dataset.tab;
+        render();
+      }
     });
   });
   ui.deathNewLifeBtn.addEventListener("click", () => bootstrapGame());
