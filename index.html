@@ -223,14 +223,13 @@
                   </div>
                   <div class="miniField">
                     <label for="imgFile">Fichier (local)</label>
-                    <form id="tineyeForm" action="https://tineye.com/search/upload" method="POST" enctype="multipart/form-data" target="_blank">
-                      <input id="imgFile" name="image" type="file" accept="image/*" />
-                    </form>
+                    <input id="imgFile" type="file" accept="image/*" />
                   </div>
                 </div>
                 <div class="aiRow">
                   <button id="btnImgReverse" class="primary" type="button">Ouvrir la recherche inversée</button>
-                  <button id="btnTinEyeUpload" class="ghost" type="button">TinEye (upload fichier)</button>
+                  <button id="btnOpenTinEye" class="ghost" type="button">TinEye (ouvrir la page)</button>
+                  <button id="btnMakeTempUrl" class="ghost" type="button">Créer une URL temporaire</button>
                   <div id="imgReverseLinks" class="kws"></div>
                 </div>
                 <div id="imgPreview" class="imgPreview" style="display:none;"></div>

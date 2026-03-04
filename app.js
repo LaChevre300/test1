@@ -78,10 +78,10 @@ const els = {
   imgUrl: document.querySelector("#imgUrl"),
   imgFile: document.querySelector("#imgFile"),
   btnImgReverse: document.querySelector("#btnImgReverse"),
-  btnTinEyeUpload: document.querySelector("#btnTinEyeUpload"),
+  btnOpenTinEye: document.querySelector("#btnOpenTinEye"),
+  btnMakeTempUrl: document.querySelector("#btnMakeTempUrl"),
   imgReverseLinks: document.querySelector("#imgReverseLinks"),
   imgPreview: document.querySelector("#imgPreview"),
-  tineyeForm: document.querySelector("#tineyeForm"),
 };
 
 /** @typedef {"wikipedia"|"openalex"|"crossref"} Source */
@@ -1948,15 +1948,35 @@ els.btnImgReverse?.addEventListener("click", () => {
   window.open(`https://tineye.com/search?url=${encodeURIComponent(u)}`, "_blank", "noopener");
 });
 
-els.btnTinEyeUpload?.addEventListener("click", () => {
+els.btnOpenTinEye?.addEventListener("click", () => {
+  // Some services block cross-site uploads. Opening the official page is the most reliable.
+  window.open("https://tineye.com/", "_blank", "noopener");
+  toast("TinEye ouvert: dépose l’image sur la page.");
+});
+
+async function uploadTemp0x0(file) {
+  const fd = new FormData();
+  fd.append("file", file, file.name || "image.png");
+  const res = await fetch("https://0x0.st", { method: "POST", body: fd });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  const text = (await res.text()).trim();
+  // 0x0 returns the URL as plain text
+  if (!/^https?:\/\/\S+$/i.test(text)) throw new Error("Réponse inattendue");
+  return text;
+}
+
+els.btnMakeTempUrl?.addEventListener("click", async () => {
   const f = els.imgFile?.files?.[0];
   if (!f) return toast("Choisis un fichier image d’abord.");
-  // Submit the form to TinEye in a new tab (no API)
+  if (!els.imgUrl) return;
   try {
-    els.tineyeForm?.requestSubmit?.();
+    toast("Création d’une URL temporaire…");
+    const url = await uploadTemp0x0(f);
+    els.imgUrl.value = url;
+    renderReverseLinks();
+    toast("URL créée. Tu peux lancer la recherche inversée.");
   } catch {
-    // fallback
-    els.tineyeForm?.submit?.();
+    toast("Impossible de créer une URL (site bloqué ou CORS). Utilise TinEye/Google en manuel.");
   }
 });
 
