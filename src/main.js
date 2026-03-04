@@ -261,7 +261,7 @@ function tick() {
   flashlight.position.copy(camera.position);
   flashlight.target.position.copy(camera.position).add(tmpVec3.set(0, 0, -1).applyQuaternion(camera.quaternion).multiplyScalar(2.0));
 
-  if (controls.state.enabled && player.alive) {
+  if (controls.state.active && player.alive) {
     // Movement
     const move = controls.getMoveVector(tmpVec3);
     const speed = controls.state.running ? 4.0 : 2.6;
@@ -281,7 +281,7 @@ function tick() {
     if (remain <= 0) player.alive = false;
   }
 
-  if (player.alive && controls.state.enabled) {
+  if (player.alive && controls.state.active) {
     updateDog(dt, tNow);
   }
 
@@ -312,17 +312,14 @@ ui.els.start.addEventListener("click", async () => {
     audio.setMasterVolume(0.55);
     resetGame();
     ui.showInGame();
+    controls.setActive(true);
 
     if ("pointerLockElement" in document && renderer.domElement.requestPointerLock) {
       controls.requestLock();
-      // Fallback: si le lock ne se fait pas, proposer de cliquer sur la zone de jeu.
+      // Fallback: si le lock ne se fait pas, on reste en jeu (WASD fonctionne) et on affiche une aide.
       setTimeout(() => {
         if (document.pointerLockElement !== renderer.domElement) {
-          ui.showMenu();
-          ui.showError(
-            "La capture de souris (Pointer Lock) a été refusée.\n\n" +
-              "Essaie:\n- clique d’abord dans la zone de jeu\n- puis reclique sur “Jouer”\n- ou vérifie les permissions du navigateur."
-          );
+          ui.setStatus("Clique sur la scène pour capturer la souris (Pointer Lock).");
         }
       }, 700);
     } else {
@@ -335,8 +332,16 @@ ui.els.start.addEventListener("click", async () => {
   }
 });
 
+// Permet de récupérer le Pointer Lock en cliquant directement sur la scène.
+renderer.domElement.addEventListener("click", () => {
+  if (!controls.state.active) return;
+  if (document.pointerLockElement === renderer.domElement) return;
+  if (renderer.domElement.requestPointerLock) controls.requestLock();
+});
+
 ui.els.reset.addEventListener("click", () => {
   resetGame();
+  controls.setActive(false);
   ui.showMenu();
 });
 

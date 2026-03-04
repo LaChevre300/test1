@@ -2,7 +2,8 @@ import * as THREE from "three";
 
 export function createPointerLockControls(camera, domElement) {
   const state = {
-    enabled: false,
+    active: false, // jeu démarré
+    locked: false, // pointer lock acquis
     yaw: 0,
     pitch: 0,
     moveF: 0,
@@ -20,7 +21,7 @@ export function createPointerLockControls(camera, domElement) {
   }
 
   function onMouseMove(e) {
-    if (!state.enabled) return;
+    if (!state.active || !state.locked) return;
     const mx = e.movementX || 0;
     const my = e.movementY || 0;
     const sensitivity = 0.0022;
@@ -30,7 +31,7 @@ export function createPointerLockControls(camera, domElement) {
   }
 
   function onKey(e, down) {
-    if (!state.enabled) return;
+    if (!state.active) return;
     switch (e.code) {
       case "KeyW":
       case "ArrowUp":
@@ -63,17 +64,22 @@ export function createPointerLockControls(camera, domElement) {
     document.addEventListener("keyup", (e) => onKey(e, false));
 
     document.addEventListener("pointerlockchange", () => {
-      state.enabled = document.pointerLockElement === domElement;
-      if (!state.enabled) {
-        state.moveF = 0;
-        state.moveR = 0;
-        state.running = false;
-      }
+      state.locked = document.pointerLockElement === domElement;
     });
   }
 
   function requestLock() {
     domElement.requestPointerLock();
+  }
+
+  function setActive(active) {
+    state.active = active;
+    if (!active) {
+      state.locked = false;
+      state.moveF = 0;
+      state.moveR = 0;
+      state.running = false;
+    }
   }
 
   function updateCamera() {
@@ -96,6 +102,6 @@ export function createPointerLockControls(camera, domElement) {
 
   connect();
 
-  return { state, requestLock, updateCamera, getMoveVector };
+  return { state, requestLock, setActive, updateCamera, getMoveVector };
 }
 
