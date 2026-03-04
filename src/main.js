@@ -1,4 +1,3 @@
-import "./style.css";
 import * as THREE from "three";
 import { createPointerLockControls } from "./controls.js";
 import { createLabWorld } from "./world.js";
