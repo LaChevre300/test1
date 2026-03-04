@@ -1,4 +1,4 @@
-# SH-Search — Recherche & aide à l’analyse (sciences humaines)
+# MuguetView — Recherche & aide à l’analyse (sciences humaines)
 
 Application web **sans installation** pour les étudiant·es en sciences humaines:
 
@@ -9,7 +9,7 @@ Application web **sans installation** pour les étudiant·es en sciences humaine
 
 ## Ouvrir (zéro installation)
 
-Le projet est **100% statique** (`index.html` + `styles.css` + `app.js`).
+Le projet est **100% statique** (`index.html` + `styles.css` + `app.js` + `assets/`).
 
 ### Option A — Lien direct (si dépôt public)
 
