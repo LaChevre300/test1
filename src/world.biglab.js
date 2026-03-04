@@ -143,10 +143,17 @@ export function createLabWorld() {
   const openMinZ = openCenter.z - openD / 2;
   const openMaxZ = openCenter.z + openD / 2;
 
-  // Encadrement open-space (murs) avec ouvertures vers couloirs
-  // Nord/Sud
+  // Encadrement open-space (murs) AVEC vraie porte vers le couloir sud
+  // Nord (mur continu)
   addWallBox(openW - 10, 0, 0, openMinZ);
-  addWallBox(openW - 10, 0, 0, openMaxZ);
+
+  // Sud (mur en 2 segments, laisse une ouverture centrée)
+  const doorW = corridorW + 2.0; // un peu plus large que le couloir
+  const segLen = (openW - 10 - doorW) / 2;
+  // Segment gauche
+  addWallBox(segLen, 0, -(doorW / 2 + segLen / 2), openMaxZ);
+  // Segment droit
+  addWallBox(segLen, 0, doorW / 2 + segLen / 2, openMaxZ);
   // Est/Ouest (rot)
   addWallBoxRot(openD - 14, 0, openMinX, openCenter.z, Math.PI / 2);
   addWallBoxRot(openD - 14, 0, openMaxX, openCenter.z, Math.PI / 2);
@@ -157,6 +164,9 @@ export function createLabWorld() {
   const corridorZ1 = entryZ;
   addWallBoxRot(corridorZ1 - corridorZ0, 0, -corridorW / 2, (corridorZ0 + corridorZ1) / 2, Math.PI / 2);
   addWallBoxRot(corridorZ1 - corridorZ0, 0, corridorW / 2, (corridorZ0 + corridorZ1) / 2, Math.PI / 2);
+
+  // Petit “sas” d’entrée: 2 murs courts pour cadrer l’entrée du couloir
+  addWallBox(10, 0, 0, entryZ);
 
   // Salle serveurs (NW)
   const server = {
@@ -430,7 +440,8 @@ export function createLabWorld() {
   }
 
   // Player/dog spawns
-  const playerStart = new THREE.Vector3(0, 1.7, entryZ - 2);
+  // Spawn directement dans le labo (pas dans une zone vide), proche des premières rangées.
+  const playerStart = new THREE.Vector3(0, 1.7, openMaxZ - 6);
   const dogStart = new THREE.Vector3(server.minX + 10, 0.55, server.minZ + 10);
 
   // Ajoute tout au groupe
