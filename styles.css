@@ -52,6 +52,42 @@ a:hover {
   border-bottom: 1px solid rgba(29, 107, 255, 0.12);
 }
 
+.bubbleBar {
+  margin-top: 12px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.bubble {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 12px;
+  border-radius: 999px;
+  border: 1px solid rgba(29, 107, 255, 0.18);
+  background: linear-gradient(135deg, rgba(29, 107, 255, 0.06), rgba(0, 179, 255, 0.06));
+  box-shadow: 0 16px 60px rgba(8, 26, 64, 0.10);
+  font-weight: 820;
+  font-size: 12.5px;
+}
+.bubbleIcon {
+  width: 18px;
+  height: 18px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 999px;
+  background: rgba(29, 107, 255, 0.10);
+  border: 1px solid rgba(29, 107, 255, 0.14);
+  color: rgba(7, 20, 45, 0.84);
+  font-size: 12px;
+}
+.bubble.active {
+  border-color: rgba(29, 107, 255, 0.32);
+  background: linear-gradient(135deg, rgba(29, 107, 255, 0.14), rgba(0, 179, 255, 0.14));
+}
+
 .brand {
   display: flex;
   gap: 12px;
@@ -340,6 +376,60 @@ button:disabled {
 .panelTools {
   display: flex;
   gap: 8px;
+}
+
+.view[hidden] {
+  display: none !important;
+}
+
+.page {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 16px 18px 24px;
+}
+
+.notesTools {
+  padding: 10px 14px;
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  border-bottom: 1px solid rgba(29, 107, 255, 0.10);
+  background: rgba(29, 107, 255, 0.03);
+}
+
+.notesBody {
+  padding: 12px 14px 14px;
+}
+
+.notesArea {
+  min-height: 52vh;
+  resize: vertical;
+  line-height: 1.55;
+  font-size: 13px;
+  border-radius: 14px;
+  border: 1px solid rgba(29, 107, 255, 0.16);
+  background: rgba(255, 255, 255, 0.88);
+}
+
+.historyList {
+  margin-top: 10px;
+  display: grid;
+  gap: 10px;
+}
+
+.historyItem {
+  padding: 12px 12px 10px;
+  border-radius: 14px;
+  border: 1px solid rgba(29, 107, 255, 0.12);
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0.84), rgba(255, 255, 255, 0.72));
+  cursor: pointer;
+  transition: transform 120ms ease, box-shadow 140ms ease, background 140ms ease, border-color 140ms ease;
+}
+.historyItem:hover {
+  border-color: rgba(29, 107, 255, 0.22);
+  background: rgba(255, 255, 255, 0.86);
+  transform: translateY(-1px);
 }
 
 .detail {

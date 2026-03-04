@@ -48,88 +48,189 @@
           <button id="btnClear" class="ghost" title="Effacer">Effacer</button>
         </div>
       </div>
+
+      <nav class="bubbleBar" aria-label="Outils">
+        <button class="bubble active" data-view="search" type="button" aria-current="page">
+          <span class="bubbleIcon" aria-hidden="true">⌕</span>
+          <span>Recherche</span>
+        </button>
+        <button class="bubble" data-view="notes" type="button">
+          <span class="bubbleIcon" aria-hidden="true">✎</span>
+          <span>Notes</span>
+        </button>
+        <button class="bubble" data-view="connexes" type="button">
+          <span class="bubbleIcon" aria-hidden="true">⟲</span>
+          <span>Connexes</span>
+        </button>
+        <button class="bubble" data-view="history" type="button">
+          <span class="bubbleIcon" aria-hidden="true">⏱</span>
+          <span>Historique</span>
+        </button>
+      </nav>
     </header>
 
-    <main class="layout">
-      <section class="left">
-        <div class="panel">
-          <div class="panelHead">
-            <div class="panelTitle">Résultats</div>
-            <div id="status" class="status">Prêt.</div>
-          </div>
+    <main>
+      <section id="view-search" class="view">
+        <div class="layout">
+          <section class="left">
+            <div class="panel">
+              <div class="panelHead">
+                <div class="panelTitle">Résultats</div>
+                <div id="status" class="status">Prêt.</div>
+              </div>
 
-          <div class="filters">
-            <div class="miniField">
-              <label for="lang">Langue</label>
-              <select id="lang">
-                <option value="fr" selected>Français</option>
-                <option value="en">Anglais</option>
-              </select>
-            </div>
-            <div class="miniField">
-              <label for="perPage">Par source</label>
-              <select id="perPage">
-                <option value="5">5</option>
-                <option value="10" selected>10</option>
-                <option value="20">20</option>
-              </select>
-            </div>
-            <div class="miniField">
-              <label for="yearMin">Année min</label>
-              <input id="yearMin" inputmode="numeric" placeholder="ex: 2000" />
-            </div>
-            <div class="miniField">
-              <label for="yearMax">Année max</label>
-              <input id="yearMax" inputmode="numeric" placeholder="ex: 2026" />
-            </div>
-          </div>
+              <div class="filters">
+                <div class="miniField">
+                  <label for="lang">Langue</label>
+                  <select id="lang">
+                    <option value="fr" selected>Français</option>
+                    <option value="en">Anglais</option>
+                  </select>
+                </div>
+                <div class="miniField">
+                  <label for="perPage">Par source</label>
+                  <select id="perPage">
+                    <option value="5">5</option>
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                  </select>
+                </div>
+                <div class="miniField">
+                  <label for="yearMin">Année min</label>
+                  <input id="yearMin" inputmode="numeric" placeholder="ex: 2000" />
+                </div>
+                <div class="miniField">
+                  <label for="yearMax">Année max</label>
+                  <input id="yearMax" inputmode="numeric" placeholder="ex: 2026" />
+                </div>
+              </div>
 
-          <div class="tabs" role="tablist" aria-label="Sources">
-            <button class="tab active" data-tab="all" role="tab" aria-selected="true">Tout</button>
-            <button class="tab" data-tab="wikipedia" role="tab">Wikipedia</button>
-            <button class="tab" data-tab="openalex" role="tab">OpenAlex</button>
-            <button class="tab" data-tab="crossref" role="tab">Crossref</button>
-          </div>
+              <div class="tabs" role="tablist" aria-label="Sources">
+                <button class="tab active" data-tab="all" role="tab" aria-selected="true">Tout</button>
+                <button class="tab" data-tab="wikipedia" role="tab">Wikipedia</button>
+                <button class="tab" data-tab="openalex" role="tab">OpenAlex</button>
+                <button class="tab" data-tab="crossref" role="tab">Crossref</button>
+              </div>
 
-          <div id="suggestBox" class="suggestBox" style="display:none;">
-            <div class="suggestTitle">Affiner la recherche</div>
-            <div class="suggestText">Clique un mot-clé pour relancer une recherche plus précise.</div>
-            <div id="suggestions" class="kws" aria-label="Mots-clés suggérés"></div>
-          </div>
+              <div id="suggestBox" class="suggestBox" style="display:none;">
+                <div class="suggestTitle">Affiner la recherche</div>
+                <div class="suggestText">Clique un mot-clé pour relancer une recherche plus précise.</div>
+                <div id="suggestions" class="kws" aria-label="Mots-clés suggérés"></div>
+              </div>
 
-          <div id="results" class="results" aria-live="polite"></div>
+              <div id="results" class="results" aria-live="polite"></div>
+            </div>
+          </section>
+
+          <section class="right">
+            <div class="panel">
+              <div class="panelHead">
+                <div class="panelTitle">Fiche</div>
+                <div class="panelTools">
+                  <button id="btnCopyApa" class="ghost" disabled>Copier APA 7</button>
+                  <button id="btnCopyNotes" class="ghost" disabled>Copier notes</button>
+                </div>
+              </div>
+
+              <div id="detail" class="detail empty">
+                <div class="emptyState">
+                  <div class="emptyTitle">Sélectionne un résultat</div>
+                  <div class="emptyText">
+                    Tu auras un résumé, des idées (problématique/conséquences/solutions/concepts-carrefour) et la citation APA 7.
+                  </div>
+                  <div class="hint">
+                    Astuce: essaye une requête courte puis affine avec des mots-clés.
+                  </div>
+                </div>
+              </div>
+
+              <footer class="foot">
+                <div class="footTitle">Important</div>
+                <div class="footText">
+                  Cette app n’utilise pas de clé API. Elle interroge des sources ouvertes (Wikipedia, OpenAlex, Crossref).
+                  Les résumés/“idées” sont générés automatiquement à partir des textes disponibles: vérifie toujours et cite tes sources.
+                </div>
+              </footer>
+            </div>
+          </section>
         </div>
       </section>
 
-      <section class="right">
-        <div class="panel">
-          <div class="panelHead">
-            <div class="panelTitle">Fiche</div>
-            <div class="panelTools">
-              <button id="btnCopyApa" class="ghost" disabled>Copier APA 7</button>
-              <button id="btnCopyNotes" class="ghost" disabled>Copier notes</button>
-            </div>
-          </div>
-
-          <div id="detail" class="detail empty">
-            <div class="emptyState">
-              <div class="emptyTitle">Sélectionne un résultat</div>
-              <div class="emptyText">
-                Tu auras un résumé, des idées (problématique/conséquences/solutions/concepts-carrefour) et la citation APA 7.
-              </div>
-              <div class="hint">
-                Astuce: essaye une requête courte puis affine avec des mots-clés.
+      <section id="view-notes" class="view" hidden>
+        <div class="page">
+          <div class="panel">
+            <div class="panelHead">
+              <div class="panelTitle">Notes</div>
+              <div class="panelTools">
+                <button id="btnNotesCopy" class="ghost">Copier</button>
+                <button id="btnNotesClear" class="ghost">Effacer</button>
               </div>
             </div>
-          </div>
-
-          <footer class="foot">
-            <div class="footTitle">Important</div>
-            <div class="footText">
-              Cette app n’utilise pas de clé API. Elle interroge des sources ouvertes (Wikipedia, OpenAlex, Crossref).
-              Les résumés/“idées” sont générés automatiquement à partir des textes disponibles: vérifie toujours et cite tes sources.
+            <div class="notesTools">
+              <button id="btnInsertSummary" type="button" class="ghost">Ajouter résumé</button>
+              <button id="btnInsertApa" type="button" class="ghost">Ajouter APA 7</button>
+              <button id="btnInsertAutoNotes" type="button" class="ghost">Ajouter notes auto</button>
+              <button id="btnGoSearch" type="button" class="primary">Aller aux résultats</button>
             </div>
-          </footer>
+            <div class="notesBody">
+              <textarea id="notesTextArea" class="notesArea" placeholder="Écris ici… (autosauvegarde)"></textarea>
+            </div>
+            <div class="foot" style="border-top:none;">
+              <div class="footTitle">Conseil</div>
+              <div class="footText">Clique un résultat puis utilise “Ajouter résumé/APA/notes auto” pour alimenter tes notes sans perdre ta recherche.</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-connexes" class="view" hidden>
+        <div class="page">
+          <div class="panel">
+            <div class="panelHead">
+              <div class="panelTitle">Recherches connexes</div>
+              <div class="panelTools">
+                <button id="btnConnexesToSearch" class="primary">Voir les résultats</button>
+              </div>
+            </div>
+            <div class="detail">
+              <div class="section">
+                <div class="sectionTitle">À partir de ta recherche</div>
+                <div class="sectionBody">Propositions pour affiner sans repartir de zéro.</div>
+                <div id="connexesFromQuery" class="kws"></div>
+              </div>
+              <div class="section">
+                <div class="sectionTitle">À partir du résultat sélectionné</div>
+                <div class="sectionBody">Mots-clés extraits du titre/texte du document courant.</div>
+                <div id="connexesFromSelected" class="kws"></div>
+              </div>
+              <div class="section">
+                <div class="sectionTitle">Recherches récentes</div>
+                <div class="sectionBody">Tu peux relancer une recherche récente en un clic.</div>
+                <div id="connexesRecent" class="kws"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section id="view-history" class="view" hidden>
+        <div class="page">
+          <div class="panel">
+            <div class="panelHead">
+              <div class="panelTitle">Historique (session)</div>
+              <div class="panelTools">
+                <button id="btnHistoryClear" class="ghost">Vider</button>
+                <button id="btnHistoryToSearch" class="primary">Voir les résultats</button>
+              </div>
+            </div>
+            <div class="detail">
+              <div class="section">
+                <div class="sectionTitle">Documents consultés</div>
+                <div class="sectionBody">Clique pour revenir sur une fiche (si elle est encore dans les résultats).</div>
+                <div id="historyList" class="historyList"></div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
     </main>

@@ -17,6 +17,28 @@ const els = {
   btnCopyApa: document.querySelector("#btnCopyApa"),
   btnCopyNotes: document.querySelector("#btnCopyNotes"),
   tabs: Array.from(document.querySelectorAll(".tab")),
+  bubbles: Array.from(document.querySelectorAll(".bubble")),
+  viewSearch: document.querySelector("#view-search"),
+  viewNotes: document.querySelector("#view-notes"),
+  viewConnexes: document.querySelector("#view-connexes"),
+  viewHistory: document.querySelector("#view-history"),
+
+  notesArea: document.querySelector("#notesTextArea"),
+  btnNotesCopy: document.querySelector("#btnNotesCopy"),
+  btnNotesClear: document.querySelector("#btnNotesClear"),
+  btnInsertSummary: document.querySelector("#btnInsertSummary"),
+  btnInsertApa: document.querySelector("#btnInsertApa"),
+  btnInsertAutoNotes: document.querySelector("#btnInsertAutoNotes"),
+  btnGoSearch: document.querySelector("#btnGoSearch"),
+
+  btnConnexesToSearch: document.querySelector("#btnConnexesToSearch"),
+  connexesFromQuery: document.querySelector("#connexesFromQuery"),
+  connexesFromSelected: document.querySelector("#connexesFromSelected"),
+  connexesRecent: document.querySelector("#connexesRecent"),
+
+  btnHistoryClear: document.querySelector("#btnHistoryClear"),
+  btnHistoryToSearch: document.querySelector("#btnHistoryToSearch"),
+  historyList: document.querySelector("#historyList"),
 };
 
 /** @typedef {"wikipedia"|"openalex"|"crossref"} Source */
@@ -27,10 +49,13 @@ const state = {
   lastQuery: "",
   results: /** @type {Array<any>} */ ([]),
   controllers: /** @type {AbortController[]} */ ([]),
+  view: /** @type {"search"|"notes"|"connexes"|"history"} */ ("search"),
+  history: /** @type {Array<{key:string,title:string,source:Source,url?:string,year?:string,when:number}>} */ ([]),
 };
 
 const CACHE_KEY = "shsearch.cache.v1";
 const cache = loadCache();
+const NOTES_KEY = "mugueteye.notes.v1";
 
 function loadCache() {
   try {
@@ -68,6 +93,44 @@ function toast(msg) {
   t.classList.add("show");
   window.clearTimeout(toast._tid);
   toast._tid = window.setTimeout(() => t.classList.remove("show"), 1200);
+}
+
+function setView(next) {
+  const v = next || "search";
+  state.view = v;
+  if (els.viewSearch) els.viewSearch.hidden = v !== "search";
+  if (els.viewNotes) els.viewNotes.hidden = v !== "notes";
+  if (els.viewConnexes) els.viewConnexes.hidden = v !== "connexes";
+  if (els.viewHistory) els.viewHistory.hidden = v !== "history";
+
+  for (const b of els.bubbles || []) {
+    const is = b.dataset.view === v;
+    b.classList.toggle("active", is);
+    if (is) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  }
+
+  const hash = `#${v}`;
+  if (location.hash !== hash) history.replaceState(null, "", hash);
+
+  if (v === "connexes") renderConnexes();
+  if (v === "history") renderHistory();
+}
+
+function loadNotes() {
+  try {
+    return localStorage.getItem(NOTES_KEY) || "";
+  } catch {
+    return "";
+  }
+}
+
+function saveNotes(text) {
+  try {
+    localStorage.setItem(NOTES_KEY, text);
+  } catch {
+    // ignore
+  }
 }
 
 function getSettings() {
@@ -947,6 +1010,16 @@ function buildApa(item, settings) {
   });
 }
 
+function appendToNotes(block) {
+  if (!els.notesArea) return;
+  const cur = String(els.notesArea.value || "");
+  const sep = cur.trim() ? "\n\n---\n\n" : "";
+  const next = cur + sep + block;
+  els.notesArea.value = next;
+  saveNotes(next);
+  toast("Ajouté aux notes.");
+}
+
 // ---------- Interaction ----------
 
 function setActiveTab(tab) {
@@ -970,6 +1043,22 @@ async function selectResult(source, id) {
   renderResults();
   renderDetail(state.selected, settings);
 
+  // Add to session history
+  try {
+    const key = `${state.selected.source}:${String(state.selected.id)}`;
+    const entry = {
+      key,
+      title: state.selected.title || "Sans titre",
+      source: state.selected.source,
+      url: state.selected.url || "",
+      year: state.selected.year || "",
+      when: Date.now(),
+    };
+    state.history = [entry, ...state.history.filter((x) => x.key !== key)].slice(0, 30);
+  } catch {
+    // ignore
+  }
+
   // If it's Wikipedia, fetch the full extract for better summaries/notes.
   if (state.selected?.source === "wikipedia" && !state.selected.extract) {
     try {
@@ -985,6 +1074,77 @@ async function selectResult(source, id) {
       // ignore enrichment failure
     }
   }
+}
+
+function renderHistory() {
+  if (!els.historyList) return;
+  if (!state.history.length) {
+    els.historyList.innerHTML = `<div class="result"><div class="rTitle">Aucun élément.</div><div class="rMeta">L’historique se remplit quand tu consultes des fiches.</div></div>`;
+    return;
+  }
+  els.historyList.innerHTML = state.history
+    .map((h) => {
+      const meta = [h.source, h.year].filter(Boolean).join(" · ");
+      return `<div class="historyItem" tabindex="0" data-key="${escapeHtml(h.key)}">
+        <div class="badgeRow">${badge(h.source)}</div>
+        <div class="rTitle">${escapeHtml(h.title)}</div>
+        <div class="rMeta">${escapeHtml(meta)}${h.url ? ` · <a href="${escapeHtml(h.url)}" target="_blank" rel="noopener">ouvrir</a>` : ""}</div>
+      </div>`;
+    })
+    .join("");
+}
+
+function renderConnexes() {
+  const settings = getSettings();
+  const query = normalizeSpace(els.q?.value || "");
+
+  const makeButtons = (arr, builder) =>
+    (arr || [])
+      .filter(Boolean)
+      .slice(0, 16)
+      .map((x) => `<button class="kw" type="button" data-q="${escapeHtml(builder(x))}">${escapeHtml(x)}</button>`)
+      .join("");
+
+  if (els.connexesFromQuery) {
+    const kws = computeSuggestedKeywords(state.results, settings.lang, 14);
+    const base = query || (settings.lang === "en" ? "topic" : "sujet");
+    const items = kws.filter((k) => !tokenizeForSearch(base, settings.lang).includes(k));
+    els.connexesFromQuery.innerHTML = makeButtons(items, (k) => normalizeSpace(`${base} ${k}`));
+  }
+
+  if (els.connexesFromSelected) {
+    if (!state.selected) {
+      els.connexesFromSelected.innerHTML = `<span class="kw" style="border-style:dashed;">Sélectionne d’abord un résultat</span>`;
+    } else {
+      const text = `${state.selected.title || ""}\n${state.selected.abstract || state.selected.extract || state.selected.snippet || ""}`;
+      const kws = extractKeywords(text, settings.lang, 12);
+      const base = query || normTitleKey(state.selected.title || "");
+      const items = kws.filter((k) => !tokenizeForSearch(base, settings.lang).includes(k));
+      els.connexesFromSelected.innerHTML = makeButtons(items, (k) => normalizeSpace(`${base} ${k}`));
+    }
+  }
+
+  if (els.connexesRecent) {
+    const recent = (cache.recent || []).slice(0, 12);
+    els.connexesRecent.innerHTML = recent
+      .map((q) => `<button class="kw" type="button" data-q="${escapeHtml(q)}">${escapeHtml(q)}</button>`)
+      .join("");
+  }
+}
+
+function wireConnexesClicks() {
+  const handler = (e) => {
+    const b = e.target.closest("[data-q]");
+    if (!b) return;
+    const q = String(b.dataset.q || "").trim();
+    if (!q) return;
+    els.q.value = q;
+    runSearch();
+    toast("Recherche relancée.");
+  };
+  els.connexesFromQuery?.addEventListener("click", handler);
+  els.connexesFromSelected?.addEventListener("click", handler);
+  els.connexesRecent?.addEventListener("click", handler);
 }
 
 els.results.addEventListener("click", (e) => {
@@ -1004,6 +1164,41 @@ for (const b of els.tabs) {
   b.addEventListener("click", () => setActiveTab(b.dataset.tab));
 }
 
+for (const b of els.bubbles || []) {
+  b.addEventListener("click", () => setView(b.dataset.view));
+}
+
+els.btnGoSearch?.addEventListener("click", () => setView("search"));
+els.btnConnexesToSearch?.addEventListener("click", () => setView("search"));
+els.btnHistoryToSearch?.addEventListener("click", () => setView("search"));
+
+els.btnHistoryClear?.addEventListener("click", () => {
+  state.history = [];
+  renderHistory();
+  toast("Historique vidé.");
+});
+
+els.historyList?.addEventListener("click", (e) => {
+  const it = e.target.closest("[data-key]");
+  if (!it) return;
+  const [source, ...rest] = String(it.dataset.key).split(":");
+  const id = rest.join(":");
+  if (!source || !id) return;
+  selectResult(source, id);
+  setView("search");
+});
+
+els.historyList?.addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const it = e.target.closest("[data-key]");
+  if (!it) return;
+  const [source, ...rest] = String(it.dataset.key).split(":");
+  const id = rest.join(":");
+  if (!source || !id) return;
+  selectResult(source, id);
+  setView("search");
+});
+
 els.btnClear.addEventListener("click", () => {
   els.q.value = "";
   state.results = [];
@@ -1013,6 +1208,59 @@ els.btnClear.addEventListener("click", () => {
   renderDetail(null, getSettings());
   renderSuggestions("", [], getSettings());
   els.q.focus();
+});
+
+// Notes tool
+if (els.notesArea) {
+  els.notesArea.value = loadNotes();
+  let noteTid = 0;
+  els.notesArea.addEventListener("input", () => {
+    window.clearTimeout(noteTid);
+    noteTid = window.setTimeout(() => saveNotes(els.notesArea.value), 250);
+  });
+}
+
+els.btnNotesCopy?.addEventListener("click", async () => {
+  try {
+    await navigator.clipboard.writeText(String(els.notesArea?.value || ""));
+    toast("Notes copiées.");
+  } catch {
+    toast("Copie impossible (navigateur).");
+  }
+});
+els.btnNotesClear?.addEventListener("click", () => {
+  if (!els.notesArea) return;
+  els.notesArea.value = "";
+  saveNotes("");
+  toast("Notes effacées.");
+});
+
+els.btnInsertApa?.addEventListener("click", () => {
+  if (!state.selected) return toast("Sélectionne un résultat d’abord.");
+  const settings = getSettings();
+  const apa = buildApa(state.selected, settings);
+  appendToNotes(`APA 7:\n${apa}`);
+});
+
+els.btnInsertSummary?.addEventListener("click", () => {
+  if (!state.selected) return toast("Sélectionne un résultat d’abord.");
+  const settings = getSettings();
+  const rawText = normalizeSpace(state.selected.abstract || state.selected.extract || state.selected.snippet || "");
+  const summary = rawText ? summarizeExtractive(rawText, settings.lang, 3) : "(vide)";
+  appendToNotes(`Résumé auto:\n${summary}`);
+});
+
+els.btnInsertAutoNotes?.addEventListener("click", () => {
+  if (!state.selected) return toast("Sélectionne un résultat d’abord.");
+  const settings = getSettings();
+  const title = state.selected.title || "Sans titre";
+  const rawText = normalizeSpace(state.selected.abstract || state.selected.extract || state.selected.snippet || "");
+  const summary = rawText ? summarizeExtractive(rawText, settings.lang, 3) : "";
+  const keywords = extractKeywords(`${title}\n${rawText}`, settings.lang, 10);
+  const ideas = generateIdeas({ title, text: rawText, keywords, lang: settings.lang });
+  const apa = buildApa(state.selected, settings);
+  const notes = buildNotes({ item: state.selected, summary, ideas, keywords, apa, lang: settings.lang });
+  appendToNotes(notes);
 });
 
 els.q.addEventListener("keydown", (e) => {
@@ -1146,4 +1394,13 @@ renderResults();
 renderDetail(null, getSettings());
 setActiveTab("all");
 setStatus("Prêt.");
+wireConnexesClicks();
+
+// Restore view from hash
+const initialView = (location.hash || "").replace("#", "");
+if (initialView === "notes" || initialView === "connexes" || initialView === "history" || initialView === "search") {
+  setView(initialView);
+} else {
+  setView("search");
+}
 
