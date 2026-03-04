@@ -555,7 +555,15 @@
   };
 
   const ui = {
+    startScreen: document.getElementById("start-screen"),
+    gameShell: document.getElementById("game-shell"),
+    startNewBtn: document.getElementById("start-new-btn"),
+    startSavesList: document.getElementById("start-saves-list"),
     newLifeBtn: document.getElementById("new-life-btn"),
+    saveCurrentBtn: document.getElementById("save-current-btn"),
+    saveCurrentAsBtn: document.getElementById("save-current-as-btn"),
+    goHomeBtn: document.getElementById("go-home-btn"),
+    settingsSavesList: document.getElementById("settings-saves-list"),
     topSettingsBtn: document.getElementById("top-settings-btn"),
     profileTrigger: document.getElementById("profile-trigger"),
     profileAvatar: document.getElementById("profile-avatar"),
@@ -623,6 +631,9 @@
   let isCharacterModalOpen = false;
   let isAvatarEditorOpen = false;
   let actionResultState = null;
+  let currentSaveId = null;
+
+  const SAVE_STORAGE_KEY = "chroniquesDynastieSavesV1";
 
   function rnd(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -703,6 +714,205 @@
       }
     }
     return weighted[weighted.length - 1].value;
+  }
+
+  function loadSaveStore() {
+    try {
+      const raw = localStorage.getItem(SAVE_STORAGE_KEY);
+      if (!raw) return [];
+      const parsed = JSON.parse(raw);
+      if (!Array.isArray(parsed)) return [];
+      return parsed;
+    } catch {
+      return [];
+    }
+  }
+
+  function persistSaveStore(saves) {
+    localStorage.setItem(SAVE_STORAGE_KEY, JSON.stringify(saves));
+  }
+
+  function serializeCurrentGame() {
+    if (!game || !game.character) return null;
+    const payload = {
+      dynastyName: game.dynastyName,
+      log: game.log,
+      pendingEvent: null,
+      character: game.character,
+      achievements: game.achievements,
+      scheduledConsequences: (game.scheduledConsequences || []).map((entry) => ({
+        triggerAge: entry.triggerAge,
+        text: entry.text,
+        tone: entry.tone,
+        rarity: entry.rarity
+      }))
+    };
+    return JSON.parse(JSON.stringify(payload));
+  }
+
+  function summarizeSave(data, saveName, saveId, updatedAt) {
+    const c = data?.character || {};
+    return {
+      id: saveId,
+      name: saveName || c.fullName || "Sauvegarde",
+      updatedAt,
+      characterName: c.fullName || "Personnage inconnu",
+      age: c.age ?? 0,
+      generation: c.generation ?? 1,
+      money: Math.round(c.money ?? 0)
+    };
+  }
+
+  function upsertSaveEntry({ id, name, data }) {
+    const saves = loadSaveStore();
+    const updatedAt = new Date().toISOString();
+    const entry = {
+      ...summarizeSave(data, name, id, updatedAt),
+      data
+    };
+    const idx = saves.findIndex((item) => item.id === id);
+    if (idx >= 0) {
+      saves[idx] = entry;
+    } else {
+      saves.unshift(entry);
+    }
+    persistSaveStore(saves);
+  }
+
+  function showStartScreen() {
+    ui.startScreen.classList.remove("is-hidden");
+    ui.gameShell.classList.add("is-hidden");
+    activeTab = "home";
+    isCharacterModalOpen = false;
+    isAvatarEditorOpen = false;
+    actionResultState = null;
+    renderSaveLists();
+  }
+
+  function showGameShell() {
+    ui.startScreen.classList.add("is-hidden");
+    ui.gameShell.classList.remove("is-hidden");
+  }
+
+  function formatSaveDate(isoDate) {
+    try {
+      const d = new Date(isoDate);
+      return d.toLocaleString("fr-FR");
+    } catch {
+      return "date inconnue";
+    }
+  }
+
+  function saveCardHtml(save) {
+    return `
+      <p class="save-title">${save.name}</p>
+      <p class="save-meta">${save.characterName} · ${save.age} ans · Génération ${save.generation} · ${save.money} pièces</p>
+      <p class="save-meta">Dernière maj: ${formatSaveDate(save.updatedAt)}</p>
+      <div class="save-controls">
+        <button class="btn btn-green" data-save-load="${save.id}">Charger</button>
+        <button class="btn btn-orange" data-save-delete="${save.id}">Supprimer</button>
+      </div>
+    `;
+  }
+
+  function restoreGameFromSave(save) {
+    const payload = save?.data;
+    if (!payload?.character) return false;
+    game = payload;
+    game.pendingEvent = null;
+    game.scheduledConsequences = (payload.scheduledConsequences || []).map((entry) => ({
+      ...entry,
+      run: null
+    }));
+    game.character.avatar = normalizedAvatarConfig(game.character.sex, game.character.avatar);
+    currentSaveId = save.id;
+    activeTab = "home";
+    isCharacterModalOpen = false;
+    isAvatarEditorOpen = false;
+    actionResultState = null;
+    showGameShell();
+    render();
+    return true;
+  }
+
+  function saveCurrentProgress(asNew = false) {
+    if (!game?.character) return;
+    const data = serializeCurrentGame();
+    if (!data) return;
+    const saves = loadSaveStore();
+    let saveId = currentSaveId;
+    if (asNew || !saveId) {
+      saveId = crypto.randomUUID();
+    }
+    const suggested = `${game.character.fullName} (${game.character.age} ans)`;
+    const existingName = saves.find((entry) => entry.id === saveId)?.name;
+    const chosenName = asNew
+      ? (window.prompt("Nom de la sauvegarde :", suggested) || "").trim()
+      : "";
+    const saveName = chosenName || existingName || suggested;
+    upsertSaveEntry({ id: saveId, name: saveName, data });
+    currentSaveId = saveId;
+    addLog(`Progression sauvegardée (${saveName}).`, "good");
+    renderSaveLists();
+  }
+
+  function autoSaveIfLinked() {
+    if (!currentSaveId || !game?.character) return;
+    const saves = loadSaveStore();
+    const existing = saves.find((entry) => entry.id === currentSaveId);
+    const name = existing?.name || `${game.character.fullName} (${game.character.age} ans)`;
+    upsertSaveEntry({ id: currentSaveId, name, data: serializeCurrentGame() });
+  }
+
+  function deleteSaveById(saveId) {
+    const saves = loadSaveStore();
+    const target = saves.find((save) => save.id === saveId);
+    if (!target) return;
+    if (!window.confirm(`Supprimer la sauvegarde "${target.name}" ?`)) return;
+    const next = saves.filter((save) => save.id !== saveId);
+    persistSaveStore(next);
+    if (currentSaveId === saveId) {
+      currentSaveId = null;
+    }
+    renderSaveLists();
+  }
+
+  function handleSaveListClick(event) {
+    const loadId = event.target.getAttribute("data-save-load");
+    const deleteId = event.target.getAttribute("data-save-delete");
+    const saves = loadSaveStore();
+    if (loadId) {
+      const entry = saves.find((save) => save.id === loadId);
+      if (entry) restoreGameFromSave(entry);
+      return;
+    }
+    if (deleteId) {
+      deleteSaveById(deleteId);
+    }
+  }
+
+  function renderSaveListInto(container) {
+    if (!container) return;
+    const saves = loadSaveStore();
+    container.innerHTML = "";
+    if (!saves.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Aucune sauvegarde pour le moment.";
+      container.append(empty);
+      return;
+    }
+    saves.forEach((save) => {
+      const div = document.createElement("div");
+      div.className = "save-item";
+      div.innerHTML = saveCardHtml(save);
+      container.append(div);
+    });
+  }
+
+  function renderSaveLists() {
+    renderSaveListInto(ui.startSavesList);
+    renderSaveListInto(ui.settingsSavesList);
   }
 
   function sexName() {
@@ -838,7 +1048,11 @@
     };
   }
 
-  function bootstrapGame(inherited = null) {
+  function bootstrapGame(inherited = null, options = {}) {
+    const preserveSaveId = !!options.preserveSaveId;
+    if (!preserveSaveId) {
+      currentSaveId = null;
+    }
     const generation = inherited?.generation || 1;
     game = {
       dynastyName: inherited?.surname || null,
@@ -859,6 +1073,7 @@
     );
     spawnAmbientPeople();
     ensureChecklist();
+    showGameShell();
     render();
   }
 
@@ -1297,7 +1512,7 @@
       avatarConfig: normalizedAvatarConfig(heir.sex, heir.avatar || game.character.avatar),
       childrenCarry: []
     };
-    bootstrapGame(legacyData);
+    bootstrapGame(legacyData, { preserveSaveId: true });
     addLog(`Tu incarnes désormais ${game.character.fullName}, héritier(e) de la lignée.`, "good");
     render();
   }
@@ -1630,6 +1845,7 @@
     if (c.alive) {
       generateAnnualEvent();
     }
+    autoSaveIfLinked();
     render();
   }
 
@@ -2608,6 +2824,7 @@
     addLog(`Décision: ${option.label}.`, "neutral");
     game.pendingEvent = null;
     mortalityCheck();
+    autoSaveIfLinked();
     render();
   }
 
@@ -2704,7 +2921,16 @@
     game.scheduledConsequences = future;
     due.forEach((item) => {
       if (!c.alive) return;
-      item.run(c);
+      if (typeof item.run === "function") {
+        item.run(c);
+      } else {
+        // Fallback when loading a saved deferred event without executable payload.
+        if (item.tone === "good") {
+          changeStat("happiness", 2);
+        } else if (item.tone === "bad") {
+          changeStat("happiness", -2);
+        }
+      }
       addLog(`Conséquence différée [${rarityLabel(item.rarity)}] : ${item.text}`, item.tone || "neutral");
     });
   }
@@ -2797,6 +3023,7 @@
     }
     const followUp = triggerActionFollowUp(categoryName, action.label);
     actionResultState = buildActionResult(action.label, before, followUp);
+    autoSaveIfLinked();
     render();
   }
 
@@ -3312,6 +3539,7 @@
   function saveAvatarFromEditor() {
     if (!game?.character) return;
     game.character.avatar = avatarFromEditorInputs();
+    autoSaveIfLinked();
     closeAvatarEditor();
     render();
   }
@@ -3331,6 +3559,10 @@
   }
 
   function render() {
+    if (!game?.character) {
+      renderSaveLists();
+      return;
+    }
     renderTopProfile();
     renderStatus();
     renderDetailMenu();
@@ -3346,6 +3578,7 @@
     renderDeathModal();
     renderCharacterModal();
     renderActionResultModal();
+    renderSaveLists();
     if (!isAvatarEditorOpen) {
       ui.avatarEditorModal?.classList.remove("show");
     }
@@ -3353,6 +3586,28 @@
 
   if (ui.newLifeBtn) {
     ui.newLifeBtn.addEventListener("click", () => bootstrapGame());
+  }
+  if (ui.startNewBtn) {
+    ui.startNewBtn.addEventListener("click", () => {
+      bootstrapGame();
+    });
+  }
+  if (ui.saveCurrentBtn) {
+    ui.saveCurrentBtn.addEventListener("click", () => saveCurrentProgress(false));
+  }
+  if (ui.saveCurrentAsBtn) {
+    ui.saveCurrentAsBtn.addEventListener("click", () => saveCurrentProgress(true));
+  }
+  if (ui.goHomeBtn) {
+    ui.goHomeBtn.addEventListener("click", () => {
+      showStartScreen();
+    });
+  }
+  if (ui.startSavesList) {
+    ui.startSavesList.addEventListener("click", handleSaveListClick);
+  }
+  if (ui.settingsSavesList) {
+    ui.settingsSavesList.addEventListener("click", handleSaveListClick);
   }
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {
@@ -3459,7 +3714,7 @@
       }
     });
   });
-  ui.deathNewLifeBtn.addEventListener("click", () => bootstrapGame());
+  ui.deathNewLifeBtn.addEventListener("click", () => bootstrapGame(null, { preserveSaveId: true }));
 
-  bootstrapGame();
+  showStartScreen();
 })();

@@ -8,6 +8,19 @@
   </head>
   <body>
     <main class="app">
+      <section id="start-screen" class="start-screen">
+        <article class="card">
+          <h2>Chroniques de Dynastie</h2>
+          <p class="muted">Choisis une progression existante ou crée un nouveau personnage.</p>
+          <button id="start-new-btn" class="btn btn-green">Créer un nouveau personnage</button>
+        </article>
+        <article class="card">
+          <h2>Anciennes progressions</h2>
+          <div id="start-saves-list" class="save-list"></div>
+        </article>
+      </section>
+
+      <div id="game-shell" class="game-shell">
       <header class="app-top">
         <div class="app-nav">
           <button id="top-settings-btn" class="nav-btn" aria-label="Paramètres">⚙️</button>
@@ -97,6 +110,13 @@
           <p class="muted">
             Personnalise ton héros médiéval et redémarre une lignée si nécessaire.
           </p>
+          <div class="save-actions">
+            <button id="save-current-btn" class="btn btn-green">Sauvegarder progression</button>
+            <button id="save-current-as-btn" class="btn btn-blue">Sauvegarder sous un nouveau nom</button>
+            <button id="go-home-btn" class="btn btn-orange">Retour à l'accueil</button>
+          </div>
+          <h3>Sauvegardes disponibles</h3>
+          <div id="settings-saves-list" class="save-list"></div>
           <button id="open-avatar-editor-btn" class="btn btn-blue">Créer / modifier avatar</button>
           <button id="new-life-btn" class="btn btn-gray">Nouvelle vie</button>
         </article>
@@ -208,6 +228,7 @@
           <p id="action-result-text" class="muted"></p>
           <ul id="action-result-details" class="compact-list"></ul>
         </div>
+      </div>
       </div>
     </main>
 

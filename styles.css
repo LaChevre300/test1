@@ -486,6 +486,62 @@ body {
   overflow-x: hidden;
 }
 
+.start-screen,
+.game-shell {
+  display: block;
+}
+
+.is-hidden {
+  display: none !important;
+}
+
+.start-screen .card {
+  margin-top: 0.35rem;
+}
+
+.save-list {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.save-item {
+  border: 1px solid #bea175;
+  border-radius: 12px;
+  background: #f8ecd3;
+  padding: 0.45rem 0.5rem;
+}
+
+.save-title {
+  font-weight: 700;
+  font-size: 0.78rem;
+  color: #3a2a16;
+  margin: 0;
+}
+
+.save-meta {
+  margin: 0.2rem 0 0.4rem;
+  font-size: 0.66rem;
+  color: #6d5538;
+}
+
+.save-controls {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.save-controls .btn {
+  min-height: 34px;
+  font-size: 0.66rem;
+  padding: 0 0.45rem;
+}
+
+.save-actions {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 0.55rem;
+}
+
 .app-top {
   margin-bottom: 0.7rem;
 }
