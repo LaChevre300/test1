@@ -8,12 +8,30 @@
   </head>
   <body>
     <main class="app">
-      <header class="top-header">
-        <div class="top-title">
-          <h1>Chroniques de Dynastie</h1>
-          <p class="subtitle">Simulation textuelle médiévale</p>
+      <header class="app-top">
+        <div class="app-nav">
+          <button id="menu-btn" class="nav-btn" aria-label="Menu">☰</button>
+          <h1>E-LIFE SIMULATION</h1>
+          <button id="top-settings-btn" class="nav-btn" aria-label="Paramètres">⚙️</button>
         </div>
-        <button id="top-settings-btn" class="top-settings-btn" aria-label="Paramètres">⚙️</button>
+        <div class="profile-strip">
+          <div class="profile-left">
+            <div class="avatar" id="profile-avatar">👶</div>
+            <div class="profile-meta">
+              <div class="profile-name-row">
+                <span id="profile-name" class="profile-name">Anna David</span>
+                <span class="info-pill">i</span>
+              </div>
+              <div class="profile-sub">
+                <span id="profile-stage">Infant</span>
+              </div>
+            </div>
+          </div>
+          <div class="profile-right">
+            <div id="profile-money" class="profile-money">$0</div>
+            <div class="bank-label">Bank Balance</div>
+          </div>
+        </div>
       </header>
 
       <section id="screen-home" class="screen active">

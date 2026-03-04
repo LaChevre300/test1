@@ -162,7 +162,12 @@
 
   const ui = {
     newLifeBtn: document.getElementById("new-life-btn"),
+    menuBtn: document.getElementById("menu-btn"),
     topSettingsBtn: document.getElementById("top-settings-btn"),
+    profileAvatar: document.getElementById("profile-avatar"),
+    profileName: document.getElementById("profile-name"),
+    profileStage: document.getElementById("profile-stage"),
+    profileMoney: document.getElementById("profile-money"),
     statusStrip: document.getElementById("status-strip"),
     eventText: document.getElementById("event-text"),
     eventChoices: document.getElementById("event-choices"),
@@ -2155,6 +2160,24 @@
     });
   }
 
+  function renderTopProfile() {
+    const c = game.character;
+    const stage = c.age <= 2
+      ? "Infant"
+      : c.age <= 12
+        ? "Enfant"
+        : c.age <= 17
+          ? "Adolescent"
+          : c.age <= 59
+            ? "Adulte"
+            : "Senior";
+    const avatar = c.age <= 2 ? "👶" : c.age <= 12 ? "🧒" : c.age <= 17 ? "🧑" : c.sex === "Homme" ? "👨" : "👩";
+    ui.profileAvatar.textContent = avatar;
+    ui.profileName.textContent = c.fullName;
+    ui.profileStage.textContent = stage;
+    ui.profileMoney.textContent = `$${Math.round(c.money)}`;
+  }
+
   function renderDetailMenu() {
     const c = game.character;
     const items = [
@@ -2428,6 +2451,7 @@
   }
 
   function render() {
+    renderTopProfile();
     renderStatus();
     renderDetailMenu();
     renderResources();
@@ -2444,6 +2468,12 @@
 
   if (ui.newLifeBtn) {
     ui.newLifeBtn.addEventListener("click", () => bootstrapGame());
+  }
+  if (ui.menuBtn) {
+    ui.menuBtn.addEventListener("click", () => {
+      activeTab = "home";
+      render();
+    });
   }
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {

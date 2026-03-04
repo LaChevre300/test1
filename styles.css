@@ -482,41 +482,118 @@ body {
   position: relative;
 }
 
-.top-header {
+.app-top {
+  margin-bottom: 0.7rem;
+}
+
+.app-nav {
+  height: 48px;
+  display: grid;
+  grid-template-columns: 40px 1fr 40px;
+  align-items: center;
+  gap: 0.45rem;
+  padding: 0 0.5rem;
+  border-radius: 14px 14px 0 0;
+  background: linear-gradient(180deg, #ff7e52, #ff4030);
+}
+
+.app-nav h1 {
+  margin: 0;
+  text-align: center;
+  color: #fff;
+  font-size: 0.93rem;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
+.nav-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  background: rgba(255, 255, 255, 0.18);
+  color: #fff;
+  font-size: 18px;
+}
+
+.profile-strip {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.65rem;
+  background: #0f4f4f;
+  padding: 0.5rem 0.6rem;
+  border-radius: 0 0 14px 14px;
+}
+
+.profile-left {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 0.6rem;
-  margin-bottom: 0.55rem;
+  gap: 0.5rem;
+  min-width: 0;
 }
 
-.top-title {
-  flex: 1;
-  text-align: center;
+.avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 999px;
+  background: #d6ecdf;
+  display: grid;
+  place-items: center;
+  font-size: 22px;
 }
 
-.top-header h1 {
-  margin: 0;
-  font-size: 1.05rem;
-  color: #101010;
+.profile-meta {
+  min-width: 0;
+}
+
+.profile-name-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.profile-name {
+  color: #71d1c1;
+  font-size: 0.86rem;
+  font-weight: 700;
+  text-decoration: underline;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 210px;
+}
+
+.info-pill {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  background: #2499ff;
+  color: #fff;
+  font-size: 0.72rem;
+  display: grid;
+  place-items: center;
   font-weight: 700;
 }
 
-.top-settings-btn {
-  width: 42px;
-  height: 42px;
-  border-radius: 12px;
-  border: 1px solid #e2e2e2;
-  background: #fff;
-  font-size: 20px;
-  cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+.profile-sub {
+  color: #d9f4ed;
+  font-size: 0.72rem;
 }
 
-.subtitle {
-  margin: 0;
-  color: #6a6a6a;
-  font-size: 0.8rem;
+.profile-right {
+  text-align: right;
+}
+
+.profile-money {
+  color: #48d7ff;
+  font-weight: 800;
+  font-size: 1.06rem;
+}
+
+.bank-label {
+  color: #8bc7cf;
+  font-size: 0.68rem;
 }
 
 .stats-bar {
@@ -796,6 +873,10 @@ body {
   color: #ffffff;
 }
 
+.tab-btn[data-accent="gray"].is-active {
+  color: #9adbe1;
+}
+
 .tab-btn[data-accent="green"].is-active {
   color: #00c851;
 }
@@ -897,10 +978,10 @@ body {
     width: min(94vw, 560px);
   }
 
-  .top-settings-btn {
-    width: 38px;
-    height: 38px;
-    font-size: 18px;
+  .nav-btn {
+    width: 32px;
+    height: 32px;
+    font-size: 16px;
   }
 
   .stats-bar {
