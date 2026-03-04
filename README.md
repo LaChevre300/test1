@@ -1,4 +1,4 @@
-# MuguetView — Recherche & aide à l’analyse (sciences humaines)
+# MuguetEye — Recherche & aide à l’analyse (sciences humaines)
 
 Application web **sans installation** pour les étudiant·es en sciences humaines:
 
