@@ -503,7 +503,12 @@ export function createLabWorld() {
 
   // --- Remplissage massif (InstancedMesh) ---
   // Géométries simples, mais beaucoup d’instances.
-  const deskGeo = new THREE.BoxGeometry(2.2, 0.85, 1.2);
+  // Bureau plus réaliste (plateau + pieds + caisson) en instancing
+  const deskTopGeo = new THREE.BoxGeometry(2.25, 0.08, 1.22);
+  const deskLegGeo = new THREE.BoxGeometry(0.08, 0.72, 0.08);
+  const deskModestyGeo = new THREE.BoxGeometry(2.05, 0.34, 0.04);
+  const deskCabinetGeo = new THREE.BoxGeometry(0.42, 0.58, 0.62);
+  const deskGrommetGeo = new THREE.CylinderGeometry(0.05, 0.05, 0.02, 12);
   const chairSeatGeo = new THREE.BoxGeometry(0.55, 0.08, 0.55);
   const chairBackGeo = new THREE.BoxGeometry(0.55, 0.65, 0.08);
   const pcGeo = new THREE.BoxGeometry(0.32, 0.55, 0.45);
@@ -523,9 +528,28 @@ export function createLabWorld() {
   const boxCount = 90;
   const neonCount = 72;
 
-  const desks = new THREE.InstancedMesh(deskGeo, deskMat, deskCount);
-  desks.castShadow = false;
-  desks.receiveShadow = true;
+  const deskTopMat = new THREE.MeshStandardMaterial({ color: 0x1a2031, roughness: 0.62, metalness: 0.08 });
+  const deskMetalMat = new THREE.MeshStandardMaterial({ color: 0x0e111b, roughness: 0.35, metalness: 0.65 });
+
+  const deskTops = new THREE.InstancedMesh(deskTopGeo, deskTopMat, deskCount);
+  deskTops.castShadow = false;
+  deskTops.receiveShadow = true;
+
+  const deskLegs = new THREE.InstancedMesh(deskLegGeo, deskMetalMat, deskCount * 4);
+  deskLegs.castShadow = false;
+  deskLegs.receiveShadow = true;
+
+  const deskModesty = new THREE.InstancedMesh(deskModestyGeo, deskMetalMat, deskCount);
+  deskModesty.castShadow = false;
+  deskModesty.receiveShadow = true;
+
+  const deskCabinets = new THREE.InstancedMesh(deskCabinetGeo, deskMat, deskCount);
+  deskCabinets.castShadow = false;
+  deskCabinets.receiveShadow = true;
+
+  const deskGrommets = new THREE.InstancedMesh(deskGrommetGeo, deskMetalMat, deskCount);
+  deskGrommets.castShadow = false;
+  deskGrommets.receiveShadow = false;
 
   const chairsSeat = new THREE.InstancedMesh(chairSeatGeo, chairMat, chairCount);
   chairsSeat.castShadow = false;
@@ -556,6 +580,7 @@ export function createLabWorld() {
 
   // Placement open-space: rangées de postes
   let di = 0;
+  let legI = 0;
   let ci = 0;
   let pi = 0;
   let si = 0;
@@ -574,8 +599,35 @@ export function createLabWorld() {
       const z = openMinZ + 5 + rz * spacingZ;
       const rot = rz % 2 === 0 ? 0 : Math.PI;
 
-      const deskPos = new THREE.Vector3(x, 0.42, z);
-      setInstance(desks, di, deskPos, rot, 1);
+      // Plateau
+      setInstance(deskTops, di, new THREE.Vector3(x, 0.76, z), rot, 1);
+
+      // Pieds (4)
+      const lx = 1.03;
+      const lz = 0.55;
+      const legY = 0.36;
+      const offs = [
+        [-lx, legY, -lz],
+        [lx, legY, -lz],
+        [-lx, legY, lz],
+        [lx, legY, lz],
+      ];
+      for (const [ox, oy, oz] of offs) {
+        const v = new THREE.Vector3(ox, oy, oz).applyAxisAngle(yAxis, rot).add(new THREE.Vector3(x, 0, z));
+        setInstance(deskLegs, legI++, v, rot, 1);
+      }
+
+      // Panneau (modesty panel)
+      const panelPos = new THREE.Vector3(0, 0.42, rot === 0 ? 0.60 : -0.60).applyAxisAngle(yAxis, rot).add(new THREE.Vector3(x, 0, z));
+      setInstance(deskModesty, di, panelPos, rot, 1);
+
+      // Caisson
+      const cabPos = new THREE.Vector3(rot === 0 ? -0.85 : 0.85, 0.30, 0.0).applyAxisAngle(yAxis, rot).add(new THREE.Vector3(x, 0, z));
+      setInstance(deskCabinets, di, cabPos, rot, 1);
+
+      // Passe-câble
+      const gPos = new THREE.Vector3(0.92, 0.80, rot === 0 ? -0.50 : 0.50).applyAxisAngle(yAxis, rot).add(new THREE.Vector3(x, 0, z));
+      setInstance(deskGrommets, di, gPos, rot, 1);
 
       // chaise (derrière)
       const chairPos = new THREE.Vector3(x, 0.26, z + (rot === 0 ? 0.95 : -0.95));
@@ -626,7 +678,23 @@ export function createLabWorld() {
       const x = classroom.minX + 7 + rx * 4.2;
       const z = classroom.minZ + 8 + rz * 3.4;
       const rot = 0;
-      setInstance(desks, di, new THREE.Vector3(x, 0.42, z), rot, 1);
+      setInstance(deskTops, di, new THREE.Vector3(x, 0.76, z), rot, 1);
+      // legs
+      const lx = 1.03;
+      const lz = 0.55;
+      const legY = 0.36;
+      const offs = [
+        [-lx, legY, -lz],
+        [lx, legY, -lz],
+        [-lx, legY, lz],
+        [lx, legY, lz],
+      ];
+      for (const [ox, oy, oz] of offs) {
+        setInstance(deskLegs, legI++, new THREE.Vector3(x + ox, oy, z + oz), rot, 1);
+      }
+      setInstance(deskModesty, di, new THREE.Vector3(x, 0.42, z + 0.60), rot, 1);
+      setInstance(deskCabinets, di, new THREE.Vector3(x - 0.85, 0.30, z), rot, 1);
+      setInstance(deskGrommets, di, new THREE.Vector3(x + 0.92, 0.80, z - 0.50), rot, 1);
       setInstance(chairsSeat, ci, new THREE.Vector3(x, 0.26, z + 0.95), rot, 1);
       setInstance(chairsBack, ci, new THREE.Vector3(x, 0.60, z + 1.21), rot, 1);
       setInstance(pcs, pi, new THREE.Vector3(x + 0.85, 0.73, z), rot, 1);
@@ -777,9 +845,13 @@ export function createLabWorld() {
   const dogStart = new THREE.Vector3(server.minX + 10, 0.55, server.minZ + 10);
 
   // Ajoute tout au groupe
-  group.add(baseboards, desks, chairsSeat, chairsBack, pcs, screens, keyboards, racks, boxes, neons);
+  group.add(baseboards, deskTops, deskLegs, deskModesty, deskCabinets, deskGrommets, chairsSeat, chairsBack, pcs, screens, keyboards, racks, boxes, neons);
   baseboards.instanceMatrix.needsUpdate = true;
-  desks.instanceMatrix.needsUpdate = true;
+  deskTops.instanceMatrix.needsUpdate = true;
+  deskLegs.instanceMatrix.needsUpdate = true;
+  deskModesty.instanceMatrix.needsUpdate = true;
+  deskCabinets.instanceMatrix.needsUpdate = true;
+  deskGrommets.instanceMatrix.needsUpdate = true;
   chairsSeat.instanceMatrix.needsUpdate = true;
   chairsBack.instanceMatrix.needsUpdate = true;
   pcs.instanceMatrix.needsUpdate = true;
