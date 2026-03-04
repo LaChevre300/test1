@@ -16,7 +16,7 @@
         </div>
         <div class="profile-strip">
           <div class="profile-left profile-trigger" id="profile-trigger" role="button" tabindex="0">
-            <div class="avatar" id="profile-avatar">👶</div>
+            <div class="avatar" id="profile-avatar" aria-hidden="true"></div>
             <div class="profile-meta">
               <div class="profile-name-row">
                 <span id="profile-name" class="profile-name">Anna David</span>
@@ -92,8 +92,9 @@
         <article class="card">
           <h2>Paramètres</h2>
           <p class="muted">
-            Interface minimaliste style BitLife mobile. Les conséquences des actions restent cachées.
+            Personnalise ton héros médiéval et redémarre une lignée si nécessaire.
           </p>
+          <button id="open-avatar-editor-btn" class="btn btn-blue">Créer / modifier avatar</button>
           <button id="new-life-btn" class="btn btn-gray">Nouvelle vie</button>
         </article>
       </section>
@@ -146,6 +147,45 @@
             <button id="character-close-btn" class="character-close-btn" aria-label="Fermer">✕</button>
           </div>
           <ul id="character-info-list" class="compact-list"></ul>
+        </div>
+      </div>
+
+      <div id="avatar-editor-modal" class="character-modal">
+        <div class="character-card">
+          <div class="character-head">
+            <h2>Créateur d'avatar</h2>
+            <button id="avatar-editor-close-btn" class="character-close-btn" aria-label="Fermer">✕</button>
+          </div>
+          <div class="avatar-editor-preview">
+            <div class="avatar avatar-large" id="avatar-editor-preview"></div>
+          </div>
+          <div class="avatar-form-grid">
+            <label>Teint
+              <select id="avatar-skin-select"></select>
+            </label>
+            <label>Cheveux
+              <select id="avatar-hair-style-select"></select>
+            </label>
+            <label>Couleur cheveux
+              <select id="avatar-hair-color-select"></select>
+            </label>
+            <label>Yeux
+              <select id="avatar-eye-color-select"></select>
+            </label>
+            <label>Barbe
+              <select id="avatar-beard-select"></select>
+            </label>
+            <label>Tenue
+              <select id="avatar-outfit-select"></select>
+            </label>
+            <label>Accessoire
+              <select id="avatar-accessory-select"></select>
+            </label>
+          </div>
+          <div class="death-actions">
+            <button id="avatar-editor-save-btn" class="btn btn-green">Enregistrer</button>
+            <button id="avatar-editor-cancel-btn" class="btn btn-gray">Annuler</button>
+          </div>
         </div>
       </div>
     </main>

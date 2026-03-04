@@ -140,6 +140,34 @@
     "hallucinations"
   ];
 
+  const AVATAR_SKINS = [
+    { id: "pale", label: "Clair", color: "#f2d4b1" },
+    { id: "warm", label: "Doré", color: "#d9ad7f" },
+    { id: "olive", label: "Olive", color: "#c08a5a" },
+    { id: "brown", label: "Brun", color: "#8e5c3b" }
+  ];
+  const AVATAR_HAIR_COLORS = [
+    { id: "black", label: "Noir", color: "#1f1a17" },
+    { id: "brown", label: "Brun", color: "#5d3a22" },
+    { id: "auburn", label: "Roux", color: "#8e4a25" },
+    { id: "blond", label: "Blond", color: "#cba76a" }
+  ];
+  const AVATAR_EYE_COLORS = [
+    { id: "brown", label: "Marron", color: "#4a2e1f" },
+    { id: "hazel", label: "Noisette", color: "#6a4c2a" },
+    { id: "green", label: "Vert", color: "#446b38" },
+    { id: "blue", label: "Bleu", color: "#456a8c" }
+  ];
+  const AVATAR_HAIR_STYLES = ["court", "long", "boucle", "tonsure"];
+  const AVATAR_BEARDS = ["aucune", "courte", "longue"];
+  const AVATAR_OUTFITS = [
+    { id: "linen", label: "Tunique claire", color: "#d8c8a9" },
+    { id: "forest", label: "Tunique verte", color: "#5f7d3a" },
+    { id: "burgundy", label: "Tunique bordeaux", color: "#7a3431" },
+    { id: "navy", label: "Tunique bleue", color: "#3d5572" }
+  ];
+  const AVATAR_ACCESSORIES = ["aucun", "capuche", "couronne", "bandeau", "chapeau"];
+
   const CHECKLIST = [
     "Création aléatoire complète (nom, pays, sexe, classe, famille, stats).",
     "Bouton « Vieillir » avec événements et choix.",
@@ -199,12 +227,26 @@
     deathLegacyBtn: document.getElementById("death-legacy-btn"),
     characterModal: document.getElementById("character-modal"),
     characterInfoList: document.getElementById("character-info-list"),
-    characterCloseBtn: document.getElementById("character-close-btn")
+    characterCloseBtn: document.getElementById("character-close-btn"),
+    openAvatarEditorBtn: document.getElementById("open-avatar-editor-btn"),
+    avatarEditorModal: document.getElementById("avatar-editor-modal"),
+    avatarEditorCloseBtn: document.getElementById("avatar-editor-close-btn"),
+    avatarEditorSaveBtn: document.getElementById("avatar-editor-save-btn"),
+    avatarEditorCancelBtn: document.getElementById("avatar-editor-cancel-btn"),
+    avatarEditorPreview: document.getElementById("avatar-editor-preview"),
+    avatarSkinSelect: document.getElementById("avatar-skin-select"),
+    avatarHairStyleSelect: document.getElementById("avatar-hair-style-select"),
+    avatarHairColorSelect: document.getElementById("avatar-hair-color-select"),
+    avatarEyeColorSelect: document.getElementById("avatar-eye-color-select"),
+    avatarBeardSelect: document.getElementById("avatar-beard-select"),
+    avatarOutfitSelect: document.getElementById("avatar-outfit-select"),
+    avatarAccessorySelect: document.getElementById("avatar-accessory-select")
   };
 
   let game = null;
   let activeTab = "home";
   let isCharacterModalOpen = false;
+  let isAvatarEditorOpen = false;
 
   function rnd(min, max) {
     return Math.floor(Math.random() * (max - min + 1)) + min;
@@ -220,6 +262,35 @@
 
   function clamp(value, min = MIN_STAT, max = MAX_STAT) {
     return Math.max(min, Math.min(max, value));
+  }
+
+  function optionColor(options, id) {
+    return options.find((entry) => entry.id === id)?.color;
+  }
+
+  function randomAvatarConfig(sex) {
+    return {
+      skin: pick(AVATAR_SKINS).id,
+      hairStyle: pick(AVATAR_HAIR_STYLES),
+      hairColor: pick(AVATAR_HAIR_COLORS).id,
+      eyeColor: pick(AVATAR_EYE_COLORS).id,
+      beard: sex === "Homme" ? pick(AVATAR_BEARDS) : "aucune",
+      outfit: pick(AVATAR_OUTFITS).id,
+      accessory: chance(0.45) ? pick(AVATAR_ACCESSORIES) : "aucun"
+    };
+  }
+
+  function normalizedAvatarConfig(sex, avatar) {
+    const fallback = randomAvatarConfig(sex);
+    return {
+      skin: avatar?.skin || fallback.skin,
+      hairStyle: avatar?.hairStyle || fallback.hairStyle,
+      hairColor: avatar?.hairColor || fallback.hairColor,
+      eyeColor: avatar?.eyeColor || fallback.eyeColor,
+      beard: sex === "Homme" ? avatar?.beard || fallback.beard : "aucune",
+      outfit: avatar?.outfit || fallback.outfit,
+      accessory: avatar?.accessory || fallback.accessory
+    };
   }
 
   function weightedPick(weighted) {
@@ -302,6 +373,7 @@
     const inlaws = chance(0.2) ? [newPerson("Belle-famille", 24, 64, pick(SURNAMES))] : [];
     const inheritedMoney = inherited?.inheritedMoney || 0;
     const stats = statBlock(socialClass.mods, inherited?.stats || null);
+    const avatar = normalizedAvatarConfig(sex, inherited?.avatarConfig || null);
 
     return {
       firstName,
@@ -354,6 +426,7 @@
       animals: inherited?.animals || [],
       properties: inherited?.properties || [],
       vehicles: inherited?.vehicles || [],
+      avatar,
       conditions: {
         illnesses: [],
         injuries: [],
@@ -471,6 +544,7 @@
       age: 0,
       alive: true,
       adopted,
+      avatar: randomAvatarConfig(sex),
       bond: rnd(35, 75),
       stats: {
         intelligence: clamp(rnd(30, 75) + Math.round((c.stats.intelligence - 50) * 0.2)),
@@ -816,6 +890,7 @@
       properties: [...game.character.properties.slice(0, 4)],
       vehicles: [...game.character.vehicles.slice(0, 3)],
       animals: [...game.character.animals.slice(0, 4)],
+      avatarConfig: normalizedAvatarConfig(heir.sex, heir.avatar || game.character.avatar),
       childrenCarry: []
     };
     bootstrapGame(legacyData);
@@ -2133,14 +2208,13 @@
 
   function renderStatus() {
     const c = game.character;
-    const netWorth = c.money - getTotalDebt();
-    const moneyScore = clamp(Math.round(((netWorth + 150) / 500) * 100), 0, 100);
+    const energy = clamp(Math.round((c.stats.strength * 0.55 + c.stats.sanity * 0.45)));
     const status = [
       { label: "Santé", icon: "❤️", value: c.stats.health },
       { label: "Bonheur", icon: "😊", value: c.stats.happiness },
       { label: "Intelligence", icon: "🧠", value: c.stats.intelligence },
       { label: "Apparence", icon: "👤", value: c.stats.looks },
-      { label: "Argent", icon: "💰", value: moneyScore, text: `$${Math.round(c.money)}` }
+      { label: "Énergie", icon: "⚡", value: energy }
     ];
     ui.statusStrip.innerHTML = "";
     status.forEach((entry) => {
@@ -2172,18 +2246,81 @@
     return "Senior";
   }
 
-  function getAvatarForCharacter(c) {
-    if (c.age <= 2) return "👶";
-    if (c.age <= 12) return "🧒";
-    if (c.age <= 17) return "🧑";
-    return c.sex === "Homme" ? "👨" : "👩";
+  function agedHairColor(baseColor, age) {
+    if (age >= 70) return "#d4d0c8";
+    if (age >= 58) return "#b8b4ab";
+    if (age >= 46) return "#8f8b85";
+    return baseColor;
+  }
+
+  function buildAvatarSvg(c, avatar, size = 72) {
+    const skin = optionColor(AVATAR_SKINS, avatar.skin) || "#d9ad7f";
+    const hairBase = optionColor(AVATAR_HAIR_COLORS, avatar.hairColor) || "#5d3a22";
+    const hair = agedHairColor(hairBase, c.age);
+    const eye = optionColor(AVATAR_EYE_COLORS, avatar.eyeColor) || "#4a2e1f";
+    const outfit = optionColor(AVATAR_OUTFITS, avatar.outfit) || "#5f7d3a";
+    const stage = getLifeStage(c.age);
+    const showBeard = c.age >= 18 && c.sex === "Homme" && avatar.beard !== "aucune";
+    const wrinkles = c.age >= 58;
+
+    const hairShape =
+      avatar.hairStyle === "long"
+        ? `<path d="M20 34 C22 16, 78 16, 80 34 L80 54 C76 50,72 48,68 49 L68 34 Z" fill="${hair}" />`
+        : avatar.hairStyle === "boucle"
+          ? `<circle cx="36" cy="27" r="9" fill="${hair}" /><circle cx="50" cy="23" r="11" fill="${hair}" /><circle cx="64" cy="27" r="9" fill="${hair}" />`
+          : avatar.hairStyle === "tonsure"
+            ? `<path d="M24 34 C28 18,72 18,76 34 C70 28,30 28,24 34 Z" fill="${hair}" />`
+            : `<path d="M22 35 C26 18,74 18,78 35 C72 30,28 30,22 35 Z" fill="${hair}" />`;
+
+    const beardShape =
+      avatar.beard === "longue"
+        ? `<path d="M39 56 C41 68,59 68,61 56 L63 72 C53 80,47 80,37 72 Z" fill="${hair}" />`
+        : `<path d="M38 56 C42 63,58 63,62 56 L60 62 C52 66,48 66,40 62 Z" fill="${hair}" />`;
+
+    const accessory =
+      avatar.accessory === "couronne"
+        ? `<path d="M28 20 L36 28 L50 18 L64 28 L72 20 L72 30 L28 30 Z" fill="#c9a34f" stroke="#8b6a2b" stroke-width="1.5" />`
+        : avatar.accessory === "capuche"
+          ? `<path d="M22 34 C24 12,76 12,78 34 L70 34 C68 22,32 22,30 34 Z" fill="#5a4430" />`
+          : avatar.accessory === "bandeau"
+            ? `<rect x="28" y="30" width="44" height="6" rx="3" fill="#7a3431" />`
+            : avatar.accessory === "chapeau"
+              ? `<ellipse cx="50" cy="21" rx="22" ry="6" fill="#4b3320" /><rect x="36" y="9" width="28" height="12" rx="4" fill="#5c4129" />`
+              : "";
+
+    const childCheeks = stage === "Infant" || stage === "Enfant" ? `<circle cx="37" cy="49" r="2.4" fill="#e9b09e" /><circle cx="63" cy="49" r="2.4" fill="#e9b09e" />` : "";
+    const wrinkleLines = wrinkles ? `<path d="M40 46 Q50 42 60 46 M40 53 Q50 49 60 53" stroke="#816852" stroke-width="1.1" fill="none" stroke-linecap="round" />` : "";
+
+    return `
+      <svg xmlns="http://www.w3.org/2000/svg" width="${size}" height="${size}" viewBox="0 0 100 100">
+        <rect width="100" height="100" rx="50" fill="#dbc7a1" />
+        <path d="M24 94 L76 94 L70 66 L30 66 Z" fill="${outfit}" />
+        <rect x="44" y="60" width="12" height="10" rx="4" fill="${skin}" />
+        <circle cx="50" cy="44" r="${stage === "Infant" ? 21 : 20}" fill="${skin}" />
+        ${hairShape}
+        ${accessory}
+        <circle cx="42" cy="45" r="2.9" fill="${eye}" />
+        <circle cx="58" cy="45" r="2.9" fill="${eye}" />
+        <path d="M43 55 Q50 59 57 55" stroke="#6e4f35" stroke-width="1.8" fill="none" stroke-linecap="round" />
+        ${showBeard ? beardShape : ""}
+        ${childCheeks}
+        ${wrinkleLines}
+      </svg>
+    `;
+  }
+
+  function renderAvatar(container, c, avatar, size = 72) {
+    if (!container) return;
+    const svg = buildAvatarSvg(c, avatar, size);
+    const src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
+    container.innerHTML = `<img src="${src}" alt="Avatar médiéval" />`;
   }
 
   function renderTopProfile() {
     const c = game.character;
+    c.avatar = normalizedAvatarConfig(c.sex, c.avatar);
     const stage = getLifeStage(c.age);
-    const avatar = getAvatarForCharacter(c);
-    ui.profileAvatar.textContent = avatar;
+    renderAvatar(ui.profileAvatar, c, c.avatar, 72);
     ui.profileName.textContent = c.fullName;
     ui.profileStage.textContent = stage;
     ui.profileMoney.textContent = `$${Math.round(c.money)}`;
@@ -2488,6 +2625,76 @@
     ui.characterModal.classList.add("show");
   }
 
+  function fillSelect(selectElement, entries, mapLabel = (v) => v, mapValue = (v) => v) {
+    if (!selectElement || selectElement.options.length) return;
+    entries.forEach((entry) => {
+      const option = document.createElement("option");
+      option.value = mapValue(entry);
+      option.textContent = mapLabel(entry);
+      selectElement.append(option);
+    });
+  }
+
+  function ensureAvatarEditorOptions() {
+    fillSelect(ui.avatarSkinSelect, AVATAR_SKINS, (entry) => entry.label, (entry) => entry.id);
+    fillSelect(ui.avatarHairStyleSelect, AVATAR_HAIR_STYLES, (entry) => entry, (entry) => entry);
+    fillSelect(ui.avatarHairColorSelect, AVATAR_HAIR_COLORS, (entry) => entry.label, (entry) => entry.id);
+    fillSelect(ui.avatarEyeColorSelect, AVATAR_EYE_COLORS, (entry) => entry.label, (entry) => entry.id);
+    fillSelect(ui.avatarBeardSelect, AVATAR_BEARDS, (entry) => entry, (entry) => entry);
+    fillSelect(ui.avatarOutfitSelect, AVATAR_OUTFITS, (entry) => entry.label, (entry) => entry.id);
+    fillSelect(ui.avatarAccessorySelect, AVATAR_ACCESSORIES, (entry) => entry, (entry) => entry);
+  }
+
+  function avatarFromEditorInputs() {
+    const c = game.character;
+    return normalizedAvatarConfig(c.sex, {
+      skin: ui.avatarSkinSelect.value,
+      hairStyle: ui.avatarHairStyleSelect.value,
+      hairColor: ui.avatarHairColorSelect.value,
+      eyeColor: ui.avatarEyeColorSelect.value,
+      beard: ui.avatarBeardSelect.value,
+      outfit: ui.avatarOutfitSelect.value,
+      accessory: ui.avatarAccessorySelect.value
+    });
+  }
+
+  function syncEditorInputsFromAvatar(avatar) {
+    ui.avatarSkinSelect.value = avatar.skin;
+    ui.avatarHairStyleSelect.value = avatar.hairStyle;
+    ui.avatarHairColorSelect.value = avatar.hairColor;
+    ui.avatarEyeColorSelect.value = avatar.eyeColor;
+    ui.avatarBeardSelect.value = avatar.beard;
+    ui.avatarOutfitSelect.value = avatar.outfit;
+    ui.avatarAccessorySelect.value = avatar.accessory;
+  }
+
+  function renderAvatarEditorPreview() {
+    if (!game?.character) return;
+    const previewAvatar = avatarFromEditorInputs();
+    renderAvatar(ui.avatarEditorPreview, game.character, previewAvatar, 104);
+  }
+
+  function openAvatarEditor() {
+    if (!game?.character) return;
+    ensureAvatarEditorOptions();
+    syncEditorInputsFromAvatar(normalizedAvatarConfig(game.character.sex, game.character.avatar));
+    isAvatarEditorOpen = true;
+    renderAvatarEditorPreview();
+    ui.avatarEditorModal.classList.add("show");
+  }
+
+  function closeAvatarEditor() {
+    isAvatarEditorOpen = false;
+    ui.avatarEditorModal.classList.remove("show");
+  }
+
+  function saveAvatarFromEditor() {
+    if (!game?.character) return;
+    game.character.avatar = avatarFromEditorInputs();
+    closeAvatarEditor();
+    render();
+  }
+
   function render() {
     renderTopProfile();
     renderStatus();
@@ -2503,6 +2710,9 @@
     renderBadges();
     renderDeathModal();
     renderCharacterModal();
+    if (!isAvatarEditorOpen) {
+      ui.avatarEditorModal?.classList.remove("show");
+    }
   }
 
   if (ui.newLifeBtn) {
@@ -2510,12 +2720,14 @@
   }
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {
+      isCharacterModalOpen = false;
       activeTab = "settings";
       render();
     });
   }
   if (ui.profileTrigger) {
     const openProfile = () => {
+      isAvatarEditorOpen = false;
       isCharacterModalOpen = true;
       renderCharacterModal();
     };
@@ -2538,6 +2750,32 @@
       if (event.target === ui.characterModal) {
         isCharacterModalOpen = false;
         renderCharacterModal();
+      }
+    });
+  }
+  if (ui.openAvatarEditorBtn) {
+    ui.openAvatarEditorBtn.addEventListener("click", openAvatarEditor);
+  }
+  [ui.avatarSkinSelect, ui.avatarHairStyleSelect, ui.avatarHairColorSelect, ui.avatarEyeColorSelect, ui.avatarBeardSelect, ui.avatarOutfitSelect, ui.avatarAccessorySelect].forEach(
+    (selectElement) => {
+      if (selectElement) {
+        selectElement.addEventListener("change", renderAvatarEditorPreview);
+      }
+    }
+  );
+  if (ui.avatarEditorCloseBtn) {
+    ui.avatarEditorCloseBtn.addEventListener("click", closeAvatarEditor);
+  }
+  if (ui.avatarEditorCancelBtn) {
+    ui.avatarEditorCancelBtn.addEventListener("click", closeAvatarEditor);
+  }
+  if (ui.avatarEditorSaveBtn) {
+    ui.avatarEditorSaveBtn.addEventListener("click", saveAvatarFromEditor);
+  }
+  if (ui.avatarEditorModal) {
+    ui.avatarEditorModal.addEventListener("click", (event) => {
+      if (event.target === ui.avatarEditorModal) {
+        closeAvatarEditor();
       }
     });
   }
