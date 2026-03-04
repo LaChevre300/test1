@@ -275,6 +275,285 @@
     ]
   };
 
+  const RARITY_CONFIG = {
+    common: { label: "Commun", weight: 74 },
+    rare: { label: "Rare", weight: 22 },
+    legendary: { label: "Légendaire", weight: 4 }
+  };
+
+  const STORYLINE_EVENTS = {
+    Famille: [
+      {
+        title: "Serment de sang",
+        rarity: "rare",
+        minAge: 12,
+        startText: "Tu promets de restaurer l'honneur de ta famille.",
+        startTone: "warn",
+        startRun: () => {
+          changeStat("reputation", 2);
+          changeStat("sanity", 2);
+        },
+        steps: [
+          {
+            inYears: 2,
+            text: "Un parent éloigné réclame ton aide pour une dette ancienne.",
+            tone: "warn",
+            run: () => {
+              game.character.debt += rnd(4, 20);
+              changeStat("happiness", -2);
+            }
+          },
+          {
+            inYears: 3,
+            text: "Ton nom est publiquement salué pour ta loyauté familiale.",
+            tone: "good",
+            run: () => {
+              changeStat("reputation", 8);
+              changeStat("happiness", 5);
+            }
+          }
+        ]
+      }
+    ],
+    "École & carrière": [
+      {
+        title: "La route du maître",
+        rarity: "rare",
+        minAge: 14,
+        startText: "Un maître artisan accepte de te former en secret.",
+        startTone: "good",
+        startRun: () => {
+          changeStat("intelligence", 3);
+          changeStat("reputation", 2);
+        },
+        steps: [
+          {
+            inYears: 2,
+            text: "Ton mentor disparaît; tu reprends son atelier en crise.",
+            tone: "warn",
+            run: () => {
+              changeMoney(-rnd(6, 25));
+              changeStat("sanity", -3);
+            }
+          },
+          {
+            inYears: 3,
+            text: "Ton savoir-faire devient réputé dans plusieurs villes.",
+            tone: "good",
+            run: () => {
+              changeMoney(rnd(14, 55));
+              changeStat("reputation", 9);
+            }
+          }
+        ]
+      }
+    ],
+    "Santé & mental": [
+      {
+        title: "Le remède perdu",
+        rarity: "legendary",
+        minAge: 12,
+        startText: "Tu découvres des notes sur un remède oublié.",
+        startTone: "good",
+        startRun: () => {
+          changeStat("intelligence", 4);
+          changeStat("sanity", 2);
+        },
+        steps: [
+          {
+            inYears: 2,
+            text: "L'essai du remède échoue et t'épuise.",
+            tone: "warn",
+            run: () => {
+              changeStat("health", -5);
+              changeStat("sanity", -4);
+            }
+          },
+          {
+            inYears: 3,
+            text: "Une version améliorée soulage durablement tes douleurs.",
+            tone: "good",
+            run: () => {
+              clearCondition("illnesses");
+              clearCondition("mental");
+              changeStat("health", 10);
+              changeStat("sanity", 8);
+            }
+          }
+        ]
+      }
+    ],
+    "Relations & amour": [
+      {
+        title: "Romance interdite",
+        rarity: "rare",
+        minAge: 14,
+        startText: "Une relation secrète débute malgré les interdits.",
+        startTone: "warn",
+        startRun: () => {
+          changeStat("happiness", 5);
+          changeStat("sanity", -1);
+        },
+        steps: [
+          {
+            inYears: 2,
+            text: "La relation éclate au grand jour et provoque un scandale.",
+            tone: "bad",
+            run: () => {
+              changeStat("reputation", -8);
+              changeStat("happiness", -6);
+            }
+          },
+          {
+            inYears: 3,
+            text: "Contre toute attente, vous obtenez la bénédiction des proches.",
+            tone: "good",
+            run: () => {
+              changeStat("reputation", 7);
+              changeStat("happiness", 8);
+            }
+          }
+        ]
+      }
+    ],
+    "Argent & biens": [
+      {
+        title: "Caravane perdue",
+        rarity: "legendary",
+        minAge: 16,
+        startText: "Tu investis dans une caravane vers l'Orient.",
+        startTone: "warn",
+        startRun: () => {
+          changeMoney(-rnd(12, 40));
+          changeStat("sanity", -2);
+        },
+        steps: [
+          {
+            inYears: 2,
+            text: "Aucune nouvelle de la caravane: tes créanciers s'impatientent.",
+            tone: "bad",
+            run: () => {
+              game.character.debt += rnd(10, 36);
+              changeStat("happiness", -5);
+            }
+          },
+          {
+            inYears: 3,
+            text: "La caravane revient chargée d'épices rares.",
+            tone: "good",
+            run: () => {
+              changeMoney(rnd(35, 130));
+              changeStat("reputation", 8);
+            }
+          }
+        ]
+      }
+    ],
+    "Crime & prison": [
+      {
+        title: "Le dossier noir",
+        rarity: "rare",
+        minAge: 14,
+        startText: "Tu mets la main sur des documents compromettants.",
+        startTone: "warn",
+        startRun: () => {
+          game.character.notoriety = clamp(game.character.notoriety + 6, -100, 100);
+        },
+        steps: [
+          {
+            inYears: 2,
+            text: "Un juge influent ordonne une traque contre ton réseau.",
+            tone: "bad",
+            run: () => {
+              game.character.criminal.record += 1;
+              changeStat("reputation", -6);
+            }
+          },
+          {
+            inYears: 3,
+            text: "Tu retournes la situation en vendant ces preuves à prix d'or.",
+            tone: "good",
+            run: () => {
+              changeMoney(rnd(18, 70));
+              game.character.criminal.record = Math.max(0, game.character.criminal.record - 1);
+            }
+          }
+        ]
+      }
+    ],
+    "Loisirs & spiritualité": [
+      {
+        title: "La prophétie du pèlerin",
+        rarity: "rare",
+        minAge: 10,
+        startText: "Un pèlerin te confie une prophétie inquiétante.",
+        startTone: "warn",
+        startRun: () => {
+          changeStat("sanity", -1);
+          addUnique(game.character.inventory, "parchemin prophétique");
+        },
+        steps: [
+          {
+            inYears: 2,
+            text: "La prophétie semble se réaliser: une perte te secoue.",
+            tone: "bad",
+            run: () => {
+              changeStat("happiness", -6);
+              changeMoney(-rnd(4, 20));
+            }
+          },
+          {
+            inYears: 3,
+            text: "Tu comprends enfin le message et évites une grande catastrophe.",
+            tone: "good",
+            run: () => {
+              changeStat("sanity", 9);
+              changeStat("reputation", 5);
+            }
+          }
+        ]
+      }
+    ]
+  };
+
+  const DELAYED_CONSEQUENCE_LIBRARY = {
+    Famille: [
+      { text: "Un héritage est enfin réglé en ta faveur.", tone: "good", run: () => changeMoney(rnd(6, 32)) },
+      { text: "Une rancune familiale ressurgit.", tone: "warn", run: () => changeStat("happiness", -4) },
+      { text: "Un proche tombe malade et dépend de toi.", tone: "bad", run: () => { changeMoney(-rnd(3, 18)); changeStat("sanity", -3); } }
+    ],
+    "École & carrière": [
+      { text: "Ton dossier académique te vaut une opportunité.", tone: "good", run: () => changeStat("reputation", 5) },
+      { text: "Une erreur de registre bloque une promotion.", tone: "warn", run: () => changeStat("happiness", -3) },
+      { text: "Un ancien maître recommande ton nom.", tone: "good", run: () => { changeMoney(rnd(5, 24)); changeStat("reputation", 3); } }
+    ],
+    "Santé & mental": [
+      { text: "Un traitement ancien révèle enfin ses effets positifs.", tone: "good", run: () => changeStat("health", 6) },
+      { text: "Une faiblesse latente réapparaît brusquement.", tone: "warn", run: () => changeStat("health", -5) },
+      { text: "Tes habitudes te rattrapent plus tard que prévu.", tone: "bad", run: () => { addCondition("illnesses", pick(ILLNESSES)); changeStat("sanity", -3); } }
+    ],
+    "Relations & amour": [
+      { text: "Un ancien lien revient avec de bonnes nouvelles.", tone: "good", run: () => changeStat("happiness", 5) },
+      { text: "Un secret de couple éclate tardivement.", tone: "bad", run: () => changeStat("reputation", -5) },
+      { text: "Une réconciliation inattendue se produit.", tone: "good", run: () => changeStat("sanity", 4) }
+    ],
+    "Argent & biens": [
+      { text: "Un investissement oublié finit par rapporter.", tone: "good", run: () => changeMoney(rnd(8, 42)) },
+      { text: "Des intérêts cachés gonflent ta dette.", tone: "warn", run: () => { game.character.debt += rnd(4, 22); } },
+      { text: "Une taxe rétroactive frappe tes biens.", tone: "bad", run: () => changeMoney(-rnd(6, 26)) }
+    ],
+    "Crime & prison": [
+      { text: "Une vieille affaire est rouverte.", tone: "bad", run: () => { game.character.criminal.record += 1; changeStat("reputation", -5); } },
+      { text: "Un témoin se rétracte tardivement.", tone: "good", run: () => { game.character.criminal.record = Math.max(0, game.character.criminal.record - 1); } },
+      { text: "Un rival criminel réclame sa part.", tone: "warn", run: () => { changeMoney(-rnd(4, 20)); game.character.notoriety = clamp(game.character.notoriety + 5, -100, 100); } }
+    ],
+    "Loisirs & spiritualité": [
+      { text: "Ton engagement spirituel améliore ta réputation.", tone: "good", run: () => changeStat("reputation", 4) },
+      { text: "Un pari ancien te revient en plein visage.", tone: "bad", run: () => changeMoney(-rnd(4, 18)) },
+      { text: "Une relation créée en voyage t'aide des années plus tard.", tone: "good", run: () => { changeMoney(rnd(5, 20)); changeStat("happiness", 3); } }
+    ]
+  };
+
   const ui = {
     newLifeBtn: document.getElementById("new-life-btn"),
     topSettingsBtn: document.getElementById("top-settings-btn"),
@@ -388,6 +667,30 @@
       outfit: avatar?.outfit || fallback.outfit,
       accessory: avatar?.accessory || fallback.accessory
     };
+  }
+
+  function rarityOf(entry) {
+    return entry?.rarity && RARITY_CONFIG[entry.rarity] ? entry.rarity : "common";
+  }
+
+  function rarityLabel(rarity) {
+    return RARITY_CONFIG[rarityOf({ rarity })].label;
+  }
+
+  function weightedPickByRarity(entries) {
+    if (!entries.length) return null;
+    const weighted = entries.map((entry) => ({
+      value: entry,
+      weight: RARITY_CONFIG[rarityOf(entry)].weight
+    }));
+    return weightedPick(weighted);
+  }
+
+  function isEventEligible(entry, character) {
+    if (entry.minAge && character.age < entry.minAge) return false;
+    if (entry.maxAge && character.age > entry.maxAge) return false;
+    if (entry.when && !entry.when(character)) return false;
+    return true;
   }
 
   function weightedPick(weighted) {
@@ -541,11 +844,15 @@
       dynastyName: inherited?.surname || null,
       log: [],
       pendingEvent: null,
+      scheduledConsequences: inherited?.scheduledConsequences || [],
       character: createInitialCharacter(generation, inherited),
       achievements: []
     };
     game.dynastyName = game.character.surname;
     activeTab = "home";
+    actionResultState = null;
+    isCharacterModalOpen = false;
+    isAvatarEditorOpen = false;
     addLog(
       `Début de la génération ${game.character.generation} : ${game.character.fullName} naît en ${game.character.country}.`,
       "good"
@@ -1294,6 +1601,7 @@
     }
     c.age += 1;
     addLog(`Tu vieillis. Tu as maintenant ${c.age} ans.`, "neutral");
+    processScheduledConsequences();
 
     processAgingRelations();
     annualSalaryAndBills();
@@ -2315,25 +2623,117 @@
     };
   }
 
-  function triggerActionFollowUp(categoryName, actionLabel) {
+  function scheduleConsequence(inYears, payload) {
     const c = game.character;
-    const pool = ACTION_FOLLOWUP_EVENTS[categoryName] || [];
-    const candidates = pool.filter((event) => {
-      if (event.minAge && c.age < event.minAge) return false;
-      if (event.maxAge && c.age > event.maxAge) return false;
-      if (event.when && !event.when(c)) return false;
-      return true;
-    });
-    if (!candidates.length || !chance(0.7)) {
-      return null;
-    }
-    const event = pick(candidates);
-    event.run(c, actionLabel);
-    addLog(`Conséquence: ${event.text}`, event.tone || "neutral");
-    return event.text;
+    if (!c.alive) return null;
+    const item = {
+      triggerAge: c.age + inYears,
+      text: payload.text,
+      tone: payload.tone || "neutral",
+      rarity: rarityOf(payload),
+      run: payload.run || (() => {})
+    };
+    game.scheduledConsequences.push(item);
+    return item;
   }
 
-  function buildActionResult(actionLabel, before, followUpText = null) {
+  function startStoryline(categoryName, actionLabel, storyline) {
+    const c = game.character;
+    const rarity = rarityOf(storyline);
+    if (storyline.startRun) {
+      storyline.startRun(c, actionLabel);
+    }
+    const scheduled = [];
+    (storyline.steps || []).forEach((step) => {
+      const inYears = step.inYears || rnd(2, 3);
+      const scheduledStep = scheduleConsequence(inYears, {
+        text: `${storyline.title} — ${step.text}`,
+        tone: step.tone || "neutral",
+        rarity,
+        run: step.run
+      });
+      if (scheduledStep) {
+        scheduled.push(scheduledStep);
+      }
+    });
+    addLog(`Arc narratif (${rarityLabel(rarity)}): ${storyline.startText}`, storyline.startTone || "neutral");
+    return {
+      text: storyline.startText,
+      rarity,
+      extraDetails: [
+        `Arc lancé: ${storyline.title}`,
+        ...scheduled.map((entry) => `Suite prévue vers ${entry.triggerAge} ans`)
+      ]
+    };
+  }
+
+  function scheduleDelayedConsequence(categoryName, actionLabel, rarityHint = "common") {
+    const c = game.character;
+    const pool = (DELAYED_CONSEQUENCE_LIBRARY[categoryName] || []).filter((entry) =>
+      isEventEligible(entry, c)
+    );
+    if (!pool.length || !chance(0.45)) {
+      return null;
+    }
+    const delayed = pick(pool);
+    const scheduled = scheduleConsequence(rnd(2, 3), {
+      ...delayed,
+      rarity: delayed.rarity || rarityHint
+    });
+    if (scheduled) {
+      addLog(
+        `Une conséquence retardée est enclenchée après "${actionLabel}".`,
+        scheduled.rarity === "legendary" ? "warn" : "neutral"
+      );
+    }
+    return scheduled;
+  }
+
+  function processScheduledConsequences() {
+    const c = game.character;
+    if (!game.scheduledConsequences.length) return;
+    const due = [];
+    const future = [];
+    game.scheduledConsequences.forEach((item) => {
+      if (item.triggerAge <= c.age) {
+        due.push(item);
+      } else {
+        future.push(item);
+      }
+    });
+    game.scheduledConsequences = future;
+    due.forEach((item) => {
+      if (!c.alive) return;
+      item.run(c);
+      addLog(`Conséquence différée [${rarityLabel(item.rarity)}] : ${item.text}`, item.tone || "neutral");
+    });
+  }
+
+  function triggerActionFollowUp(categoryName, actionLabel) {
+    const c = game.character;
+    const storyPool = (STORYLINE_EVENTS[categoryName] || []).filter((entry) => isEventEligible(entry, c));
+    if (storyPool.length && chance(0.2)) {
+      const storyline = weightedPickByRarity(storyPool);
+      return startStoryline(categoryName, actionLabel, storyline);
+    }
+
+    const pool = (ACTION_FOLLOWUP_EVENTS[categoryName] || []).filter((entry) => isEventEligible(entry, c));
+    if (!pool.length || !chance(0.75)) {
+      return null;
+    }
+    const event = weightedPickByRarity(pool);
+    const rarity = rarityOf(event);
+    event.run(c, actionLabel);
+    addLog(`Conséquence [${rarityLabel(rarity)}] : ${event.text}`, event.tone || "neutral");
+    const delayed = scheduleDelayedConsequence(categoryName, actionLabel, rarity);
+    return {
+      text: event.text,
+      rarity,
+      extraDetails: delayed ? [`Répercussion planifiée vers ${delayed.triggerAge} ans`] : []
+    };
+  }
+
+  function buildActionResult(actionLabel, before, followUp = null) {
     const c = game.character;
     const statNames = {
       health: "Santé",
@@ -2370,15 +2770,21 @@
     const newLogCount = Math.max(0, game.log.length - before.logLen);
     const recentLogs = newLogCount ? game.log.slice(0, Math.min(3, newLogCount)).map((entry) => entry.text) : [];
     recentLogs.forEach((line) => details.push(line));
+    if (followUp?.extraDetails?.length) {
+      followUp.extraDetails.forEach((line) => details.push(line));
+    }
     if (!details.length) {
       details.push("Aucun changement notable.");
     }
+    const rarity = followUp?.rarity || null;
+    const rarityTag = rarity ? ` [${rarityLabel(rarity)}]` : "";
     return {
-      title: `Action effectuée: ${actionLabel}`,
-      text: followUpText
-        ? `Tu as réalisé "${actionLabel}". Événement lié: ${followUpText}`
+      title: `Action effectuée${rarityTag}: ${actionLabel}`,
+      text: followUp?.text
+        ? `Tu as réalisé "${actionLabel}". Conséquence: ${followUp.text}`
         : `Tu as réalisé "${actionLabel}".`,
-      details
+      details,
+      rarity
     };
   }
 
@@ -2390,8 +2796,8 @@
       render();
       return;
     }
-    const followUpText = triggerActionFollowUp(categoryName, action.label);
-    actionResultState = buildActionResult(action.label, before, followUpText);
+    const followUp = triggerActionFollowUp(categoryName, action.label);
+    actionResultState = buildActionResult(action.label, before, followUp);
     render();
   }
 
