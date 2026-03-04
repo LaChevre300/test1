@@ -3,20 +3,131 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Laboratoire 4512 — Horreur 3D</title>
-    <link rel="stylesheet" href="./src/style.css" />
-    <script type="importmap">
-      {
-        "imports": {
-          "three": "https://cdn.jsdelivr.net/npm/three@0.179.1/build/three.module.js",
-          "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.179.1/examples/jsm/"
-        }
-      }
-    </script>
+    <title>SH-Search — Recherche & aide à l’analyse (sciences humaines)</title>
+    <meta
+      name="description"
+      content="Recherche multi-sources (Wikipedia, OpenAlex, Crossref) + résumé + idées de problématique/conséquences/solutions + citation APA 7."
+    />
+    <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
-    <div id="app"></div>
-    <script type="module" src="./src/main.js"></script>
+    <header class="top">
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="title">SH-Search</div>
+          <div class="subtitle">Recherche & aide à l’analyse — sans clé API</div>
+        </div>
+      </div>
+
+      <div class="toolbar">
+        <div class="field">
+          <label for="q">Recherche</label>
+          <input id="q" type="search" placeholder="ex: “mémoire collective”, “migration”, “capital culturel”…"
+            autocomplete="off" />
+        </div>
+
+        <div class="sources">
+          <div class="chip">
+            <input id="srcWiki" type="checkbox" checked />
+            <label for="srcWiki">Wikipedia</label>
+          </div>
+          <div class="chip">
+            <input id="srcOpenAlex" type="checkbox" checked />
+            <label for="srcOpenAlex">OpenAlex</label>
+          </div>
+          <div class="chip">
+            <input id="srcCrossref" type="checkbox" checked />
+            <label for="srcCrossref">Crossref</label>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button id="btnSearch" class="primary">Rechercher</button>
+          <button id="btnClear" class="ghost" title="Effacer">Effacer</button>
+        </div>
+      </div>
+    </header>
+
+    <main class="layout">
+      <section class="left">
+        <div class="panel">
+          <div class="panelHead">
+            <div class="panelTitle">Résultats</div>
+            <div id="status" class="status">Prêt.</div>
+          </div>
+
+          <div class="filters">
+            <div class="miniField">
+              <label for="lang">Langue</label>
+              <select id="lang">
+                <option value="fr" selected>Français</option>
+                <option value="en">Anglais</option>
+              </select>
+            </div>
+            <div class="miniField">
+              <label for="perPage">Par source</label>
+              <select id="perPage">
+                <option value="5">5</option>
+                <option value="10" selected>10</option>
+                <option value="20">20</option>
+              </select>
+            </div>
+            <div class="miniField">
+              <label for="yearMin">Année min</label>
+              <input id="yearMin" inputmode="numeric" placeholder="ex: 2000" />
+            </div>
+            <div class="miniField">
+              <label for="yearMax">Année max</label>
+              <input id="yearMax" inputmode="numeric" placeholder="ex: 2026" />
+            </div>
+          </div>
+
+          <div class="tabs" role="tablist" aria-label="Sources">
+            <button class="tab active" data-tab="all" role="tab" aria-selected="true">Tout</button>
+            <button class="tab" data-tab="wikipedia" role="tab">Wikipedia</button>
+            <button class="tab" data-tab="openalex" role="tab">OpenAlex</button>
+            <button class="tab" data-tab="crossref" role="tab">Crossref</button>
+          </div>
+
+          <div id="results" class="results" aria-live="polite"></div>
+        </div>
+      </section>
+
+      <section class="right">
+        <div class="panel">
+          <div class="panelHead">
+            <div class="panelTitle">Fiche</div>
+            <div class="panelTools">
+              <button id="btnCopyApa" class="ghost" disabled>Copier APA 7</button>
+              <button id="btnCopyNotes" class="ghost" disabled>Copier notes</button>
+            </div>
+          </div>
+
+          <div id="detail" class="detail empty">
+            <div class="emptyState">
+              <div class="emptyTitle">Sélectionne un résultat</div>
+              <div class="emptyText">
+                Tu auras un résumé, des idées (problématique/conséquences/solutions/concepts-carrefour) et la citation APA 7.
+              </div>
+              <div class="hint">
+                Astuce: essaye une requête courte puis affine avec des mots-clés.
+              </div>
+            </div>
+          </div>
+
+          <footer class="foot">
+            <div class="footTitle">Important</div>
+            <div class="footText">
+              Cette app n’utilise pas de clé API. Elle interroge des sources ouvertes (Wikipedia, OpenAlex, Crossref).
+              Les résumés/“idées” sont générés automatiquement à partir des textes disponibles: vérifie toujours et cite tes sources.
+            </div>
+          </footer>
+        </div>
+      </section>
+    </main>
+
+    <script type="module" src="./app.js"></script>
   </body>
 </html>
 

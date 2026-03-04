@@ -1,15 +1,19 @@
-# Laboratoire 4512 — Jeu d’horreur 3D (prototype)
+# SH-Search — Recherche & aide à l’analyse (sciences humaines)
 
-Prototype jouable en 3D dans le navigateur: un laboratoire informatique, un chien-monstre qui patrouille et vous chasse, et un HUD rappelant que votre personnage est chauve.
+Application web **sans installation** pour les étudiant·es en sciences humaines:
 
-## Ouvrir sans installer Node.js (recommandé)
+- Recherche sur plusieurs sources **sans clé API**: **Wikipedia**, **OpenAlex**, **Crossref**
+- Résumé automatique (extractif, local)
+- Idées: problématique, conséquences, solutions / angles, concepts-carrefour
+- Génération de citation **APA 7** (au mieux selon les métadonnées disponibles)
 
-Le projet fonctionne en **HTML/CSS/JS “pur navigateur”** (grâce à un *import map* qui charge `three` depuis un CDN).
+## Ouvrir (zéro installation)
 
-### Option A — GitHub Pages (zéro installation)
+Le projet est **100% statique** (`index.html` + `styles.css` + `app.js`).
 
-- Active GitHub Pages sur la branche du dépôt (dossier racine).
-- Ouvre ensuite le site publié: tu n’as rien à installer.
+### Option A — Lien direct (si dépôt public)
+
+Tu peux ouvrir `index.html` via un hébergement statique (ou un lien “raw” qui sert les bons MIME types).
 
 ### Option B — Serveur local intégré (sans installation)
 
@@ -21,25 +25,5 @@ python3 -m http.server 8000
 
 Puis ouvre `http://localhost:8000`.
 
-> Remarque: ouvrir `index.html` en `file://` peut échouer (modules ES / CORS). En HTTP ça marche.
-
-## Lancer en local (avec Node.js, optionnel)
-
-```bash
-npm install
-npm run dev
-```
-
-Puis ouvrez l’URL affichée par Vite.
-
-## Contrôles
-
-- WASD: déplacer
-- Souris: regarder
-- Maj: courir
-- Échap: libérer la souris (Pointer Lock)
-
-## Objectif
-
-Survivre 60 secondes. Si le chien vous attrape, c’est perdu.
+> Remarque: ouvrir `index.html` en `file://` peut échouer (modules ES). En HTTP, c’est fiable.
 
