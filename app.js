@@ -37,6 +37,8 @@ const els = {
   aiUseSelected: document.querySelector("#aiUseSelected"),
   aiUseAll: document.querySelector("#aiUseAll"),
   aiUseNotes: document.querySelector("#aiUseNotes"),
+  aiAutoSearch: document.querySelector("#aiAutoSearch"),
+  aiAutoLimit: document.querySelector("#aiAutoLimit"),
   btnAiAsk: document.querySelector("#btnAiAsk"),
   btnAiCopy: document.querySelector("#btnAiCopy"),
   btnAiClear: document.querySelector("#btnAiClear"),
@@ -1796,19 +1798,66 @@ function pickEvidenceBlocks(settings) {
   return { blocks, usedItems: used };
 }
 
+async function autoSearchWikipediaEvidence(question, settings) {
+  const limit = clampInt(parseInt(String(els.aiAutoLimit?.value || "3"), 10), 1, 8, 3);
+  const auto = !!els.aiAutoSearch?.checked;
+  if (!auto) return { blocks: [], usedItems: [] };
+
+  const q = normalizeSpace(question);
+  if (!q) return { blocks: [], usedItems: [] };
+
+  // Use Wikipedia search as a general "no API key" fallback for factual questions.
+  const c = new AbortController();
+  const items = await searchWikipedia(q, settings.lang, limit, c.signal);
+  const top = items.slice(0, limit);
+  const enriched = await Promise.allSettled(
+    top.map(async (it) => {
+      try {
+        const d = await wikipediaDetails(it.id, settings.lang, c.signal);
+        if (!d) return it;
+        return { ...it, extract: d.extract, url: d.fullurl || it.url, timestamp: d.timestamp };
+      } catch {
+        return it;
+      }
+    })
+  );
+
+  const blocks = [];
+  const usedItems = [];
+  for (const s of enriched) {
+    if (s.status !== "fulfilled") continue;
+    const it = s.value;
+    const t = normalizeSpace(it.extract || it.snippet || "");
+    if (!t) continue;
+    blocks.push({ title: it.title || "Wikipédia", text: t, item: it });
+    usedItems.push(it);
+  }
+  return { blocks, usedItems };
+}
+
 function bestSentencesForQuestion(question, blocks, lang) {
   // Backward-compatible wrapper (now TF‑IDF based).
   const picked = tfidfRankSentences(question, blocks, lang, 6);
   return picked.map((p) => ({ s: p.s, score: p.score, from: p.from }));
 }
 
-function aiAnswer(question, settings) {
+async function aiAnswer(question, settings) {
   const q = normalizeSpace(question);
   if (!q) return "";
 
-  const { blocks, usedItems } = pickEvidenceBlocks(settings);
-  const corpus = blocks.map((b) => `${b.title}\n${b.text}`).join("\n\n");
+  let { blocks, usedItems } = pickEvidenceBlocks(settings);
+  let corpus = blocks.map((b) => `${b.title}\n${b.text}`).join("\n\n");
   const lang = settings.lang;
+
+  // If we have too little material, auto-search Wikipedia.
+  if (normalizeSpace(corpus).length < 450) {
+    const auto = await autoSearchWikipediaEvidence(q, settings).catch(() => ({ blocks: [], usedItems: [] }));
+    if (auto.blocks.length) {
+      blocks = [...blocks, ...auto.blocks];
+      usedItems = [...usedItems, ...auto.usedItems];
+      corpus = blocks.map((b) => `${b.title}\n${b.text}`).join("\n\n");
+    }
+  }
 
   const keywords = extractKeywords(`${q}\n${corpus}`, lang, 14);
   const ideas = generateIdeas({ title: q, text: corpus, keywords, lang });
@@ -1817,7 +1866,7 @@ function aiAnswer(question, settings) {
   const claims = extractClaimsToCheck(corpus, lang, 6);
 
   const lines = [];
-  lines.push("Œil vigilant — réponse structurée (locale)");
+  lines.push("Œil vigilant — réponse structurée (locale, sources ouvertes)");
   lines.push(`Question: ${q}`);
   if (years.length) lines.push(`Repères temporels détectés: ${years.join(", ")}`);
   lines.push("");
@@ -2102,7 +2151,8 @@ els.btnAiClear?.addEventListener("click", () => {
 els.btnAiAsk?.addEventListener("click", async () => {
   const settings = getSettings();
   const q = String(els.aiQ?.value || "");
-  const ans = aiAnswer(q, settings);
+  renderAi("Œil vigilant: je rassemble des sources…");
+  const ans = await aiAnswer(q, settings);
   renderAi(ans);
 });
 

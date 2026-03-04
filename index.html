@@ -317,6 +317,18 @@
                   <input id="aiUseNotes" type="checkbox" />
                   <label for="aiUseNotes">Inclure mes notes</label>
                 </div>
+                <div class="chip">
+                  <input id="aiAutoSearch" type="checkbox" checked />
+                  <label for="aiAutoSearch">Chercher des sources si besoin (Wikipedia)</label>
+                </div>
+                <div class="miniField" style="min-width:180px;">
+                  <label for="aiAutoLimit">Sources</label>
+                  <select id="aiAutoLimit">
+                    <option value="2">2</option>
+                    <option value="3" selected>3</option>
+                    <option value="5">5</option>
+                  </select>
+                </div>
                 <button id="btnAiAsk" class="primary" type="button">Répondre</button>
               </div>
 
