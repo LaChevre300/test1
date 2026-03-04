@@ -19,6 +19,84 @@ function fract(x) {
   return x - Math.floor(x);
 }
 
+function makeNoiseCanvas(size, fn) {
+  const c = document.createElement("canvas");
+  c.width = size;
+  c.height = size;
+  const ctx = c.getContext("2d");
+  const img = ctx.createImageData(size, size);
+  for (let i = 0; i < img.data.length; i += 4) {
+    const x = (i / 4) % size;
+    const y = Math.floor(i / 4 / size);
+    const v = fn(x, y); // 0..1
+    const g = Math.max(0, Math.min(255, Math.floor(v * 255)));
+    img.data[i + 0] = g;
+    img.data[i + 1] = g;
+    img.data[i + 2] = g;
+    img.data[i + 3] = 255;
+  }
+  ctx.putImageData(img, 0, 0);
+  return c;
+}
+
+function heightToNormalTexture(heightCanvas, strength = 1.8) {
+  const w = heightCanvas.width;
+  const h = heightCanvas.height;
+  const src = heightCanvas.getContext("2d").getImageData(0, 0, w, h).data;
+  const c = document.createElement("canvas");
+  c.width = w;
+  c.height = h;
+  const ctx = c.getContext("2d");
+  const out = ctx.createImageData(w, h);
+
+  const sample = (x, y) => {
+    x = (x + w) % w;
+    y = (y + h) % h;
+    const i = (y * w + x) * 4;
+    return src[i] / 255;
+  };
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const hl = sample(x - 1, y);
+      const hr = sample(x + 1, y);
+      const hd = sample(x, y - 1);
+      const hu = sample(x, y + 1);
+
+      const dx = (hr - hl) * strength;
+      const dy = (hu - hd) * strength;
+
+      // normal = normalize([-dx, -dy, 1])
+      let nx = -dx;
+      let ny = -dy;
+      let nz = 1.0;
+      const invLen = 1 / Math.max(1e-6, Math.hypot(nx, ny, nz));
+      nx *= invLen;
+      ny *= invLen;
+      nz *= invLen;
+
+      const r = Math.floor((nx * 0.5 + 0.5) * 255);
+      const g = Math.floor((ny * 0.5 + 0.5) * 255);
+      const b = Math.floor((nz * 0.5 + 0.5) * 255);
+
+      const i = (y * w + x) * 4;
+      out.data[i + 0] = r;
+      out.data[i + 1] = g;
+      out.data[i + 2] = b;
+      out.data[i + 3] = 255;
+    }
+  }
+
+  ctx.putImageData(out, 0, 0);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.NoColorSpace;
+  t.wrapS = THREE.RepeatWrapping;
+  t.wrapT = THREE.RepeatWrapping;
+  t.anisotropy = 4;
+  t.needsUpdate = true;
+  return t;
+}
+
 export function createProceduralTextures() {
   // Sol: “dalles” + joints
   const floorBase = canvasTexture(512, 512, (ctx, w, h) => {
@@ -118,11 +196,37 @@ export function createProceduralTextures() {
   wallRough.anisotropy = 4;
   wallRough.needsUpdate = true;
 
+  // Normal maps (à partir de heightmaps bruitées)
+  const floorHeight = makeNoiseCanvas(512, (x, y) => {
+    const n1 = fract(Math.sin(x * 0.15 + y * 0.11) * 43758.5453);
+    const n2 = fract(Math.sin(x * 0.07 + y * 0.23) * 24634.6345);
+    // joints / micro relief
+    const tile = 64;
+    const gx = Math.min((x % tile), tile - (x % tile));
+    const gy = Math.min((y % tile), tile - (y % tile));
+    const grout = Math.max(0, 1 - Math.min(gx, gy) / 5);
+    return Math.min(1, 0.35 * n1 + 0.25 * n2 + grout * 0.55);
+  });
+  const floorNormal = heightToNormalTexture(floorHeight, 2.2);
+  floorNormal.repeat.set(18, 18);
+
+  const wallHeight = makeNoiseCanvas(512, (x, y) => {
+    const n1 = fract(Math.sin(x * 0.09 + y * 0.08) * 43758.5453);
+    const n2 = fract(Math.sin(x * 0.21 + y * 0.05) * 24634.6345);
+    // panneaux verticaux
+    const panel = Math.max(0, 1 - Math.min(x % 64, 64 - (x % 64)) / 6);
+    return Math.min(1, 0.55 * n1 + 0.25 * n2 + panel * 0.35);
+  });
+  const wallNormal = heightToNormalTexture(wallHeight, 1.8);
+  wallNormal.repeat.set(10, 4);
+
   return {
     floorBase,
     floorRough,
+    floorNormal,
     wallBase,
     wallRough,
+    wallNormal,
   };
 }
 

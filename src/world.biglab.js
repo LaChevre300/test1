@@ -74,17 +74,21 @@ export function createLabWorld() {
   const floorMat = new THREE.MeshStandardMaterial({
     map: tex.floorBase,
     roughnessMap: tex.floorRough,
+    normalMap: tex.floorNormal,
     color: 0xffffff,
     roughness: 0.92,
     metalness: 0.02,
   });
+  floorMat.normalScale.set(0.55, 0.55);
   const wallMat = new THREE.MeshStandardMaterial({
     map: tex.wallBase,
     roughnessMap: tex.wallRough,
+    normalMap: tex.wallNormal,
     color: 0xffffff,
     roughness: 0.95,
     metalness: 0.0,
   });
+  wallMat.normalScale.set(0.35, 0.35);
   const deskMat = new THREE.MeshStandardMaterial({ color: 0x1b2033, roughness: 0.78, metalness: 0.06 });
   const chairMat = new THREE.MeshStandardMaterial({ color: 0x101422, roughness: 0.85, metalness: 0.08 });
   const plasticMat = new THREE.MeshStandardMaterial({ color: 0x0c111c, roughness: 0.62, metalness: 0.12 });
@@ -258,6 +262,57 @@ export function createLabWorld() {
   addWallBox(classroom.maxX - classroom.minX - 10, 0, (classroom.minX + classroom.maxX) / 2 - 5, classroom.maxZ);
   addWallBoxRot(classroom.maxZ - classroom.minZ, 0, classroom.minX, (classroom.minZ + classroom.maxZ) / 2, Math.PI / 2);
   addWallBoxRot(classroom.maxZ - classroom.minZ, 0, classroom.maxX, (classroom.minZ + classroom.maxZ) / 2, Math.PI / 2);
+
+  // Cloison vitrée côté sud de la salle de cours (plus “réaliste”)
+  const glassMat = new THREE.MeshPhysicalMaterial({
+    color: 0xbfd6ff,
+    roughness: 0.06,
+    metalness: 0.0,
+    transmission: 0.92,
+    thickness: 0.25,
+    ior: 1.45,
+    transparent: true,
+    opacity: 0.95,
+  });
+  const glassW = (classroom.maxX - classroom.minX) - 16;
+  const glassH = 3.1;
+  const glassT = 0.1;
+  const glass = new THREE.Mesh(new THREE.BoxGeometry(glassW, glassH, glassT), glassMat);
+  glass.position.set((classroom.minX + classroom.maxX) / 2, 1.35, classroom.maxZ + 0.55);
+  glass.castShadow = false;
+  glass.receiveShadow = true;
+  group.add(glass);
+  // collision fine: même dimensions que le verre (évite murs invisibles)
+  addColliderBox(group, colliders, new THREE.Vector3(glassW, glassH, glassT + 0.25), glass.position.clone(), "glassWallCollider");
+
+  // Signalétique (panneaux)
+  const signTex = (() => {
+    const c = document.createElement("canvas");
+    c.width = 512;
+    c.height = 256;
+    const ctx = c.getContext("2d", { alpha: true });
+    ctx.clearRect(0, 0, c.width, c.height);
+    ctx.fillStyle = "rgba(10,14,22,0.9)";
+    ctx.fillRect(0, 0, c.width, c.height);
+    ctx.strokeStyle = "rgba(160,210,255,0.35)";
+    ctx.lineWidth = 8;
+    ctx.strokeRect(10, 10, c.width - 20, c.height - 20);
+    ctx.fillStyle = "rgba(210,240,255,0.92)";
+    ctx.font = "700 54px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto";
+    ctx.fillText("SALLE DE COURS", 42, 106);
+    ctx.font = "600 28px ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto";
+    ctx.fillStyle = "rgba(210,240,255,0.78)";
+    ctx.fillText("Accès réservé", 42, 160);
+    const t = new THREE.CanvasTexture(c);
+    t.colorSpace = THREE.SRGBColorSpace;
+    t.needsUpdate = true;
+    return t;
+  })();
+  const signMat = new THREE.MeshStandardMaterial({ map: signTex, transparent: true, roughness: 0.6, metalness: 0.1 });
+  const sign = new THREE.Mesh(new THREE.PlaneGeometry(4.6, 2.3), signMat);
+  sign.position.set(classroom.minX + 4.4, 2.6, classroom.maxZ + 1.2);
+  sign.rotation.y = Math.PI;
+  group.add(sign);
 
   // Stockage (W)
   const storage = {
