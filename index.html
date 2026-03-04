@@ -9,11 +9,12 @@
   <body>
     <main class="app">
       <header class="top-header">
-        <h1>Chroniques de Dynastie</h1>
-        <p class="subtitle">Simulation textuelle médiévale</p>
+        <div class="top-title">
+          <h1>Chroniques de Dynastie</h1>
+          <p class="subtitle">Simulation textuelle médiévale</p>
+        </div>
+        <button id="top-settings-btn" class="top-settings-btn" aria-label="Paramètres">⚙️</button>
       </header>
-
-      <section class="stats-bar" id="status-strip"></section>
 
       <section id="screen-home" class="screen active">
         <article class="card event-card">
@@ -73,6 +74,8 @@
         </article>
       </section>
 
+      <section class="stats-bar" id="status-strip"></section>
+
       <section class="bottom-actions" id="bottom-actions">
         <button id="bottom-btn-1" class="btn btn-green"></button>
         <button id="bottom-btn-2" class="btn btn-orange"></button>
@@ -84,7 +87,7 @@
           🏠<span class="badge" id="badge-home"></span>
         </button>
         <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Activité">
-          ⚙️<span class="badge" id="badge-activity"></span>
+          🎯<span class="badge" id="badge-activity"></span>
         </button>
         <button class="tab-btn tab-orange" data-tab="crime" data-accent="orange" aria-label="Crime">
           🔪<span class="badge" id="badge-crime"></span>
@@ -92,8 +95,8 @@
         <button class="tab-btn" data-tab="stats" data-accent="blue" aria-label="Stats">
           📊<span class="badge" id="badge-stats"></span>
         </button>
-        <button class="tab-btn" data-tab="settings" data-accent="gray" aria-label="Paramètres">
-          ⚙️<span class="badge" id="badge-settings"></span>
+        <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Activité">
+          🎲<span class="badge" id="badge-activity-2"></span>
         </button>
       </nav>
 

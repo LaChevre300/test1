@@ -162,6 +162,7 @@
 
   const ui = {
     newLifeBtn: document.getElementById("new-life-btn"),
+    topSettingsBtn: document.getElementById("top-settings-btn"),
     statusStrip: document.getElementById("status-strip"),
     eventText: document.getElementById("event-text"),
     eventChoices: document.getElementById("event-choices"),
@@ -187,9 +188,9 @@
     badges: {
       home: document.getElementById("badge-home"),
       activity: document.getElementById("badge-activity"),
+      activity2: document.getElementById("badge-activity-2"),
       crime: document.getElementById("badge-crime"),
-      stats: document.getElementById("badge-stats"),
-      settings: document.getElementById("badge-settings")
+      stats: document.getElementById("badge-stats")
     },
     deathModal: document.getElementById("death-modal"),
     deathTitle: document.getElementById("death-title"),
@@ -2434,9 +2435,9 @@
     const badgeState = {
       home: !!game.pendingEvent,
       activity: false,
+      activity2: false,
       crime: c.criminal.inPrison || c.criminal.record > 0,
-      stats: c.conditions.illnesses.length + c.conditions.mental.length + c.conditions.injuries.length > 0,
-      settings: false
+      stats: c.conditions.illnesses.length + c.conditions.mental.length + c.conditions.injuries.length > 0
     };
     Object.entries(ui.badges).forEach(([key, badge]) => {
       if (badgeState[key]) {
@@ -2501,6 +2502,12 @@
 
   if (ui.newLifeBtn) {
     ui.newLifeBtn.addEventListener("click", () => bootstrapGame());
+  }
+  if (ui.topSettingsBtn) {
+    ui.topSettingsBtn.addEventListener("click", () => {
+      activeTab = "settings";
+      render();
+    });
   }
   ui.tabButtons.forEach((button) => {
     button.addEventListener("click", () => {
