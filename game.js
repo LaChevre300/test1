@@ -2860,31 +2860,23 @@
     if (storyline.startRun) {
       storyline.startRun(c, actionLabel);
     }
-    const scheduled = [];
     (storyline.steps || []).forEach((step) => {
       const inYears = step.inYears || rnd(2, 3);
-      const scheduledStep = scheduleConsequence(inYears, {
+      scheduleConsequence(inYears, {
         text: `${storyline.title} — ${step.text}`,
         tone: step.tone || "neutral",
         rarity,
         run: step.run
       });
-      if (scheduledStep) {
-        scheduled.push(scheduledStep);
-      }
     });
-    addLog(`Arc narratif (${rarityLabel(rarity)}): ${storyline.startText}`, storyline.startTone || "neutral");
+    addLog(`Événement [${rarityLabel(rarity)}] : ${storyline.startText}`, storyline.startTone || "neutral");
     return {
       text: storyline.startText,
-      rarity,
-      extraDetails: [
-        `Arc lancé: ${storyline.title}`,
-        ...scheduled.map((entry) => `Suite prévue vers ${entry.triggerAge} ans`)
-      ]
+      rarity
     };
   }
 
-  function scheduleDelayedConsequence(categoryName, actionLabel, rarityHint = "common") {
+  function scheduleDelayedConsequence(categoryName, rarityHint = "common") {
     const c = game.character;
     const pool = (DELAYED_CONSEQUENCE_LIBRARY[categoryName] || []).filter((entry) =>
       isEventEligible(entry, c)
@@ -2897,12 +2889,6 @@
       ...delayed,
       rarity: delayed.rarity || rarityHint
     });
-    if (scheduled) {
-      addLog(
-        `Une conséquence retardée est enclenchée après "${actionLabel}".`,
-        scheduled.rarity === "legendary" ? "warn" : "neutral"
-      );
-    }
     return scheduled;
   }
 
@@ -2951,11 +2937,10 @@
     const rarity = rarityOf(event);
     event.run(c, actionLabel);
     addLog(`Conséquence [${rarityLabel(rarity)}] : ${event.text}`, event.tone || "neutral");
-    const delayed = scheduleDelayedConsequence(categoryName, actionLabel, rarity);
+    scheduleDelayedConsequence(categoryName, rarity);
     return {
       text: event.text,
-      rarity,
-      extraDetails: delayed ? [`Répercussion planifiée vers ${delayed.triggerAge} ans`] : []
+      rarity
     };
   }
 
@@ -2996,9 +2981,6 @@
     const newLogCount = Math.max(0, game.log.length - before.logLen);
     const recentLogs = newLogCount ? game.log.slice(0, Math.min(3, newLogCount)).map((entry) => entry.text) : [];
     recentLogs.forEach((line) => details.push(line));
-    if (followUp?.extraDetails?.length) {
-      followUp.extraDetails.forEach((line) => details.push(line));
-    }
     if (!details.length) {
       details.push("Aucun changement notable.");
     }
