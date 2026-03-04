@@ -26,6 +26,7 @@ export function createUI(rootEl) {
           <button id="start">Jouer (clic pour capturer la souris)</button>
           <button id="reset">Recommencer</button>
         </div>
+        <pre id="err" style="display:none;margin:12px 0 0;white-space:pre-wrap;word-break:break-word;font-size:12px;line-height:1.35;opacity:.9;background:rgba(0,0,0,.35);border:1px solid rgba(255,80,100,.25);padding:10px;border-radius:12px;"></pre>
         <p class="muted" style="margin-top:12px;font-size:12.5px;">
           Contrôles: WASD pour bouger, Maj pour courir, souris pour regarder. Echap pour libérer la souris.
         </p>
@@ -46,6 +47,7 @@ export function createUI(rootEl) {
     danger: ui.querySelector("#danger"),
     br: ui.querySelector("#br"),
     hint: ui.querySelector("#hint"),
+    err: ui.querySelector("#err"),
   };
 
   return {
@@ -62,12 +64,17 @@ export function createUI(rootEl) {
       els.crosshair.style.display = "none";
       els.br.style.display = "none";
       els.danger.style.display = "none";
+      els.err.style.display = "none";
     },
     setStatus(text) {
       els.status.textContent = text;
     },
     setDanger(isDanger) {
       els.danger.style.display = isDanger ? "" : "none";
+    },
+    showError(text) {
+      els.err.textContent = text;
+      els.err.style.display = "";
     },
   };
 }

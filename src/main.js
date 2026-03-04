@@ -11,6 +11,27 @@ const root = document.querySelector("#app");
 const ui = createUI(root);
 const audio = createAudio();
 
+// Affiche les erreurs runtime (utile si “Jouer” ne lance rien).
+function formatErr(e) {
+  if (!e) return "Erreur inconnue.";
+  if (typeof e === "string") return e;
+  if (e?.message) return `${e.message}\n${e?.stack ?? ""}`.trim();
+  try {
+    return JSON.stringify(e, null, 2);
+  } catch {
+    return String(e);
+  }
+}
+
+window.addEventListener("error", (ev) => {
+  ui.showMenu();
+  ui.showError(`Erreur JS:\n${formatErr(ev?.error ?? ev?.message)}`);
+});
+window.addEventListener("unhandledrejection", (ev) => {
+  ui.showMenu();
+  ui.showError(`Promise rejetée:\n${formatErr(ev?.reason)}`);
+});
+
 const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: "high-performance" });
 renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
@@ -285,11 +306,33 @@ function tick() {
 }
 
 ui.els.start.addEventListener("click", async () => {
-  await audio.start();
-  audio.setMasterVolume(0.55);
-  resetGame();
-  ui.showInGame();
-  controls.requestLock();
+  try {
+    // Ne bloque pas le lancement si l’audio échoue sur certains navigateurs.
+    audio.start().catch(() => {});
+    audio.setMasterVolume(0.55);
+    resetGame();
+    ui.showInGame();
+
+    if ("pointerLockElement" in document && renderer.domElement.requestPointerLock) {
+      controls.requestLock();
+      // Fallback: si le lock ne se fait pas, proposer de cliquer sur la zone de jeu.
+      setTimeout(() => {
+        if (document.pointerLockElement !== renderer.domElement) {
+          ui.showMenu();
+          ui.showError(
+            "La capture de souris (Pointer Lock) a été refusée.\n\n" +
+              "Essaie:\n- clique d’abord dans la zone de jeu\n- puis reclique sur “Jouer”\n- ou vérifie les permissions du navigateur."
+          );
+        }
+      }, 700);
+    } else {
+      ui.showMenu();
+      ui.showError("Pointer Lock non supporté sur ce navigateur/appareil (mobile?).");
+    }
+  } catch (e) {
+    ui.showMenu();
+    ui.showError(`Impossible de démarrer:\n${formatErr(e)}`);
+  }
 });
 
 ui.els.reset.addEventListener("click", () => {
