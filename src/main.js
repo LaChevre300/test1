@@ -15,9 +15,10 @@ renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 renderer.setSize(window.innerWidth, window.innerHeight);
 renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.physicallyCorrectLights = true;
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
-renderer.toneMappingExposure = 1.35;
+renderer.toneMappingExposure = 1.15;
 root.appendChild(renderer.domElement);
 
 const scene = new THREE.Scene();
@@ -30,9 +31,9 @@ camera.position.set(0, 1.7, 14);
 
 const controls = createPointerLockControls(camera, renderer.domElement);
 
-// Lighting baseline
-scene.add(new THREE.HemisphereLight(0x9fbfff, 0x06040a, 0.22));
-scene.add(new THREE.AmbientLight(0x1f2b44, 0.22));
+// Lighting baseline (plus réaliste / moins “bleu”)
+scene.add(new THREE.HemisphereLight(0xd8e8ff, 0x07040a, 0.12));
+scene.add(new THREE.AmbientLight(0x121a2a, 0.14));
 
 // World
 const world = createLabWorld();
@@ -41,7 +42,7 @@ scene.add(world.group);
 for (const l of world.lights) scene.add(l);
 
 // Lampe torche (évite le “tout noir” et garde l’ambiance horreur)
-const flashlight = new THREE.SpotLight(0xe8f4ff, 85, 22, Math.PI / 8, 0.45, 1.7);
+const flashlight = new THREE.SpotLight(0xfff2e0, 260, 26, Math.PI / 9, 0.55, 1.9);
 flashlight.castShadow = true;
 flashlight.shadow.mapSize.set(1024, 1024);
 flashlight.shadow.bias = -0.0002;
@@ -106,23 +107,28 @@ function resetGame() {
   audio.setDangerLevel(0);
 }
 
-function aabbForMesh(mesh) {
-  mesh.geometry.computeBoundingBox();
-  const bb = mesh.geometry.boundingBox.clone();
-  bb.applyMatrix4(mesh.matrixWorld);
-  return bb;
+function aabbForCollider(m) {
+  if (m.userData?.aabb) return m.userData.aabb;
+  if (!m.geometry) return null;
+  m.updateWorldMatrix(true, false);
+  m.geometry.computeBoundingBox();
+  const bb = m.geometry.boundingBox.clone();
+  bb.applyMatrix4(m.matrixWorld);
+  const aabb = { minX: bb.min.x, maxX: bb.max.x, minZ: bb.min.z, maxZ: bb.max.z };
+  m.userData.aabb = aabb;
+  return aabb;
 }
 
 function resolveCollisions(pos, radius) {
   // Approximate player as a vertical capsule with radius; resolve against AABBs by pushing out in XZ.
   for (const m of world.colliders) {
-    if (!m.geometry) continue;
-    const bb = aabbForMesh(m);
+    const bb = aabbForCollider(m);
+    if (!bb) continue;
 
-    const minX = bb.min.x - radius;
-    const maxX = bb.max.x + radius;
-    const minZ = bb.min.z - radius;
-    const maxZ = bb.max.z + radius;
+    const minX = bb.minX - radius;
+    const maxX = bb.maxX + radius;
+    const minZ = bb.minZ - radius;
+    const maxZ = bb.maxZ + radius;
 
     if (pos.x >= minX && pos.x <= maxX && pos.z >= minZ && pos.z <= maxZ) {
       // push out on the smallest penetration axis

@@ -8,6 +8,20 @@ function makeRng(seed0 = 4512) {
   };
 }
 
+function cacheWorldAabb(mesh) {
+  if (!mesh.geometry) return;
+  mesh.updateWorldMatrix(true, false);
+  mesh.geometry.computeBoundingBox();
+  const bb = mesh.geometry.boundingBox.clone();
+  bb.applyMatrix4(mesh.matrixWorld);
+  mesh.userData.aabb = {
+    minX: bb.min.x,
+    maxX: bb.max.x,
+    minZ: bb.min.z,
+    maxZ: bb.max.z,
+  };
+}
+
 function setInstance(mesh, i, position, rotY = 0, scale = 1) {
   const m = new THREE.Matrix4();
   const q = new THREE.Quaternion().setFromEuler(new THREE.Euler(0, rotY, 0));
@@ -25,6 +39,7 @@ function addColliderBox(group, colliders, size, position, name = "collider") {
   mesh.visible = false;
   group.add(mesh);
   colliders.push(mesh);
+  cacheWorldAabb(mesh);
   return mesh;
 }
 
@@ -87,6 +102,7 @@ export function createLabWorld() {
     wall.receiveShadow = true;
     group.add(wall);
     colliders.push(wall);
+    cacheWorldAabb(wall);
   };
   wallLong(half * 2, 0, -half, 0);
   wallLong(half * 2, 0, half, 0);
@@ -111,6 +127,7 @@ export function createLabWorld() {
     mesh.receiveShadow = true;
     group.add(mesh);
     colliders.push(mesh);
+    cacheWorldAabb(mesh);
     return mesh;
   }
   function addWallBoxRot(sizeX, sizeZ, x, z, rotY) {
@@ -122,6 +139,7 @@ export function createLabWorld() {
     mesh.receiveShadow = true;
     group.add(mesh);
     colliders.push(mesh);
+    cacheWorldAabb(mesh);
     return mesh;
   }
 
@@ -275,9 +293,10 @@ export function createLabWorld() {
   for (let rz = 0; rz < rowCount; rz++) {
     for (let rx = 0; rx < colCount; rx++) {
       if (di >= deskCount) break;
-      const x = openMinX + 6 + rx * spacingX + (rand() - 0.5) * 0.25;
-      const z = openMinZ + 5 + rz * spacingZ + (rand() - 0.5) * 0.25;
-      const rot = rand() > 0.5 ? 0 : Math.PI;
+      // Positions stables (pas de jitter) => collisions plus cohérentes.
+      const x = openMinX + 6 + rx * spacingX;
+      const z = openMinZ + 5 + rz * spacingZ;
+      const rot = rz % 2 === 0 ? 0 : Math.PI;
 
       const deskPos = new THREE.Vector3(x, 0.42, z);
       setInstance(desks, di, deskPos, rot, 1);
@@ -289,7 +308,7 @@ export function createLabWorld() {
       setInstance(chairsBack, ci, backPos, rot, 1);
 
       // PC tour + écran + clavier
-      const pcPos = new THREE.Vector3(x + (rot === 0 ? 0.85 : -0.85), 0.73, z + (rand() - 0.5) * 0.08);
+      const pcPos = new THREE.Vector3(x + (rot === 0 ? 0.85 : -0.85), 0.73, z);
       setInstance(pcs, pi, pcPos, rot, 1);
       const screenPos = new THREE.Vector3(x - (rot === 0 ? 0.05 : -0.05), 1.02, z - (rot === 0 ? 0.44 : -0.44));
       setInstance(screens, si, screenPos, rot, 1);
@@ -306,7 +325,9 @@ export function createLabWorld() {
 
   // Colliders: au lieu de “gros murs invisibles” par rangée, on met des segments alignés avec les bureaux.
   // (On garde peu de colliders pour rester fluide.)
-  const blockWidth = spacingX * 2 - 1.0; // couvre 2 bureaux
+  // Colliders un peu plus petits que l’emprise visuelle => évite les “coins” qui bloquent.
+  const blockWidth = spacingX * 2 - 1.6; // couvre 2 bureaux mais laisse des marges
+  const blockDepth = 1.35;
   for (let rz = 0; rz < rowCount; rz++) {
     const z = openMinZ + 5 + rz * spacingZ;
     for (let rx = 0; rx < colCount; rx += 2) {
@@ -314,7 +335,7 @@ export function createLabWorld() {
       addColliderBox(
         group,
         colliders,
-        new THREE.Vector3(blockWidth, 1.55, 1.55),
+        new THREE.Vector3(blockWidth, 1.55, blockDepth),
         new THREE.Vector3(x + spacingX * 0.5, 0.78, z),
         "deskBlockCollider"
       );
@@ -324,8 +345,8 @@ export function createLabWorld() {
   // Salle cours: rangées plus serrées
   for (let rz = 0; rz < 6 && di < deskCount; rz++) {
     for (let rx = 0; rx < 8 && di < deskCount; rx++) {
-      const x = classroom.minX + 7 + rx * 4.2 + (rand() - 0.5) * 0.2;
-      const z = classroom.minZ + 8 + rz * 3.4 + (rand() - 0.5) * 0.2;
+      const x = classroom.minX + 7 + rx * 4.2;
+      const z = classroom.minZ + 8 + rz * 3.4;
       const rot = 0;
       setInstance(desks, di, new THREE.Vector3(x, 0.42, z), rot, 1);
       setInstance(chairsSeat, ci, new THREE.Vector3(x, 0.26, z + 0.95), rot, 1);
@@ -350,7 +371,7 @@ export function createLabWorld() {
       addColliderBox(
         group,
         colliders,
-        new THREE.Vector3(classSpacingX * 2 - 1.0, 1.55, 1.55),
+        new THREE.Vector3(classSpacingX * 2 - 1.6, 1.55, blockDepth),
         new THREE.Vector3(x + classSpacingX * 0.5, 0.78, z),
         "classDeskBlockCollider"
       );
