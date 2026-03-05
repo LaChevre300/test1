@@ -1,4 +1,4 @@
-const CACHE_NAME = "carnet-survivaliste-v1";
+const CACHE_NAME = "carnet-survivaliste-v2";
 const APP_SHELL = [
   "/",
   "/index.html",

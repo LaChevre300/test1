@@ -8,6 +8,19 @@
   "background_color": "#101512",
   "theme_color": "#1f3a2d",
   "lang": "fr-CA",
+  "categories": ["education", "utilities", "safety"],
+  "shortcuts": [
+    {
+      "name": "Commencer BOB",
+      "short_name": "BOB",
+      "url": "/index.html#plans"
+    },
+    {
+      "name": "Guide Eau",
+      "short_name": "Eau",
+      "url": "/index.html#eau"
+    }
+  ],
   "icons": [
     {
       "src": "assets/icon.svg",
