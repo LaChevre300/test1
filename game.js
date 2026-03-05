@@ -799,7 +799,6 @@
     schoolPeopleRoot: document.getElementById("school-people-root"),
     subpageScreen: document.getElementById("subpage-screen"),
     subpageBackBtn: document.getElementById("subpage-back-btn"),
-    subpageJournalBtn: document.getElementById("subpage-journal-btn"),
     subpageTitle: document.getElementById("subpage-title"),
     subpageContent: document.getElementById("subpage-content"),
     eventText: document.getElementById("event-text"),
@@ -4780,13 +4779,6 @@
     render();
   }
 
-  function returnToJournal() {
-    activeSubpage = null;
-    activeTab = "home";
-    previousTabBeforeSettings = "home";
-    render();
-  }
-
   function renderSubpage() {
     if (!ui.subpageScreen || !ui.subpageContent || !ui.subpageTitle) return;
     if (!activeSubpage) {
@@ -5231,9 +5223,6 @@
   }
   if (ui.subpageBackBtn) {
     ui.subpageBackBtn.addEventListener("click", closeSubpage);
-  }
-  if (ui.subpageJournalBtn) {
-    ui.subpageJournalBtn.addEventListener("click", returnToJournal);
   }
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {

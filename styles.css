@@ -783,7 +783,7 @@ body {
   background: linear-gradient(180deg, #1f5f9f, #184e83);
   color: #fff;
   display: grid;
-  grid-template-columns: 40px 1fr 68px;
+  grid-template-columns: 40px 1fr 40px;
   align-items: center;
   border-bottom: 1px solid #123d66;
   padding: 0 0.3rem;
@@ -808,15 +808,9 @@ body {
   font-size: 12px;
 }
 
-.subpage-journal-btn {
+.subpage-spacer {
+  width: 30px;
   height: 30px;
-  border: 1px solid rgba(255, 255, 255, 0.75);
-  border-radius: 999px;
-  background: rgba(255, 255, 255, 0.1);
-  color: #fff;
-  font-size: 0.68rem;
-  font-weight: 700;
-  letter-spacing: 0.01em;
 }
 
 .subpage-content {
