@@ -2029,7 +2029,8 @@
     return byTheme[theme] || EVENT_BIASES[index % EVENT_BIASES.length];
   }
 
-  function buildThemedMassChoices(c, theme, bias, index) {
+  function buildThemedMassChoices(c, theme, bias, index, text) {
+    const lower = text.toLowerCase();
     const makeChoice = (label, approach, extra) => ({
       label,
       run: () => {
@@ -2040,105 +2041,327 @@
       }
     });
 
-    const wantsFourth = index % 3 === 0;
-    const choices = [];
+    const choose = (list, shift = 0) => list[(index + shift) % list.length];
+    const wantsFourth = index % 2 === 0;
+
+    const choiceBanks = {
+      school: {
+        safe: [
+          "Réviser chaque détail avant d'agir",
+          "Demander un conseil au professeur",
+          "Travailler discrètement après les cours",
+          "Préparer un exposé irréprochable"
+        ],
+        balanced: [
+          "Former une alliance avec un camarade fiable",
+          "Négocier un délai avec l'encadrement",
+          "Proposer une solution de compromis",
+          "Soutirer des infos sans te compromettre"
+        ],
+        risky: [
+          "Tenter un bluff devant toute la classe",
+          "Voler un avantage à un rival",
+          "Forcer la chance dans une épreuve",
+          "Lancer une manœuvre audacieuse"
+        ],
+        fourth: [
+          "Sécher et improviser au dernier moment",
+          "Transformer ça en défi public",
+          "Faire porter la faute à un autre élève",
+          "Contourner les règles de l'école"
+        ]
+      },
+      work: {
+        safe: [
+          "Accepter la tâche en respectant la méthode",
+          "Suivre le protocole de l'atelier",
+          "Livrer un travail propre sans bruit",
+          "Demander une validation officielle"
+        ],
+        balanced: [
+          "Renégocier les conditions de la mission",
+          "Passer par un réseau de contacts",
+          "Partager le risque avec un collègue",
+          "Négocier un bonus contre résultat"
+        ],
+        risky: [
+          "Saboter discrètement un concurrent",
+          "Contourner les règles de guilde",
+          "Signer un accord opaque",
+          "Promettre l'impossible pour briller"
+        ],
+        fourth: [
+          "Refiler la partie sale à un apprenti",
+          "Exiger un engagement écrit immédiat",
+          "Parier ta réputation sur ce coup",
+          "Monter un coup de pression au client"
+        ]
+      },
+      trade: {
+        safe: [
+          "Sécuriser un contrat clair et mesuré",
+          "Vérifier les comptes ligne par ligne",
+          "Avancer petit à petit sur le marché",
+          "Refuser les clauses ambiguës"
+        ],
+        balanced: [
+          "Négocier ferme sans rompre l'accord",
+          "Monter une association temporaire",
+          "Tester le marché avec une mise modérée",
+          "Jouer les intermédiaires rémunérés"
+        ],
+        risky: [
+          "Spéculer massivement sur la rumeur",
+          "Cacher une partie des recettes",
+          "Acheter en masse avant la hausse",
+          "Forcer une opération limite légale"
+        ],
+        fourth: [
+          "Corrompre un contrôleur des taxes",
+          "Faire circuler une fausse information",
+          "Monter une caisse noire provisoire",
+          "Vendre avant que la garde n'arrive"
+        ]
+      },
+      family: {
+        safe: [
+          "Ouvrir une discussion calme avec les proches",
+          "Chercher un compromis familial",
+          "Prendre du recul avant de répondre",
+          "Rassurer chacun sans accuser"
+        ],
+        balanced: [
+          "Offrir un geste concret pour apaiser",
+          "Poser des limites claires mais justes",
+          "Demander une médiation d'un proche",
+          "Négocier une trêve temporaire"
+        ],
+        risky: [
+          "Imposer ta décision sans débat",
+          "Raviver un vieux reproche",
+          "Menacer de couper les liens",
+          "Faire éclater la vérité brutalement"
+        ],
+        fourth: [
+          "Partir quelques jours sans prévenir",
+          "Mettre tout le monde devant le fait accompli",
+          "Confier le conflit à la belle-famille",
+          "Rompre temporairement les contacts"
+        ]
+      },
+      romance: {
+        safe: [
+          "Parler avec franchise dès maintenant",
+          "Écouter avant de répondre",
+          "Montrer ta loyauté par des actes",
+          "Poser une discussion intime et honnête"
+        ],
+        balanced: [
+          "Faire un geste romantique mesuré",
+          "Négocier un compromis de couple",
+          "Temporiser sans fuir le sujet",
+          "Demander du temps pour clarifier"
+        ],
+        risky: [
+          "Mentir pour éviter la crise",
+          "Jouer la jalousie pour reprendre l'avantage",
+          "Tester les limites du couple",
+          "Balancer une vérité blessante"
+        ],
+        fourth: [
+          "Prendre de la distance quelques jours",
+          "Faire intervenir un proche dans la dispute",
+          "Annuler tous vos plans communs",
+          "Lancer un ultimatum émotionnel"
+        ]
+      },
+      prison: {
+        safe: [
+          "Rester invisible dans le bloc",
+          "Respecter strictement les règles internes",
+          "Éviter les clans pour survivre",
+          "Garder profil bas avec les gardiens"
+        ],
+        balanced: [
+          "Négocier une protection discrète",
+          "Échanger des services mesurés",
+          "Obtenir des infos sans t'exposer",
+          "Tisser une alliance de circonstance"
+        ],
+        risky: [
+          "Participer au plan d'évasion",
+          "Prendre parti dans la guerre des cellules",
+          "Corrompre un gardien influent",
+          "Provoquer un rival en public"
+        ],
+        fourth: [
+          "Dénoncer un meneur à la direction",
+          "Voler des ressources d'un autre bloc",
+          "Forcer un passage interdit",
+          "Parier gros sur un coup unique"
+        ]
+      },
+      crime: {
+        safe: [
+          "Refuser l'affaire et couper court",
+          "Signaler discrètement l'approche suspecte",
+          "Te tenir loin de ce réseau",
+          "Jouer l'ignorance totale"
+        ],
+        balanced: [
+          "Aider sans laisser de traces directes",
+          "Négocier une petite part du coup",
+          "Servir d'intermédiaire temporaire",
+          "Observer avant de t'engager"
+        ],
+        risky: [
+          "Entrer à fond dans l'opération",
+          "Doubler tes partenaires au dernier moment",
+          "Monter un coup parallèle",
+          "Tenter un acte criminel spectaculaire"
+        ],
+        fourth: [
+          "Piéger un complice pour t'en sortir",
+          "Racketter un acteur déjà impliqué",
+          "Déclencher une diversion violente",
+          "Brûler les preuves après le coup"
+        ]
+      },
+      spiritual: {
+        safe: [
+          "Chercher conseil auprès d'un religieux respecté",
+          "Prendre un temps de retraite et prière",
+          "Suivre une voie de réconciliation",
+          "Choisir l'humilité et la retenue"
+        ],
+        balanced: [
+          "Faire un don mesuré à la communauté",
+          "Négocier une médiation morale",
+          "Soutenir le rite sans trop t'exposer",
+          "Gagner du temps en restant diplomate"
+        ],
+        risky: [
+          "Instrumentaliser le conflit à ton profit",
+          "Défier l'autorité spirituelle locale",
+          "Soutenir publiquement une position polémique",
+          "Exploiter la ferveur populaire"
+        ],
+        fourth: [
+          "Ignorer totalement l'affaire sacrée",
+          "Acheter des soutiens religieux en coulisses",
+          "Propager une lecture controversée",
+          "Rompre avec la ligne officielle"
+        ]
+      },
+      politics: {
+        safe: [
+          "Respecter le protocole et les formes",
+          "Chercher un arbitrage officiel",
+          "T'appuyer sur des témoins fiables",
+          "Construire une position crédible"
+        ],
+        balanced: [
+          "Négocier en coulisses avec prudence",
+          "Former un bloc d'alliés temporaires",
+          "Échanger des faveurs encadrées",
+          "Tester un compromis avantageux"
+        ],
+        risky: [
+          "Manipuler l'opinion par la rumeur",
+          "Attaquer frontalement un rival puissant",
+          "Forcer une décision publique",
+          "Monter une manœuvre de déstabilisation"
+        ],
+        fourth: [
+          "Rester neutre publiquement mais agir derrière",
+          "Sacrifier un allié pour sauver ta place",
+          "Acheter un vote décisif",
+          "Déclencher une crise calculée"
+        ]
+      },
+      city: {
+        safe: [
+          "Calmer la situation au plus vite",
+          "Demander un avis officiel avant d'agir",
+          "Aider la communauté sans te montrer",
+          "Suivre la version la plus stable"
+        ],
+        balanced: [
+          "Tirer un avantage raisonnable du contexte",
+          "Passer un accord local discret",
+          "Négocier un échange de services",
+          "Soutenir un camp sans t'afficher"
+        ],
+        risky: [
+          "Jouer la foule pour imposer ta version",
+          "Exploiter la panique pour t'enrichir",
+          "Lancer une manœuvre coup de poing",
+          "Pousser l'affaire jusqu'au scandale"
+        ],
+        fourth: [
+          "Quitter les lieux et laisser faire",
+          "Faire disparaître un indice gênant",
+          "Monter un contre-récit agressif",
+          "Prendre un risque total sur un pari"
+        ]
+      }
+    };
+
+    const bank = choiceBanks[theme] || choiceBanks.city;
+    const choices = [
+      makeChoice(choose(bank.safe), "safe"),
+      makeChoice(choose(bank.balanced, 2), "balanced"),
+      makeChoice(choose(bank.risky, 4), "risky")
+    ];
 
     if (theme === "school") {
-      choices.push(makeChoice("Étudier sérieusement", "safe"));
-      choices.push(makeChoice("Demander l'aide d'un mentor", "balanced"));
-      choices.push(makeChoice("Tricher pour avancer", "risky", () => changeStat("reputation", -2)));
-      if (wantsFourth) {
-        choices.push(makeChoice("Sécher discrètement", "balanced", () => changeStat("happiness", 2)));
-      }
-      return choices;
+      choices[2] = makeChoice(choices[2].label, "risky", () => changeStat("reputation", -2));
+    } else if (theme === "work") {
+      choices[2] = makeChoice(choices[2].label, "risky", () => changeStat("reputation", -2));
+    } else if (theme === "trade") {
+      choices[2] = makeChoice(choices[2].label, "risky", () => changeStat("reputation", -2));
+    } else if (theme === "family") {
+      choices[1] = makeChoice(choices[1].label, "balanced", () => changeMoney(-rnd(1, 10)));
+    } else if (theme === "romance") {
+      choices[1] = makeChoice(choices[1].label, "balanced", () => changeMoney(-rnd(2, 12)));
+    } else if (theme === "prison") {
+      choices[1] = makeChoice(choices[1].label, "balanced", () => changeMoney(-rnd(2, 14)));
+      choices[2] = makeChoice(choices[2].label, "risky");
+    } else if (theme === "crime") {
+      choices[2] = makeChoice(choices[2].label, "risky");
+    } else if (theme === "spiritual") {
+      choices[1] = makeChoice(choices[1].label, "balanced", () => changeMoney(-rnd(1, 9)));
+    } else if (theme === "politics") {
+      choices[2] = makeChoice(choices[2].label, "risky");
     }
 
-    if (theme === "work") {
-      choices.push(makeChoice("Accepter la mission", "safe"));
-      choices.push(makeChoice("Renégocier les conditions", "balanced"));
-      choices.push(makeChoice("Saboter un rival", "risky", () => changeStat("reputation", -2)));
-      if (wantsFourth) {
-        choices.push(makeChoice("Passer par un contact influent", "balanced", () => changeMoney(-rnd(1, 8))));
-      }
-      return choices;
-    }
-
-    if (theme === "trade") {
-      choices.push(makeChoice("Signer un accord prudent", "safe"));
-      choices.push(makeChoice("Négocier agressivement", "balanced"));
-      choices.push(makeChoice("Spéculer lourdement", "risky"));
-      if (wantsFourth) {
-        choices.push(makeChoice("Cacher une partie des comptes", "risky", () => changeStat("reputation", -3)));
-      }
-      return choices;
-    }
-
-    if (theme === "family") {
-      choices.push(makeChoice("Dialoguer calmement", "safe"));
-      choices.push(makeChoice("Faire un geste concret", "balanced", () => changeMoney(-rnd(1, 10))));
-      choices.push(makeChoice("Imposer ton point de vue", "risky"));
-      if (wantsFourth) {
-        choices.push(makeChoice("Couper les ponts pour un temps", "risky", () => changeStat("sanity", -1)));
-      }
-      return choices;
-    }
-
-    if (theme === "romance") {
-      choices.push(makeChoice("Être totalement honnête", "safe"));
-      choices.push(makeChoice("Faire un geste romantique", "balanced", () => changeMoney(-rnd(2, 12))));
-      choices.push(makeChoice("Mentir pour gagner du temps", "risky"));
-      if (wantsFourth) {
-        choices.push(makeChoice("Prendre de la distance", "balanced", () => changeStat("happiness", -2)));
-      }
-      return choices;
-    }
-
-    if (theme === "prison") {
-      choices.push(makeChoice("Rester discret", "safe"));
-      choices.push(makeChoice("Payer pour une protection", "balanced", () => changeMoney(-rnd(2, 14))));
-      choices.push(makeChoice("Participer au plan risqué", "risky"));
-      if (wantsFourth) {
-        choices.push(makeChoice("Dénoncer un meneur", "risky", () => changeStat("reputation", -4)));
-      }
-      return choices;
-    }
-
-    if (theme === "crime") {
-      choices.push(makeChoice("Refuser l'affaire", "safe"));
-      choices.push(makeChoice("Aider discrètement", "balanced"));
-      choices.push(makeChoice("Plonger dans le coup", "risky"));
-      if (wantsFourth) {
-        choices.push(makeChoice("Piéger un complice", "risky", () => changeStat("sanity", -2)));
-      }
-      return choices;
-    }
-
-    if (theme === "spiritual") {
-      choices.push(makeChoice("Chercher conseil spirituel", "safe"));
-      choices.push(makeChoice("Faire un don modéré", "balanced", () => changeMoney(-rnd(1, 9))));
-      choices.push(makeChoice("Exploiter la situation", "risky"));
-      if (wantsFourth) {
-        choices.push(makeChoice("Ignorer entièrement", "balanced", () => changeStat("happiness", -1)));
-      }
-      return choices;
-    }
-
-    if (theme === "politics") {
-      choices.push(makeChoice("Respecter le protocole", "safe"));
-      choices.push(makeChoice("Négocier en coulisses", "balanced"));
-      choices.push(makeChoice("Manipuler l'opinion", "risky"));
-      if (wantsFourth) {
-        choices.push(makeChoice("Rester neutre publiquement", "balanced", () => changeStat("reputation", -1)));
-      }
-      return choices;
-    }
-
-    choices.push(makeChoice("Rester prudent", "safe"));
-    choices.push(makeChoice("Chercher un compromis", "balanced"));
-    choices.push(makeChoice("Profiter de la confusion", "risky"));
     if (wantsFourth) {
-      choices.push(makeChoice("Ignorer l'affaire", "balanced", () => changeStat("happiness", -1)));
+      let fourthApproach = theme === "crime" || theme === "prison" ? "risky" : "balanced";
+      let fourthExtra = null;
+      if (theme === "family") fourthExtra = () => changeStat("sanity", -1);
+      if (theme === "romance") fourthExtra = () => changeStat("happiness", -2);
+      if (theme === "politics") fourthExtra = () => changeStat("reputation", -1);
+      if (theme === "crime") fourthExtra = () => changeStat("sanity", -2);
+      if (theme === "prison") fourthExtra = () => changeStat("reputation", -4);
+      choices.push(makeChoice(choose(bank.fourth, 1), fourthApproach, fourthExtra));
     }
+
+    if (lower.includes("taxe")) {
+      choices[0] = makeChoice("Contester la taxe auprès du bailli", "safe");
+      choices[1] = makeChoice("Négocier une remise avec des appuis", "balanced");
+    }
+    if (lower.includes("évasion")) {
+      choices[2] = makeChoice("T'inscrire dans le plan d'évasion", "risky");
+    }
+    if (lower.includes("héritage")) {
+      choices[0] = makeChoice("Demander une médiation familiale officielle", "safe");
+      choices[1] = makeChoice("Négocier ta part directement", "balanced");
+    }
+    if (lower.includes("épidémie")) {
+      choices[0] = makeChoice("Te mettre en retrait sanitaire", "safe");
+      choices[1] = makeChoice("Aider les malades avec précaution", "balanced");
+    }
+
     return choices;
   }
 
@@ -2147,7 +2370,7 @@
     const bias = biasForTheme(theme, index);
     return {
       text,
-      choices: buildThemedMassChoices(c, theme, bias, index)
+      choices: buildThemedMassChoices(c, theme, bias, index, text)
     };
   }
 
