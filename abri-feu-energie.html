@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Abri / Feu / Énergie | Carnet Survivaliste Québec</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="menuToggle" class="menu-toggle" aria-expanded="true" aria-controls="pagesNav">☰ Pages</button>
+      <div class="brand"><img src="assets/icon.svg" alt="Logo" width="28" height="28" /><span>Carnet Survivaliste</span></div>
+      <button id="themeToggle" class="theme-toggle">🌙</button>
+    </header>
+    <nav id="pagesNav" class="pages-nav open" aria-label="Liste des pages">
+      <a href="index.html">Accueil</a><a href="plans.html">Plans</a><a href="eau.html">Eau</a><a href="nourriture.html">Nourriture</a><a class="active-page" href="abri-feu-energie.html">Abri / Feu / Énergie</a><a href="sante.html">Santé</a><a href="navigation-comms.html">Navigation / Comms</a><a href="securite.html">Sécurité</a><a href="competences.html">Compétences</a><a href="annexes.html">Annexes</a>
+    </nav>
+    <main class="page-main">
+      <section class="panel">
+        <h1>Abri, feu et énergie</h1>
+        <div class="grid-3">
+          <article class="card">
+            <h2>Abri</h2>
+            <p>Igloo neige, tarp A-frame, isolation thermique.</p>
+            <label>R-value <input id="rValueInput" type="number" step="0.1" value="2.5" /></label>
+            <button id="calcRValueBtn">Évaluer isolation</button>
+            <p id="rValueOutput" class="result"></p>
+          </article>
+          <article class="card">
+            <h2>Feu</h2>
+            <p>Technique 5C, allumage ferro rod, gestion combustible.</p>
+          </article>
+          <article class="card">
+            <h2>Énergie</h2>
+            <p>Panneau 100W, rocket stove, solutions hors réseau.</p>
+            <label>Besoin Wh/jour <input id="energyNeedInput" type="number" value="600" /></label>
+            <button id="calcEnergyBtn">Dimensionner</button>
+            <p id="energyOutput" class="result"></p>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="footer"><a href="index.html">Retour accueil</a></footer>
+    <script src="app.js" defer></script>
+  </body>
+</html>

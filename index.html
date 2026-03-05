@@ -3,632 +3,145 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Carnet Survivaliste Québec | Portail interactif PWA</title>
-    <meta
-      name="description"
-      content="Guide survivaliste Québec interactif: plans familiaux, eau, nourriture, abri, santé, communications et checklists hors ligne."
-    />
-    <meta
-      name="keywords"
-      content="survie Québec, BOB GHB, eau purification, kit survie Montréal hiver, plans évacuation, autonomie 72h"
-    />
-    <meta name="theme-color" content="#1f3a2d" />
-    <meta name="robots" content="index,follow,max-snippet:-1,max-image-preview:large" />
+    <title>Accueil | Carnet Survivaliste Québec</title>
+    <meta name="description" content="Portail survivaliste Québec: alerte, quiz, carte risques et actions prioritaires." />
     <link rel="manifest" href="manifest.webmanifest" />
     <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-    <link
-      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap"
-      rel="stylesheet"
-    />
-    <link
-      rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-      crossorigin=""
-    />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
     <link rel="stylesheet" href="styles.css" />
-    <script
-      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
-      defer
-    ></script>
-    <script
-      src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-      crossorigin=""
-      defer
-    ></script>
-    <script type="application/ld+json">
-      {
-        "@context": "https://schema.org",
-        "@type": "WebSite",
-        "name": "Carnet Survivaliste Québec",
-        "url": "https://example.com/",
-        "potentialAction": {
-          "@type": "SearchAction",
-          "target": "https://example.com/?q={search_term_string}",
-          "query-input": "required name=search_term_string"
-        }
-      }
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
   </head>
   <body>
-    <a class="skip-link" href="#contenu-principal">Aller au contenu</a>
-
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
     <header class="topbar">
-      <button id="menuToggle" class="menu-toggle" aria-label="Ouvrir le menu">☰</button>
+      <button id="menuToggle" class="menu-toggle" aria-expanded="true" aria-controls="pagesNav">☰ Pages</button>
       <div class="brand">
-        <img src="assets/icon.svg" alt="Logo boussole" width="28" height="28" />
+        <img src="assets/icon.svg" alt="Logo" width="28" height="28" />
         <span>Carnet Survivaliste</span>
       </div>
-      <form id="searchForm" class="search-box" role="search">
-        <label for="siteSearch" class="sr-only">Recherche globale</label>
-        <input
-          id="siteSearch"
-          name="q"
-          list="searchSuggestions"
-          placeholder="Recherche: purification eau, BOB Montréal, hypothermie..."
-          autocomplete="off"
-        />
-        <datalist id="searchSuggestions"></datalist>
-        <button type="submit">Rechercher</button>
-      </form>
-      <button id="themeToggle" class="theme-toggle" aria-label="Basculer thème">🌙</button>
+      <button id="themeToggle" class="theme-toggle" aria-label="Changer le thème">🌙</button>
     </header>
 
-    <div class="layout">
-      <aside id="sideNav" class="side-nav" aria-label="Navigation principale">
-        <nav>
-          <a href="#accueil" data-crumb="Accueil">Accueil</a>
-          <a href="#plans" data-crumb="Plans">Plans</a>
-          <a href="#eau" data-crumb="Eau">Eau</a>
-          <a href="#nourriture" data-crumb="Nourriture">Nourriture</a>
-          <a href="#abri-feu-energie" data-crumb="Abri / Feu / Énergie">Abri/Feu/Énergie</a>
-          <a href="#sante" data-crumb="Santé">Santé</a>
-          <a href="#navigation-comms" data-crumb="Navigation / Comms">Navigation/Comms</a>
-          <a href="#securite" data-crumb="Sécurité">Sécurité</a>
-          <a href="#competences" data-crumb="Compétences">Compétences</a>
-          <a href="#annexes" data-crumb="Annexes">Annexes</a>
-        </nav>
-      </aside>
+    <nav id="pagesNav" class="pages-nav open" aria-label="Liste des pages">
+      <a class="active-page" href="index.html">Accueil</a>
+      <a href="plans.html">Plans</a>
+      <a href="eau.html">Eau</a>
+      <a href="nourriture.html">Nourriture</a>
+      <a href="abri-feu-energie.html">Abri / Feu / Énergie</a>
+      <a href="sante.html">Santé</a>
+      <a href="navigation-comms.html">Navigation / Comms</a>
+      <a href="securite.html">Sécurité</a>
+      <a href="competences.html">Compétences</a>
+      <a href="annexes.html">Annexes</a>
+    </nav>
 
-      <main id="contenu-principal" class="main-content">
-        <nav id="breadcrumb" class="breadcrumb" aria-label="Fil d'Ariane">Accueil</nav>
+    <main id="contenu" class="page-main">
+      <section class="panel">
+        <h1>Accueil - Portail d'entrée immersif</h1>
+        <p>Évaluez votre préparation en moins de 30 secondes et obtenez un plan d'action direct.</p>
 
-        <section id="accueil" class="panel hero-panel" data-title="Accueil">
-          <h1>Portail d'entrée survivaliste (30 secondes)</h1>
-          <p>
-            Préparez votre autonomie civile rapidement: visualisez les alertes Québec,
-            évaluez votre niveau, générez un plan d'action PDF et priorisez vos actions.
-          </p>
-
-          <article class="card alert-banner">
-            <h2>Alerte Québec en direct</h2>
-            <p id="alertesTexte">Connexion API météo en cours...</p>
-          </article>
-
-          <div class="grid-2">
-            <article class="card">
-              <h2>Vidéo 90s - Règle des 3</h2>
-              <iframe
-                loading="lazy"
-                title="Vidéo règle des 3 survie"
-                src="https://www.youtube-nocookie.com/embed/Lx0M5M4fT4I?mute=1&rel=0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-                referrerpolicy="strict-origin-when-cross-origin"
-              ></iframe>
-              <p class="helper-text">3h sans abri thermique, 3j sans eau, 3 semaines sans nourriture.</p>
-            </article>
-
-            <article class="card">
-              <h2>Quiz préparation (10 questions)</h2>
-              <form id="quizForm" class="quiz-form">
-                <label>1. Taille du foyer
-                  <select name="familySize" required>
-                    <option value="">Choisir</option>
-                    <option value="2">1 personne</option>
-                    <option value="5">2 personnes</option>
-                    <option value="8">3-4 personnes</option>
-                    <option value="10">5+ personnes</option>
-                  </select>
-                </label>
-                <label>2. Localisation
-                  <select name="location" required>
-                    <option value="">Choisir</option>
-                    <option value="10">Montréal urbain</option>
-                    <option value="8">Laval / Rive-Sud</option>
-                    <option value="6">Zone périurbaine</option>
-                    <option value="4">Zone isolée</option>
-                  </select>
-                </label>
-                <label>3. Stock d'eau réel (jours)
-                  <input type="number" name="waterDays" min="0" max="30" required />
-                </label>
-                <label>4. Avez-vous un BOB prêt?
-                  <select name="bobReady" required>
-                    <option value="">Choisir</option>
-                    <option value="10">Oui, complet</option>
-                    <option value="5">Partiel</option>
-                    <option value="0">Non</option>
-                  </select>
-                </label>
-                <label>5. Avez-vous un GHB maison?
-                  <select name="ghbReady" required>
-                    <option value="">Choisir</option>
-                    <option value="10">Oui</option>
-                    <option value="4">Partiel</option>
-                    <option value="0">Non</option>
-                  </select>
-                </label>
-                <label>6. Risque principal perçu
-                  <select name="mainRisk" required>
-                    <option value="">Choisir</option>
-                    <option value="tempete">Tempête/verglas</option>
-                    <option value="inondation">Inondation</option>
-                    <option value="panne">Panne réseau</option>
-                    <option value="froid">Grand froid</option>
-                  </select>
-                </label>
-                <label>7. Chauffage de secours
-                  <select name="heatingBackup" required>
-                    <option value="">Choisir</option>
-                    <option value="10">Oui, testé</option>
-                    <option value="5">Oui, non testé</option>
-                    <option value="0">Aucun</option>
-                  </select>
-                </label>
-                <label>8. Trousse IFAK complète?
-                  <select name="ifak" required>
-                    <option value="">Choisir</option>
-                    <option value="10">Oui</option>
-                    <option value="5">Partielle</option>
-                    <option value="0">Non</option>
-                  </select>
-                </label>
-                <label>9. Communication hors réseau
-                  <select name="comms" required>
-                    <option value="">Choisir</option>
-                    <option value="10">Radio + plan fréquence</option>
-                    <option value="5">Téléphone seulement</option>
-                    <option value="0">Aucune</option>
-                  </select>
-                </label>
-                <label>10. Plan familial écrit
-                  <select name="familyPlan" required>
-                    <option value="">Choisir</option>
-                    <option value="10">Oui + copies papier</option>
-                    <option value="4">Brouillon</option>
-                    <option value="0">Non</option>
-                  </select>
-                </label>
-                <div class="quiz-actions">
-                  <button type="button" id="quizScoreBtn">Calculer mon score</button>
-                  <button type="button" id="quizPdfBtn">Exporter plan PDF</button>
-                </div>
-              </form>
-              <p id="quizResult" class="result"></p>
-              <ul id="quizActionPlan" class="result-list"></ul>
-            </article>
-          </div>
-
-          <article class="card">
-            <h2>Carte risques interactive Québec</h2>
-            <div id="riskMap" class="risk-map" aria-label="Carte Leaflet des risques"></div>
-            <p id="mapInsights" class="result">
-              Cliquez un point de risque pour voir les statistiques et conseils locaux.
-            </p>
-          </article>
-
-          <article class="card stats-grid">
-            <h2>Infographie 72h survie</h2>
-            <div class="kpi-grid">
-              <div class="kpi"><strong>4L</strong><span>eau / jour / personne</span></div>
-              <div class="kpi"><strong>2000 kcal</strong><span>ration de base / jour</span></div>
-              <div class="kpi"><strong>72h</strong><span>autonomie minimale foyer</span></div>
-              <div class="kpi"><strong>6 mois</strong><span>rotation bidons 20L</span></div>
-            </div>
-          </article>
-
-          <article class="cta-row">
-            <a class="cta-btn" href="#plans">Commencer BOB</a>
-            <button id="downloadChecklistBtn" class="cta-btn alt">Télécharger Checklist Gratuite</button>
-          </article>
-        </section>
-
-        <section id="plans" class="panel" data-title="Plans Familiaux et Évacuation">
-          <h2>Plans familiaux et évacuation</h2>
-          <p>
-            Construisez votre protocole familial: routes, rôles, rally points GPS, BOB/GHB
-            et simulation d'évacuation.
-          </p>
-
-          <div class="grid-2">
-            <article class="card">
-              <h3>Canva embed (schéma modifiable)</h3>
-              <p class="helper-text">Collez un lien Canva d'embed pour afficher votre schéma de plan.</p>
-              <label>URL Canva embed
-                <input id="canvaUrlInput" placeholder="https://www.canva.com/design/.../view?embed" />
-              </label>
-              <button id="loadCanvaBtn">Charger l'embed</button>
-              <iframe id="canvaFrame" title="Schéma plan familial Canva" loading="lazy"></iframe>
-            </article>
-            <article class="card">
-              <h3>Template plan familial (éditable localement)</h3>
-              <div id="familyPlanEditor" class="editor" contenteditable="true">
-Nom du foyer:
-Contact hors-région:
-Route Nord (A15):
-Route Sud (St-Laurent):
-Route Est:
-Route Ouest:
-Rally point 1 GPS:
-Rally point 2 GPS:
-Rôle enfant 1: GHB
-Rôle adulte 1: Radio + navigation
-Rôle adulte 2: Santé + documents
-              </div>
-              <div class="checklist-actions">
-                <button id="savePlanBtn">Sauvegarder local</button>
-                <button id="exportPlanTxtBtn">Exporter plan TXT</button>
-              </div>
-            </article>
-          </div>
-
-          <article class="card">
-            <h3>Tableau BOB / GHB détaillé</h3>
-            <div class="table-wrap">
-              <table id="gearTable">
-                <thead>
-                  <tr>
-                    <th>✓</th>
-                    <th>Item</th>
-                    <th>Quantité</th>
-                    <th>Poids (kg)</th>
-                    <th>Raison</th>
-                    <th>Alternatives</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td><input type="checkbox" /></td>
-                    <td>Eau potable</td>
-                    <td>6L / personne</td>
-                    <td><input class="weight-input" type="number" step="0.1" value="6" /></td>
-                    <td>Hydratation 72h</td>
-                    <td>Filtre Sawyer (0.02$/L)</td>
-                  </tr>
-                  <tr>
-                    <td><input type="checkbox" /></td>
-                    <td>Filtre + pastilles</td>
-                    <td>1 kit</td>
-                    <td><input class="weight-input" type="number" step="0.1" value="0.4" /></td>
-                    <td>Purification rapide</td>
-                    <td>Ébullition + tissu</td>
-                  </tr>
-                  <tr>
-                    <td><input type="checkbox" /></td>
-                    <td>Couverture thermique</td>
-                    <td>2</td>
-                    <td><input class="weight-input" type="number" step="0.1" value="0.2" /></td>
-                    <td>Hypothermie</td>
-                    <td>Tarp + laine</td>
-                  </tr>
-                  <tr>
-                    <td><input type="checkbox" /></td>
-                    <td>IFAK compact</td>
-                    <td>1</td>
-                    <td><input class="weight-input" type="number" step="0.1" value="0.9" /></td>
-                    <td>Trauma / soins</td>
-                    <td>Trousse maison</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <p id="totalWeight" class="result">Poids total estimé: 0 kg</p>
-          </article>
-
-          <div class="grid-2">
-            <article class="card">
-              <h3>Simulateur évacuation</h3>
-              <label>Distance (km) <input id="distanceInput" type="number" min="1" value="25" /></label>
-              <label>Vitesse vélo (km/h) <input id="vitesseInput" type="number" min="3" value="14" /></label>
-              <button id="simulateEvacBtn">Simuler</button>
-              <p id="evacOutput" class="result"></p>
-            </article>
-            <article class="card">
-              <h3>Caches et carte perso</h3>
-              <ul>
-                <li>Tube PVC étanche + absorbeur humidité + inventaire papier.</li>
-                <li>Coordonnées GPS codées (grille familiale).</li>
-                <li>Rotation trimestrielle des consommables.</li>
-              </ul>
-              <label>Uploader une carte personnelle (image/PDF)
-                <input id="cacheMapUpload" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" />
-              </label>
-              <p id="cacheMapStatus" class="helper-text">Aucun fichier importé.</p>
-            </article>
-          </div>
-        </section>
-
-        <section id="eau" class="panel" data-title="Eau">
-          <h2>Eau - Guide exhaustif</h2>
-          <p>
-            Modules complets: stockage, purification, sources, calculs et dix sous-pages
-            spécialisées pour conditions québécoises.
-          </p>
-          <div class="tabs">
-            <button class="tab is-active" data-target="eau-stockage">Stockage</button>
-            <button class="tab" data-target="eau-purification">Purification</button>
-            <button class="tab" data-target="eau-sources">Sources</button>
-            <button class="tab" data-target="eau-calculs">Calculs</button>
-          </div>
-
-          <div id="eau-stockage" class="tab-panel active-tab-panel">
-            <article class="card">
-              <h3>4L/jour/personne (+2L en fonte neige)</h3>
-              <div class="table-wrap">
-                <table>
-                  <thead>
-                    <tr><th>Contenant</th><th>Volume</th><th>Rotation</th><th>Usage</th></tr>
-                  </thead>
-                  <tbody>
-                    <tr><td>Bidon HDPE</td><td>20L</td><td>6 mois</td><td>Stock principal famille</td></tr>
-                    <tr><td>Jerrican souple</td><td>10L</td><td>3 mois</td><td>Évacuation mobile</td></tr>
-                    <tr><td>Cuve IBC</td><td>1000L</td><td>Traitement continu</td><td>Stock fixe</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <p>Chlore cible: 2 ppm. Formule pratique: 2 gouttes d'eau de javel 5% / litre clair.</p>
-            </article>
-          </div>
-
-          <div id="eau-purification" class="tab-panel">
-            <article class="card">
-              <h3>Comparatif 7 méthodes</h3>
-              <ol>
-                <li>Ébullition: 1 min (100m altitude), 3 min en altitude élevée.</li>
-                <li>UV SODIS: 6h plein soleil (bouteille PET claire).</li>
-                <li>Filtre gravitaire type Berkey (haute rétention microbienne).</li>
-                <li>Pastilles chlore/dioxyde de chlore.</li>
-                <li>Filtre membrane portable.</li>
-                <li>Distillation improvisée.</li>
-                <li>Floculation + filtration multi-étapes.</li>
-              </ol>
-              <p>DIY: filtre sable/charbon puis traitement final (chimie ou ébullition).</p>
-            </article>
-          </div>
-
-          <div id="eau-sources" class="tab-panel">
-            <article class="card">
-              <h3>Sources alternatives</h3>
-              <ul>
-                <li>Pluie gouttière avec entonnoir: jusqu'à 100L/j selon précipitation.</li>
-                <li>Puits manuel + pompe Ram.</li>
-                <li>Condensation tarp matin/soir.</li>
-                <li>Lacs/rivières Québec: vigilance giardia et turbidité.</li>
-              </ul>
-            </article>
-          </div>
-
-          <div id="eau-calculs" class="tab-panel">
-            <article class="card">
-              <h3>Calculateur stock eau + export CSV</h3>
-              <label>Personnes <input id="waterPeopleInput" type="number" min="1" max="20" value="4" /></label>
-              <label>Jours <input id="waterDaysInput" type="number" min="1" max="90" value="7" /></label>
-              <label>Supplément hiver (L/pers/jour)
-                <input id="waterWinterInput" type="number" min="0" max="5" value="2" />
-              </label>
-              <div class="checklist-actions">
-                <button id="calcWaterStockBtn">Calculer</button>
-                <button id="exportWaterCsvBtn">Exporter CSV</button>
-              </div>
-              <p id="waterStockOutput" class="result"></p>
-            </article>
-          </div>
-
-          <article class="card">
-            <h3>10 sous-pages eau (plan éditorial)</h3>
-            <div class="chip-list">
-              <span>1) Stock 72h</span><span>2) Rotation bidons</span><span>3) Chloration</span>
-              <span>4) Ébullition</span><span>5) UV</span><span>6) Filtration</span>
-              <span>7) Tests TDS</span><span>8) Collecte pluie</span><span>9) Eau hivernale</span>
-              <span>10) Qualité microbiologique</span>
-            </div>
-          </article>
-        </section>
-
-        <section id="nourriture" class="panel" data-title="Nourriture">
-          <h2>Nourriture - autonomie alimentaire complète</h2>
-          <div class="accordion">
-            <details open>
-              <summary>Stocks</summary>
-              <p>FIFO, lyophilisés 25 ans, conserves acier + ouvre-boîte P-51.</p>
-              <div class="table-wrap">
-                <table>
-                  <thead><tr><th>Foyer</th><th>Poids total/mois</th><th>Objectif kcal/j</th><th>Protéines</th></tr></thead>
-                  <tbody><tr><td>Famille 4</td><td>500 kg (mix eau incluse)</td><td>8000 kcal</td><td>100 g/adulte/j</td></tr></tbody>
-                </table>
-              </div>
-            </details>
-            <details>
-              <summary>Production</summary>
-              <p>Potager froid (kale, betterave, pois), poules, aquaponie DIY poisson + salade.</p>
-              <p>Guide sauvage: ortie (soupe), pissenlit, plantain, quenouille.</p>
-            </details>
-            <details>
-              <summary>Conservation</summary>
-              <p>Déshydratation solaire, lacto-fermentation (choucroute 6 mois), fumage froid.</p>
-              <p>Marmite norvégienne vs cocotte: gains d'énergie mesurables.</p>
-            </details>
-            <details>
-              <summary>Menus</summary>
-              <p>Plan 30 jours imprimable: recettes pemmican, ragoûts longue conservation, options allergies.</p>
-              <button id="exportMenuBtn">Exporter menu 30j (TXT)</button>
-            </details>
-          </div>
-        </section>
-
-        <section id="abri-feu-energie" class="panel" data-title="Abri Feu Énergie">
-          <h2>Abri, feu et énergie</h2>
-          <div class="grid-3">
-            <article class="card">
-              <h3>Abri</h3>
-              <p>10 types: igloo neige, tarp A-frame, lean-to, debris hut, etc.</p>
-              <p>Matériaux: tarp silnylon 1.5kg, corde 550, isolants mousse.</p>
-              <label>Calcul R-value simplifié
-                <input id="rValueInput" type="number" step="0.1" value="2.5" />
-              </label>
-              <button id="calcRValueBtn">Évaluer isolation</button>
-              <p id="rValueOutput" class="result"></p>
-            </article>
-            <article class="card">
-              <h3>Feu</h3>
-              <p>Technique 5C: combustible, comburant, chaleur, continuité, contrôle.</p>
-              <p>Noeuds: tendeur, cabestan, chaise, prussik, etc. (20 au programme).</p>
-            </article>
-            <article class="card">
-              <h3>Énergie</h3>
-              <p>Solaire 100W (Jackery), rocket stove (~30% rendement), gazéificateur bois DIY.</p>
-              <label>Besoin Wh/jour <input id="energyNeedInput" type="number" value="600" /></label>
-              <button id="calcEnergyBtn">Dimensionner panneau 100W</button>
-              <p id="energyOutput" class="result"></p>
-            </article>
-          </div>
-        </section>
-
-        <section id="sante" class="panel" data-title="Santé">
-          <h2>Santé, secours et hygiène</h2>
-          <div class="grid-2">
-            <article class="card">
-              <h3>IFAK - 50 items</h3>
-              <div id="ifakList" class="scroll-list"></div>
-            </article>
-            <article class="card">
-              <h3>Pathologies et protocoles</h3>
-              <ul>
-                <li>Hypothermie: réchauffement progressif, isoler et surveiller conscience.</li>
-                <li>Infections: protocole médical et dosage selon prescription professionnelle.</li>
-                <li>Mental: respiration box / 4-7-8, routines de crise.</li>
-              </ul>
-              <h4>Hygiène terrain</h4>
-              <p>Latrine VIP ventilée, savon solide, hygiène menstruelle polyvalente.</p>
-            </article>
-          </div>
-        </section>
-
-        <section id="navigation-comms" class="panel" data-title="Navigation Comms">
-          <h2>Navigation, signaux et communications</h2>
-          <div class="grid-2">
-            <article class="card">
-              <h3>Navigation</h3>
-              <ul>
-                <li>Boussole Suunto, cartes plastifiées, azimut de secours.</li>
-                <li>Orientation étoile Polaire + repères terrestres.</li>
-              </ul>
-              <label>Message Morse à écouter
-                <input id="morseInput" value="SOS QC" />
-              </label>
-              <button id="playMorseBtn">Lancer trainer Morse</button>
-            </article>
-            <article class="card">
-              <h3>Radios et signaux</h3>
-              <p>Baofeng + fréquences FRS/GMRS locales, protection Faraday anti-EMP.</p>
-              <div class="table-wrap">
-                <table>
-                  <thead><tr><th>Canal</th><th>Usage</th><th>Note</th></tr></thead>
-                  <tbody>
-                    <tr><td>FRS 1</td><td>Coordination équipe</td><td>Faible portée urbaine</td></tr>
-                    <tr><td>FRS 8</td><td>Rally point</td><td>Standardiser en famille</td></tr>
-                    <tr><td>NOAA/Météo</td><td>Alerte</td><td>Veille continue</td></tr>
-                  </tbody>
-                </table>
-              </div>
-            </article>
-          </div>
-        </section>
-
-        <section id="securite" class="panel" data-title="Sécurité">
-          <h2>Outils, défense et OPSEC</h2>
-          <div class="accordion">
-            <details open>
-              <summary>EDC</summary>
-              <p>Morakniv, multitool, lampe frontale, gants, briquet, cordage, carnet étanche.</p>
-            </details>
-            <details>
-              <summary>Défense et cadre légal Québec</summary>
-              <p>Connaître le droit local, privilégier la prévention, l'évitement et la désescalade.</p>
-            </details>
-            <details>
-              <summary>OPSEC</summary>
-              <p>Codes famille, discrétion des stocks, segmentation des informations critiques.</p>
-            </details>
-          </div>
-          <button id="notifBtn">Activer les notifications d'alerte</button>
-          <p id="notifStatus" class="result"></p>
-        </section>
-
-        <section id="competences" class="panel" data-title="Compétences">
-          <h2>Compétences pratiques et psychologie</h2>
-          <p>Programme de 50 tutoriels (couture, jardin vertical, réparation terrain, etc.).</p>
-          <div id="skillsGrid" class="chip-list"></div>
-        </section>
-
-        <section id="annexes" class="panel" data-title="Annexes">
-          <h2>Annexes, ressources, blog et FAQ</h2>
-          <div class="grid-2">
-            <article class="card">
-              <h3>Documents et checklists</h3>
-              <div id="annexChecklist" class="checklist" data-key="checklist-annexes"></div>
-              <p id="annexProgress" class="result">0% complété</p>
-            </article>
-            <article class="card">
-              <h3>Forum / commentaires / boutique</h3>
-              <p>Intégration Disqus modérée + liens affiliés transparents sans popups.</p>
-              <p>Blog low-tech: troc, autonomie urbaine, sobriété énergétique.</p>
-            </article>
-          </div>
-
-          <article class="card">
-            <h3>FAQ / Glossaire (200 termes) avec recherche IA-like</h3>
-            <label>Rechercher un terme
-              <input id="glossarySearchInput" placeholder="Ex: giardia, BOB, tartanpion..." />
-            </label>
-            <div id="glossaryResults" class="scroll-list"></div>
-          </article>
-        </section>
-      </main>
-
-      <aside class="sidebar" aria-label="Barre latérale">
         <article class="card">
-          <h2>Checklist rapide</h2>
-          <ul>
-            <li>⬜ Eau 72h stockée</li>
-            <li>⬜ Plan évacuation imprimé</li>
-            <li>⬜ IFAK complète</li>
-            <li>⬜ Radios chargées</li>
-          </ul>
+          <h2>Alerte Québec</h2>
+          <p id="alertesTexte">Chargement des alertes...</p>
         </article>
-        <article class="card low-tech">
-          <h2>Téléchargements utiles</h2>
-          <a href="#annexes">20 checklists interactives</a><br />
-          <a href="#plans">Template plan familial</a><br />
-          <a href="#eau">Calculateur stock eau</a>
+
+        <div class="grid-2">
+          <article class="card">
+            <h2>Vidéo 90s - Règle des 3</h2>
+            <iframe
+              title="Règle des 3"
+              src="https://www.youtube-nocookie.com/embed/Lx0M5M4fT4I?mute=1&rel=0"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            ></iframe>
+          </article>
+
+          <article class="card">
+            <h2>Quiz interactif (10 questions)</h2>
+            <form id="quizForm" class="quiz-form">
+              <label>1. Taille du foyer
+                <select name="familySize" required>
+                  <option value="">Choisir</option>
+                  <option value="2">1 personne</option>
+                  <option value="5">2 personnes</option>
+                  <option value="8">3-4 personnes</option>
+                  <option value="10">5+ personnes</option>
+                </select>
+              </label>
+              <label>2. Localisation
+                <select name="location" required>
+                  <option value="">Choisir</option>
+                  <option value="10">Montréal</option>
+                  <option value="8">Rive-Sud/Laval</option>
+                  <option value="6">Périurbain</option>
+                  <option value="4">Rural</option>
+                </select>
+              </label>
+              <label>3. Stock eau (jours) <input type="number" name="waterDays" min="0" max="30" required /></label>
+              <label>4. BOB prêt?
+                <select name="bobReady" required><option value=""></option><option value="10">Oui</option><option value="5">Partiel</option><option value="0">Non</option></select>
+              </label>
+              <label>5. GHB prêt?
+                <select name="ghbReady" required><option value=""></option><option value="10">Oui</option><option value="4">Partiel</option><option value="0">Non</option></select>
+              </label>
+              <label>6. Risque principal
+                <select name="mainRisk" required>
+                  <option value="">Choisir</option><option value="tempete">Tempête</option><option value="inondation">Inondation</option><option value="panne">Panne</option><option value="froid">Grand froid</option>
+                </select>
+              </label>
+              <label>7. Chauffage secours?
+                <select name="heatingBackup" required><option value=""></option><option value="10">Oui testé</option><option value="5">Oui non testé</option><option value="0">Non</option></select>
+              </label>
+              <label>8. IFAK complète?
+                <select name="ifak" required><option value=""></option><option value="10">Oui</option><option value="5">Partielle</option><option value="0">Non</option></select>
+              </label>
+              <label>9. Communication hors réseau?
+                <select name="comms" required><option value=""></option><option value="10">Oui</option><option value="5">Partielle</option><option value="0">Non</option></select>
+              </label>
+              <label>10. Plan familial écrit?
+                <select name="familyPlan" required><option value=""></option><option value="10">Oui</option><option value="4">Brouillon</option><option value="0">Non</option></select>
+              </label>
+              <div class="quiz-actions">
+                <button type="button" id="quizScoreBtn">Voir le score</button>
+                <button type="button" id="quizPdfBtn">Exporter plan PDF</button>
+              </div>
+            </form>
+            <p id="quizResult" class="result"></p>
+            <ul id="quizActionPlan" class="result-list"></ul>
+          </article>
+        </div>
+
+        <article class="card">
+          <h2>Carte des risques Québec</h2>
+          <div id="riskMap" class="risk-map"></div>
+          <p id="mapInsights" class="result">Cliquez un point pour obtenir conseils locaux.</p>
         </article>
-      </aside>
-    </div>
+
+        <article class="card">
+          <h2>Stats clés 72h</h2>
+          <div class="chip-list">
+            <span>4L eau / jour / pers</span>
+            <span>2000 kcal / jour</span>
+            <span>72h autonomie minimale</span>
+            <span>Rotation eau 6 mois</span>
+          </div>
+        </article>
+
+        <div class="cta-row">
+          <a class="cta-btn" href="plans.html">Commencer BOB</a>
+          <button id="downloadChecklistBtn">Télécharger Checklist Gratuite</button>
+        </div>
+      </section>
+    </main>
 
     <footer class="footer">
-      <a href="mailto:contact@carnet-survivaliste.local">Contacts</a>
-      <a href="#">Mises à jour RSS</a>
-      <a href="#annexes">Téléchargements PDF gratuits</a>
       <a href="https://www.quebec.ca/securite-situations-urgence" target="_blank" rel="noopener noreferrer">Urgence Québec</a>
+      <a href="annexes.html">FAQ / Glossaire</a>
     </footer>
-
-    <noscript>
-      <div class="noscript-box">
-        Mode survie statique activé: contenu de base consultable sans JavaScript.
-      </div>
-    </noscript>
-
     <script src="app.js" defer></script>
   </body>
 </html>

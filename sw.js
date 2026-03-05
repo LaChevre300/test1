@@ -1,7 +1,16 @@
-const CACHE_NAME = "carnet-survivaliste-v2";
+const CACHE_NAME = "carnet-survivaliste-v3";
 const APP_SHELL = [
   "/",
   "/index.html",
+  "/plans.html",
+  "/eau.html",
+  "/nourriture.html",
+  "/abri-feu-energie.html",
+  "/sante.html",
+  "/navigation-comms.html",
+  "/securite.html",
+  "/competences.html",
+  "/annexes.html",
   "/styles.css",
   "/app.js",
   "/manifest.webmanifest",

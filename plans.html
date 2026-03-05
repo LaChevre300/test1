@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Plans | Carnet Survivaliste Québec</title>
+    <meta name="description" content="Plans familiaux, évacuation, BOB/GHB et simulateur d'évacuation." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="menuToggle" class="menu-toggle" aria-expanded="true" aria-controls="pagesNav">☰ Pages</button>
+      <div class="brand"><img src="assets/icon.svg" alt="Logo" width="28" height="28" /><span>Carnet Survivaliste</span></div>
+      <button id="themeToggle" class="theme-toggle">🌙</button>
+    </header>
+    <nav id="pagesNav" class="pages-nav open" aria-label="Liste des pages">
+      <a href="index.html">Accueil</a><a class="active-page" href="plans.html">Plans</a><a href="eau.html">Eau</a><a href="nourriture.html">Nourriture</a><a href="abri-feu-energie.html">Abri / Feu / Énergie</a><a href="sante.html">Santé</a><a href="navigation-comms.html">Navigation / Comms</a><a href="securite.html">Sécurité</a><a href="competences.html">Compétences</a><a href="annexes.html">Annexes</a>
+    </nav>
+    <main class="page-main">
+      <section class="panel">
+        <h1>Plans familiaux et évacuation</h1>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Schéma Canva modifiable</h2>
+            <label>URL Canva embed <input id="canvaUrlInput" placeholder="https://www.canva.com/design/.../view?embed" /></label>
+            <button id="loadCanvaBtn">Charger l'embed</button>
+            <iframe id="canvaFrame" title="Canva embed"></iframe>
+          </article>
+          <article class="card">
+            <h2>Plan familial éditable</h2>
+            <div id="familyPlanEditor" class="editor">
+Nom du foyer:
+Route Nord (A15):
+Route Sud (St-Laurent):
+Route Est:
+Route Ouest:
+Rally point A GPS:
+Rally point B GPS:
+Rôles: adulte1 / adulte2 / enfant1
+            </div>
+            <div class="checklist-actions">
+              <button id="savePlanBtn">Sauvegarder local</button>
+              <button id="exportPlanTxtBtn">Exporter TXT</button>
+            </div>
+          </article>
+        </div>
+
+        <article class="card">
+          <h2>BOB / GHB détaillés</h2>
+          <div class="table-wrap">
+            <table id="gearTable">
+              <thead>
+                <tr><th>✓</th><th>Item</th><th>Quantité</th><th>Poids (kg)</th><th>Raison</th><th>Alternatives</th></tr>
+              </thead>
+              <tbody>
+                <tr><td><input type="checkbox" /></td><td>Eau</td><td>6L/pers.</td><td><input class="weight-input" type="number" step="0.1" value="6" /></td><td>Hydratation</td><td>Filtre Sawyer</td></tr>
+                <tr><td><input type="checkbox" /></td><td>Filtre</td><td>1</td><td><input class="weight-input" type="number" step="0.1" value="0.4" /></td><td>Purification</td><td>Ébullition</td></tr>
+                <tr><td><input type="checkbox" /></td><td>IFAK</td><td>1</td><td><input class="weight-input" type="number" step="0.1" value="0.9" /></td><td>Santé</td><td>Trousse maison</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <p id="totalWeight" class="result"></p>
+        </article>
+
+        <div class="grid-2">
+          <article class="card">
+            <h2>Simulateur évacuation</h2>
+            <label>Distance (km) <input id="distanceInput" type="number" value="25" min="1" /></label>
+            <label>Vitesse vélo (km/h) <input id="vitesseInput" type="number" value="14" min="3" /></label>
+            <button id="simulateEvacBtn">Calculer</button>
+            <p id="evacOutput" class="result"></p>
+          </article>
+          <article class="card">
+            <h2>Caches terrain</h2>
+            <p>Tutoriel: tube PVC étanche, rotation, coordonnées GPS codées.</p>
+            <label>Uploader carte perso <input id="cacheMapUpload" type="file" accept=".png,.jpg,.jpeg,.webp,.pdf" /></label>
+            <p id="cacheMapStatus"></p>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="footer"><a href="index.html">Retour accueil</a></footer>
+    <script src="app.js" defer></script>
+  </body>
+</html>

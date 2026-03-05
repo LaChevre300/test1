@@ -13,12 +13,12 @@
     {
       "name": "Commencer BOB",
       "short_name": "BOB",
-      "url": "/index.html#plans"
+      "url": "/plans.html"
     },
     {
       "name": "Guide Eau",
       "short_name": "Eau",
-      "url": "/index.html#eau"
+      "url": "/eau.html"
     }
   ],
   "icons": [
