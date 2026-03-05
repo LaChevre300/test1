@@ -627,6 +627,7 @@
 
   let game = null;
   let activeTab = "home";
+  let previousTabBeforeSettings = "home";
   let isCharacterModalOpen = false;
   let isAvatarEditorOpen = false;
   let actionResultState = null;
@@ -782,6 +783,7 @@
     ui.startScreen.classList.remove("is-hidden");
     ui.gameShell.classList.add("is-hidden");
     activeTab = "home";
+    previousTabBeforeSettings = "home";
     isCharacterModalOpen = false;
     isAvatarEditorOpen = false;
     actionResultState = null;
@@ -1060,6 +1062,7 @@
     };
     game.dynastyName = game.character.surname;
     activeTab = "home";
+    previousTabBeforeSettings = "home";
     actionResultState = null;
     isCharacterModalOpen = false;
     isAvatarEditorOpen = false;
@@ -3588,7 +3591,12 @@
     ui.topSettingsBtn.addEventListener("click", () => {
       isCharacterModalOpen = false;
       actionResultState = null;
-      activeTab = "settings";
+      if (activeTab === "settings") {
+        activeTab = previousTabBeforeSettings || "home";
+      } else {
+        previousTabBeforeSettings = activeTab || "home";
+        activeTab = "settings";
+      }
       render();
     });
   }
@@ -3685,6 +3693,9 @@
       if (button.dataset.tab) {
         actionResultState = null;
         activeTab = button.dataset.tab;
+        if (activeTab !== "settings") {
+          previousTabBeforeSettings = activeTab;
+        }
         render();
       }
     });
