@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Eau | Carnet Survivaliste Québec</title>
+    <meta name="description" content="Guide eau: stockage, purification, sources et calculs." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="menuToggle" class="menu-toggle" aria-expanded="true" aria-controls="pagesNav" onclick="const n=document.getElementById('pagesNav');const o=n.classList.toggle('open');this.setAttribute('aria-expanded',o?'true':'false');">☰ Pages</button>
+      <div class="brand"><img src="assets/icon.svg" alt="Logo" width="28" height="28" /><span>Carnet Survivaliste</span></div>
+    </header>
+    <nav id="pagesNav" class="pages-nav open" aria-label="Liste des pages">
+      <a href="index.html">Accueil</a><a href="plans.html">Plans</a><a class="active-page" href="eau.html">Eau</a><a href="nourriture.html">Nourriture</a><a href="abri-feu-energie.html">Abri / Feu / Énergie</a><a href="sante.html">Santé</a><a href="navigation-comms.html">Navigation / Comms</a><a href="securite.html">Sécurité</a><a href="competences.html">Compétences</a><a href="annexes.html">Annexes</a>
+    </nav>
+    <main class="page-main">
+      <section class="panel">
+        <h1>Eau - Guide exhaustif</h1>
+        <div class="tabs">
+          <button class="tab is-active" data-target="eau-stockage">Stockage</button>
+          <button class="tab" data-target="eau-purification">Purification</button>
+          <button class="tab" data-target="eau-sources">Sources</button>
+          <button class="tab" data-target="eau-calculs">Calculs</button>
+        </div>
+
+        <div id="eau-stockage" class="tab-panel active-tab-panel">
+          <article class="card">
+            <h2>Stockage</h2>
+            <p>Base: 4L/jour/personne. Québec hiver: +2L pour fonte neige.</p>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Contenant</th><th>Volume</th><th>Rotation</th></tr></thead>
+                <tbody>
+                  <tr><td>Bidon HDPE</td><td>20L</td><td>6 mois</td></tr>
+                  <tr><td>Jerrican souple</td><td>10L</td><td>3 mois</td></tr>
+                  <tr><td>Cuve IBC</td><td>1000L</td><td>Surveillance continue</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+
+        <div id="eau-purification" class="tab-panel">
+          <article class="card">
+            <h2>Purification</h2>
+            <ol>
+              <li>Ébullition 1 minute.</li>
+              <li>UV SODIS 6h.</li>
+              <li>Filtration gravitaire.</li>
+              <li>Pastilles chlore.</li>
+              <li>Filtre membrane.</li>
+              <li>Distillation.</li>
+              <li>Floculation + filtration.</li>
+            </ol>
+          </article>
+        </div>
+
+        <div id="eau-sources" class="tab-panel">
+          <article class="card">
+            <h2>Sources alternatives</h2>
+            <ul>
+              <li>Pluie: collecte gouttière.</li>
+              <li>Puits manuel.</li>
+              <li>Condensation tarp.</li>
+              <li>Lacs/rivières: traitement anti-giardia obligatoire.</li>
+            </ul>
+          </article>
+        </div>
+
+        <div id="eau-calculs" class="tab-panel">
+          <article class="card">
+            <h2>Calculateur eau + export CSV</h2>
+            <label>Personnes <input id="waterPeopleInput" type="number" min="1" max="20" value="4" /></label>
+            <label>Jours <input id="waterDaysInput" type="number" min="1" max="90" value="7" /></label>
+            <label>Supplément hiver (L/pers/jour) <input id="waterWinterInput" type="number" min="0" max="5" value="2" /></label>
+            <div class="checklist-actions">
+              <button id="calcWaterStockBtn">Calculer</button>
+              <button id="exportWaterCsvBtn">Exporter CSV</button>
+            </div>
+            <p id="waterStockOutput" class="result"></p>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="footer"><a href="index.html">Retour accueil</a></footer>
+    <script src="app.js" defer></script>
+  </body>
+</html>

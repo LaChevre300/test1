@@ -1,0 +1,32 @@
+{
+  "name": "Carnet Survivaliste Québec",
+  "short_name": "Carnet Survie",
+  "description": "Guide survivaliste interactif: eau, BOB, abri, santé et checklists hors ligne.",
+  "start_url": "/index.html",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#101512",
+  "theme_color": "#1f3a2d",
+  "lang": "fr-CA",
+  "categories": ["education", "utilities", "safety"],
+  "shortcuts": [
+    {
+      "name": "Commencer BOB",
+      "short_name": "BOB",
+      "url": "/plans.html"
+    },
+    {
+      "name": "Guide Eau",
+      "short_name": "Eau",
+      "url": "/eau.html"
+    }
+  ],
+  "icons": [
+    {
+      "src": "assets/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

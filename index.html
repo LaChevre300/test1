@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Accueil | Carnet Survivaliste Québec</title>
+    <meta name="description" content="Portail survivaliste Québec: alerte, quiz, carte risques et actions prioritaires." />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
+    <link rel="stylesheet" href="styles.css" />
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js" defer></script>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin="" defer></script>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu">Aller au contenu</a>
+    <header class="topbar">
+      <button id="menuToggle" class="menu-toggle" aria-expanded="true" aria-controls="pagesNav" onclick="const n=document.getElementById('pagesNav');const o=n.classList.toggle('open');this.setAttribute('aria-expanded',o?'true':'false');">☰ Pages</button>
+      <div class="brand">
+        <img src="assets/icon.svg" alt="Logo" width="28" height="28" />
+        <span>Carnet Survivaliste</span>
+      </div>
+    </header>
+
+    <nav id="pagesNav" class="pages-nav open" aria-label="Liste des pages">
+      <a class="active-page" href="index.html">Accueil</a>
+      <a href="plans.html">Plans</a>
+      <a href="eau.html">Eau</a>
+      <a href="nourriture.html">Nourriture</a>
+      <a href="abri-feu-energie.html">Abri / Feu / Énergie</a>
+      <a href="sante.html">Santé</a>
+      <a href="navigation-comms.html">Navigation / Comms</a>
+      <a href="securite.html">Sécurité</a>
+      <a href="competences.html">Compétences</a>
+      <a href="annexes.html">Annexes</a>
+    </nav>
+
+    <main id="contenu" class="page-main">
+      <section class="panel">
+        <h1>Accueil - Portail d'entrée immersif</h1>
+        <p>Évaluez votre préparation en moins de 30 secondes et obtenez un plan d'action direct.</p>
+
+        <article class="card">
+          <h2>Alerte Québec</h2>
+          <p id="alertesTexte">Chargement des alertes...</p>
+        </article>
+
+        <div class="grid-2">
+          <article class="card">
+            <h2>Vidéo 90s - Règle des 3</h2>
+            <iframe
+              title="Règle des 3"
+              src="https://www.youtube-nocookie.com/embed/Lx0M5M4fT4I?mute=1&rel=0"
+              loading="lazy"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+            ></iframe>
+          </article>
+
+          <article class="card">
+            <h2>Quiz interactif (10 questions)</h2>
+            <form id="quizForm" class="quiz-form">
+              <label>1. Taille du foyer
+                <select name="familySize" required>
+                  <option value="">Choisir</option>
+                  <option value="2">1 personne</option>
+                  <option value="5">2 personnes</option>
+                  <option value="8">3-4 personnes</option>
+                  <option value="10">5+ personnes</option>
+                </select>
+              </label>
+              <label>2. Localisation
+                <select name="location" required>
+                  <option value="">Choisir</option>
+                  <option value="10">Montréal</option>
+                  <option value="8">Rive-Sud/Laval</option>
+                  <option value="6">Périurbain</option>
+                  <option value="4">Rural</option>
+                </select>
+              </label>
+              <label>3. Stock eau (jours) <input type="number" name="waterDays" min="0" max="30" required /></label>
+              <label>4. BOB prêt?
+                <select name="bobReady" required><option value=""></option><option value="10">Oui</option><option value="5">Partiel</option><option value="0">Non</option></select>
+              </label>
+              <label>5. GHB prêt?
+                <select name="ghbReady" required><option value=""></option><option value="10">Oui</option><option value="4">Partiel</option><option value="0">Non</option></select>
+              </label>
+              <label>6. Risque principal
+                <select name="mainRisk" required>
+                  <option value="">Choisir</option><option value="tempete">Tempête</option><option value="inondation">Inondation</option><option value="panne">Panne</option><option value="froid">Grand froid</option>
+                </select>
+              </label>
+              <label>7. Chauffage secours?
+                <select name="heatingBackup" required><option value=""></option><option value="10">Oui testé</option><option value="5">Oui non testé</option><option value="0">Non</option></select>
+              </label>
+              <label>8. IFAK complète?
+                <select name="ifak" required><option value=""></option><option value="10">Oui</option><option value="5">Partielle</option><option value="0">Non</option></select>
+              </label>
+              <label>9. Communication hors réseau?
+                <select name="comms" required><option value=""></option><option value="10">Oui</option><option value="5">Partielle</option><option value="0">Non</option></select>
+              </label>
+              <label>10. Plan familial écrit?
+                <select name="familyPlan" required><option value=""></option><option value="10">Oui</option><option value="4">Brouillon</option><option value="0">Non</option></select>
+              </label>
+              <div class="quiz-actions">
+                <button type="button" id="quizScoreBtn">Voir le score</button>
+                <button type="button" id="quizPdfBtn">Exporter plan PDF</button>
+              </div>
+            </form>
+            <p id="quizResult" class="result"></p>
+            <ul id="quizActionPlan" class="result-list"></ul>
+          </article>
+        </div>
+
+        <article class="card">
+          <h2>Carte des risques Québec</h2>
+          <div id="riskMap" class="risk-map"></div>
+          <p id="mapInsights" class="result">Cliquez un point pour obtenir conseils locaux.</p>
+        </article>
+
+        <article class="card">
+          <h2>Stats clés 72h</h2>
+          <div class="chip-list">
+            <span>4L eau / jour / pers</span>
+            <span>2000 kcal / jour</span>
+            <span>72h autonomie minimale</span>
+            <span>Rotation eau 6 mois</span>
+          </div>
+        </article>
+
+        <div class="cta-row">
+          <a class="cta-btn" href="plans.html">Commencer BOB</a>
+          <button id="downloadChecklistBtn">Télécharger Checklist Gratuite</button>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <a href="https://www.quebec.ca/securite-situations-urgence" target="_blank" rel="noopener noreferrer">Urgence Québec</a>
+      <a href="annexes.html">FAQ / Glossaire</a>
+    </footer>
+    <script src="app.js" defer></script>
+  </body>
+</html>

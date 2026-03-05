@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="fr-CA">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Navigation / Comms | Carnet Survivaliste Québec</title>
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <button id="menuToggle" class="menu-toggle" aria-expanded="true" aria-controls="pagesNav" onclick="const n=document.getElementById('pagesNav');const o=n.classList.toggle('open');this.setAttribute('aria-expanded',o?'true':'false');">☰ Pages</button>
+      <div class="brand"><img src="assets/icon.svg" alt="Logo" width="28" height="28" /><span>Carnet Survivaliste</span></div>
+    </header>
+    <nav id="pagesNav" class="pages-nav open" aria-label="Liste des pages">
+      <a href="index.html">Accueil</a><a href="plans.html">Plans</a><a href="eau.html">Eau</a><a href="nourriture.html">Nourriture</a><a href="abri-feu-energie.html">Abri / Feu / Énergie</a><a href="sante.html">Santé</a><a class="active-page" href="navigation-comms.html">Navigation / Comms</a><a href="securite.html">Sécurité</a><a href="competences.html">Compétences</a><a href="annexes.html">Annexes</a>
+    </nav>
+    <main class="page-main">
+      <section class="panel">
+        <h1>Navigation, signaux et communications</h1>
+        <div class="grid-2">
+          <article class="card">
+            <h2>Navigation</h2>
+            <ul>
+              <li>Boussole, cartes plastifiées, azimuts.</li>
+              <li>Repérage étoile Polaire.</li>
+            </ul>
+            <label>Texte Morse <input id="morseInput" value="SOS QC" /></label>
+            <button id="playMorseBtn">Afficher Morse</button>
+          </article>
+          <article class="card">
+            <h2>Radios et signaux</h2>
+            <div class="table-wrap">
+              <table>
+                <thead><tr><th>Canal</th><th>Usage</th><th>Note</th></tr></thead>
+                <tbody>
+                  <tr><td>FRS 1</td><td>Coordination</td><td>Portée locale</td></tr>
+                  <tr><td>FRS 8</td><td>Rally point</td><td>Plan famille</td></tr>
+                  <tr><td>Météo</td><td>Alerte</td><td>Veille continue</td></tr>
+                </tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </section>
+    </main>
+    <footer class="footer"><a href="index.html">Retour accueil</a></footer>
+    <script src="app.js" defer></script>
+  </body>
+</html>
