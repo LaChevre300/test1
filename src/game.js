@@ -429,6 +429,7 @@ class Game {
     this.messageTimeout = null;
     this.fishingState = null;
     this.isNewGamePlus = false;
+    this.fxTime = 0;
 
     this.camera = { x: 0, y: 0 };
     this.dayMinute = DAY_START;
@@ -1902,6 +1903,7 @@ class Game {
   }
 
   render() {
+    this.fxTime = performance.now() * 0.001;
     this.updateHud();
     this.drawWorld();
     this.drawEntities();
@@ -2030,6 +2032,12 @@ class Game {
     return this.dayMinute >= 18 * 60 || this.dayMinute < 6 * 60;
   }
 
+  getLampFlicker(worldX, worldY) {
+    const waveA = Math.sin(this.fxTime * 8 + worldX * 1.31 + worldY * 0.61);
+    const waveB = Math.sin(this.fxTime * 5.1 + worldX * 0.83);
+    return clamp(0.78 + (waveA * 0.14 + waveB * 0.08), 0.45, 1.08);
+  }
+
   drawBuildings() {
     const buildingDefs = this.getBuildingRenderDefs();
     const litWindows = this.isNightLightTime();
@@ -2049,12 +2057,22 @@ class Game {
         b.w * TILE_SIZE,
         (b.h - 2) * TILE_SIZE,
       );
-      this.ctx.fillStyle = litWindows ? "#f5d18f" : b.window;
+      const windowFlicker = litWindows ? this.getLampFlicker(b.x + b.w * 0.5, b.y + 2) : 0;
+      if (litWindows) {
+        const r = Math.floor(244 + 10 * windowFlicker);
+        const g = Math.floor(201 + 20 * windowFlicker);
+        const bTone = Math.floor(135 + 12 * windowFlicker);
+        this.ctx.fillStyle = `rgb(${r},${g},${bTone})`;
+      } else {
+        this.ctx.fillStyle = b.window;
+      }
       this.ctx.fillRect((b.x + 2) * TILE_SIZE - this.camera.x, (b.y + 3) * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
       this.ctx.fillRect((b.x + b.w - 3) * TILE_SIZE - this.camera.x, (b.y + 3) * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
       this.ctx.fillStyle = "#3b2d22";
       this.ctx.fillRect(b.door.x * TILE_SIZE - this.camera.x, b.door.y * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
     }
+
+    this.drawChimneySmoke(buildingDefs);
 
     this.ctx.fillStyle = "#7a5d38";
     this.ctx.fillRect(STORAGE_TILES.chest.x * TILE_SIZE - this.camera.x, STORAGE_TILES.chest.y * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
@@ -2097,14 +2115,39 @@ class Game {
     }
   }
 
+  drawChimneySmoke(buildingDefs) {
+    this.ctx.save();
+    for (let i = 0; i < buildingDefs.length; i += 1) {
+      const b = buildingDefs[i];
+      const chimneyX = b.x + b.w - 2.1;
+      const chimneyY = b.y + 0.9;
+      for (let p = 0; p < 4; p += 1) {
+        const phase = (this.fxTime * 0.14 + i * 0.31 + p * 0.22) % 1;
+        const drift = Math.sin(this.fxTime * 1.8 + i + p * 0.6) * 0.18;
+        const px = (chimneyX + drift + phase * 0.45) * TILE_SIZE - this.camera.x;
+        const py = (chimneyY - phase * 3.2) * TILE_SIZE - this.camera.y;
+        const radius = 2 + phase * 5;
+        const alpha = (1 - phase) * (this.weather === "storm" ? 0.14 : 0.24);
+        this.ctx.fillStyle = `rgba(220, 228, 236, ${alpha})`;
+        this.ctx.beginPath();
+        this.ctx.arc(px, py, radius, 0, Math.PI * 2);
+        this.ctx.fill();
+      }
+    }
+    this.ctx.restore();
+  }
+
   drawDecor() {
+    const windStrength = this.weather === "storm" ? 1.9 : this.weather === "rain" ? 1.25 : 0.8;
     for (const g of this.resources.grass) {
       if (!g.alive) continue;
-      drawNode(this.ctx, g.x, g.y, this.camera, "#6da66a", 8, 8);
+      const sway = Math.sin(this.fxTime * 4.5 + g.x * 0.7 + g.y * 0.31) * 0.06 * windStrength;
+      drawNode(this.ctx, g.x + sway, g.y, this.camera, "#6da66a", 8, 8);
     }
     for (const t of this.resources.trees) {
       if (!t.alive) continue;
-      drawNode(this.ctx, t.x, t.y, this.camera, "#467b45", 14, 14);
+      const sway = Math.sin(this.fxTime * 2.7 + t.x * 0.53 + t.y * 0.19) * 0.11 * windStrength;
+      drawNode(this.ctx, t.x + sway, t.y, this.camera, "#467b45", 14, 14);
     }
     for (const r of this.resources.rocks) {
       if (!r.alive) continue;
@@ -2152,9 +2195,16 @@ class Game {
     }
 
     for (const lamp of LAMP_POSTS) {
+      const flicker = this.isNightLightTime() ? this.getLampFlicker(lamp.x, lamp.y) : 0;
       this.ctx.fillStyle = "#3f3a33";
       this.ctx.fillRect(lamp.x * TILE_SIZE - this.camera.x + 6, lamp.y * TILE_SIZE - this.camera.y - 8, 4, 24);
-      this.ctx.fillStyle = "#d9be7e";
+      if (flicker > 0) {
+        const r = Math.floor(214 + 20 * flicker);
+        const g = Math.floor(181 + 18 * flicker);
+        this.ctx.fillStyle = `rgb(${r},${g},126)`;
+      } else {
+        this.ctx.fillStyle = "#d9be7e";
+      }
       this.ctx.fillRect(lamp.x * TILE_SIZE - this.camera.x + 4, lamp.y * TILE_SIZE - this.camera.y - 10, 8, 4);
     }
 
@@ -2233,19 +2283,54 @@ class Game {
     if (insideRoom) {
       for (const f of insideRoom.furniture) {
         if (f.kind === "lamp") {
-          this.drawRadialGlow(f.x + f.w / 2, f.y + f.h / 2, 96, "255,208,140", 0.38);
+          const flicker = this.getLampFlicker(f.x, f.y);
+          this.drawRadialGlow(f.x + f.w / 2, f.y + f.h / 2, 90 + flicker * 10, "255,208,140", 0.28 + flicker * 0.13);
         }
       }
       if (insideRoom.bed) this.drawRadialGlow(insideRoom.bed.x + 1.5, insideRoom.bed.y + 1, 64, "255,196,140", 0.2);
     } else {
       for (const b of this.getBuildingRenderDefs()) {
-        this.drawRadialGlow(b.x + 2.5, b.y + 3.5, 58, "255,201,130", 0.18);
-        this.drawRadialGlow(b.x + b.w - 2.5, b.y + 3.5, 58, "255,201,130", 0.18);
+        const f = this.getLampFlicker(b.x + b.w * 0.5, b.y);
+        this.drawRadialGlow(b.x + 2.5, b.y + 3.5, 56 + f * 8, "255,201,130", 0.12 + f * 0.08);
+        this.drawRadialGlow(b.x + b.w - 2.5, b.y + 3.5, 56 + f * 8, "255,201,130", 0.12 + f * 0.08);
       }
       for (const lamp of LAMP_POSTS) {
-        this.drawRadialGlow(lamp.x + 0.5, lamp.y - 0.4, 76, "255,214,135", 0.32);
+        const flicker = this.getLampFlicker(lamp.x, lamp.y);
+        this.drawRadialGlow(lamp.x + 0.5, lamp.y - 0.4, 68 + flicker * 12, "255,214,135", 0.16 + flicker * 0.22);
       }
       this.drawRadialGlow(this.player.x / TILE_SIZE + 1, this.player.y / TILE_SIZE + 1, 62, "238,228,180", 0.18);
+    }
+    this.ctx.restore();
+  }
+
+  drawRainStreaks(intensity) {
+    this.ctx.save();
+    this.ctx.lineWidth = 1;
+    this.ctx.strokeStyle = intensity > 0.7 ? "rgba(210,230,255,0.42)" : "rgba(205,225,250,0.30)";
+    const count = Math.floor(80 + intensity * 70);
+    for (let i = 0; i < count; i += 1) {
+      const seed = i * 73.391;
+      const x = ((seed * 17 + this.fxTime * (420 + intensity * 120) + i * 13) % (SCREEN_WIDTH + 180)) - 90;
+      const y = ((seed * 29 + this.fxTime * (640 + intensity * 180) + i * 7) % (SCREEN_HEIGHT + 200)) - 100;
+      this.ctx.beginPath();
+      this.ctx.moveTo(x, y);
+      this.ctx.lineTo(x - (8 + intensity * 5), y + (16 + intensity * 10));
+      this.ctx.stroke();
+    }
+    this.ctx.restore();
+  }
+
+  drawWindLeafParticles(windStrength) {
+    if (this.currentSeason() !== "autumn" && this.weather !== "storm") return;
+    this.ctx.save();
+    const count = this.weather === "storm" ? 28 : 14;
+    for (let i = 0; i < count; i += 1) {
+      const seed = i * 97.17;
+      const x = ((seed * 11 + this.fxTime * (120 + windStrength * 80) + i * 19) % (SCREEN_WIDTH + 40)) - 20;
+      const y = ((seed * 7 + this.fxTime * (80 + windStrength * 55) + i * 17) % (SCREEN_HEIGHT + 40)) - 20;
+      const hue = this.currentSeason() === "autumn" ? "rgba(204,146,78,0.55)" : "rgba(171,194,144,0.45)";
+      this.ctx.fillStyle = hue;
+      this.ctx.fillRect(x, y, 3, 2);
     }
     this.ctx.restore();
   }
@@ -2281,6 +2366,12 @@ class Game {
       const rainAlpha = this.weather === "storm" ? 0.18 : 0.12;
       this.ctx.fillStyle = `rgba(150,180,220,${rainAlpha})`;
       this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      this.drawRainStreaks(this.weather === "storm" ? 1 : 0.65);
+    }
+
+    if (!insideRoom) {
+      const windStrength = this.weather === "storm" ? 1.6 : this.weather === "rain" ? 1.1 : 0.7;
+      this.drawWindLeafParticles(windStrength);
     }
   }
 }
