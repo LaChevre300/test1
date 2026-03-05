@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Carnet Survivaliste Québec | Guide interactif hors ligne</title>
+    <meta
+      name="description"
+      content="Carnet survie Québec interactif: eau, nourriture, BOB, abri, sécurité et checklists cliquables avec mode hors ligne PWA."
+    />
+    <meta
+      name="keywords"
+      content="carnet survivaliste, survie Québec, kit survie Montréal hiver, BOB Québec, purification eau urgence"
+    />
+    <meta name="theme-color" content="#1f3a2d" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="assets/icon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link rel="stylesheet" href="styles.css" />
+    <script
+      src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"
+      defer
+    ></script>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "FAQPage",
+        "mainEntity": [
+          {
+            "@type": "Question",
+            "name": "Combien d'eau prévoir par jour et par personne ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Prévoyez au moins 4 litres d'eau par personne et par jour pour l'hydratation, la cuisson et l'hygiène minimale."
+            }
+          },
+          {
+            "@type": "Question",
+            "name": "Quelle est la priorité dans les 72 premières heures ?",
+            "acceptedAnswer": {
+              "@type": "Answer",
+              "text": "Suivre la règle de 3, sécuriser l'abri, l'eau potable, puis la nourriture et la communication."
+            }
+          }
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <a class="skip-link" href="#contenu-principal">Aller au contenu</a>
+
+    <header class="topbar">
+      <button id="menuToggle" class="menu-toggle" aria-label="Ouvrir le menu">
+        ☰
+      </button>
+      <div class="brand">
+        <img src="assets/icon.svg" alt="Logo boussole survivaliste" width="28" height="28" />
+        <span>Carnet Survivaliste</span>
+      </div>
+      <form id="searchForm" class="search-box" role="search">
+        <label for="siteSearch" class="sr-only">Recherche</label>
+        <input
+          id="siteSearch"
+          name="q"
+          list="searchSuggestions"
+          placeholder="Rechercher: eau purification, BOB Québec..."
+          autocomplete="off"
+        />
+        <datalist id="searchSuggestions"></datalist>
+        <button type="submit">Rechercher</button>
+      </form>
+      <button id="themeToggle" class="theme-toggle" aria-label="Basculer thème">
+        🌙
+      </button>
+    </header>
+
+    <div class="layout">
+      <aside id="sideNav" class="side-nav" aria-label="Navigation principale">
+        <nav>
+          <a href="#accueil" data-crumb="Accueil">Accueil</a>
+          <a href="#plans" data-crumb="Plans">Plans</a>
+          <a href="#eau" data-crumb="Eau">Eau</a>
+          <a href="#nourriture" data-crumb="Nourriture">Nourriture</a>
+          <a href="#abri-feu" data-crumb="Abri / Feu">Abri/Feu</a>
+          <a href="#sante" data-crumb="Santé">Santé</a>
+          <a href="#outils" data-crumb="Outils">Outils</a>
+          <a href="#securite" data-crumb="Sécurité">Sécurité</a>
+          <a href="#competences" data-crumb="Compétences">Compétences</a>
+          <a href="#annexes" data-crumb="Annexes">Annexes</a>
+          <a href="#forum" data-crumb="Forum">Forum</a>
+        </nav>
+      </aside>
+
+      <main id="contenu-principal" class="main-content">
+        <nav id="breadcrumb" class="breadcrumb" aria-label="Fil d'Ariane">
+          Accueil
+        </nav>
+
+        <section id="accueil" class="panel active-panel" data-title="Accueil">
+          <h1>Carnet Survivaliste Interactif - Québec</h1>
+          <p>
+            Un guide pratique et compact pour la préparation civile: eau, abri, feu,
+            santé, sécurité et autonomie 72h+. Tout est pensé pour être lisible sur
+            mobile, rapide à charger et utilisable même avec une connexion dégradée.
+          </p>
+
+          <div class="grid-2">
+            <article class="card">
+              <h2>Vidéo intro (règle des 3)</h2>
+              <iframe
+                loading="lazy"
+                title="Règle des 3 en survie"
+                src="https://www.youtube-nocookie.com/embed/Lx0M5M4fT4I?mute=1&rel=0"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                referrerpolicy="strict-origin-when-cross-origin"
+              ></iframe>
+            </article>
+            <article class="card">
+              <h2>Auto-évaluation préparation</h2>
+              <form id="quizForm">
+                <fieldset>
+                  <legend>Quelle est votre préparation actuelle?</legend>
+                  <label><input type="checkbox" name="quiz" value="25" /> J'ai 72h d'eau.</label>
+                  <label><input type="checkbox" name="quiz" value="25" /> J'ai un BOB prêt.</label>
+                  <label><input type="checkbox" name="quiz" value="25" /> Je connais 2 méthodes feu.</label>
+                  <label><input type="checkbox" name="quiz" value="25" /> J'ai un plan familial.</label>
+                </fieldset>
+                <button type="button" id="quizScoreBtn">Voir mon score</button>
+              </form>
+              <p id="quizResult" class="result"></p>
+            </article>
+          </div>
+
+          <article class="card alerts">
+            <h2>Dernières alertes Québec</h2>
+            <p id="alertesTexte">Chargement des alertes régionales...</p>
+          </article>
+
+          <article class="card">
+            <h2>Carte mentale du carnet</h2>
+            <p>
+              Cliquez sur un nœud pour accéder rapidement à une section prioritaire.
+            </p>
+            <svg viewBox="0 0 900 420" class="mindmap" role="img" aria-label="Carte mentale survivaliste">
+              <defs>
+                <style>
+                  .node { fill: #355f46; stroke: #b6d6be; stroke-width: 2; }
+                  .branch { stroke: #6ba17d; stroke-width: 2; }
+                  .txt { fill: #fff; font: 15px sans-serif; }
+                </style>
+              </defs>
+              <line class="branch" x1="450" y1="210" x2="180" y2="70" />
+              <line class="branch" x1="450" y1="210" x2="200" y2="210" />
+              <line class="branch" x1="450" y1="210" x2="180" y2="350" />
+              <line class="branch" x1="450" y1="210" x2="720" y2="70" />
+              <line class="branch" x1="450" y1="210" x2="730" y2="210" />
+              <line class="branch" x1="450" y1="210" x2="720" y2="350" />
+              <a href="#plans"><circle class="node" cx="180" cy="70" r="56" /><text class="txt" x="150" y="75">Plans</text></a>
+              <a href="#eau"><circle class="node" cx="200" cy="210" r="58" /><text class="txt" x="170" y="215">Eau</text></a>
+              <a href="#sante"><circle class="node" cx="180" cy="350" r="64" /><text class="txt" x="140" y="355">Santé</text></a>
+              <a href="#nourriture"><circle class="node" cx="720" cy="70" r="64" /><text class="txt" x="670" y="75">Nourriture</text></a>
+              <a href="#abri-feu"><circle class="node" cx="730" cy="210" r="58" /><text class="txt" x="692" y="215">Abri/Feu</text></a>
+              <a href="#securite"><circle class="node" cx="720" cy="350" r="64" /><text class="txt" x="675" y="355">Sécurité</text></a>
+              <circle class="node" cx="450" cy="210" r="74" />
+              <text class="txt" x="372" y="205">Carnet</text>
+              <text class="txt" x="365" y="225">Survivaliste</text>
+            </svg>
+          </article>
+        </section>
+
+        <section id="plans" class="panel" data-title="Plans">
+          <h2>Plans et protocoles</h2>
+          <p>
+            Définissez vos plans d'action selon les scénarios: panne longue, inondation,
+            tempête hivernale ou évacuation rapide.
+          </p>
+          <div class="accordion">
+            <details open>
+              <summary>Plan familial 72h</summary>
+              <ul>
+                <li>Point de ralliement A/B + contact hors-région.</li>
+                <li>Copies papier: assurances, identité, ordonnances.</li>
+                <li>Routines de communication (SMS prioritaire).</li>
+              </ul>
+            </details>
+            <details>
+              <summary>Plan évacuation (BOB)</summary>
+              <ul>
+                <li>Poids cible: 10-15% du poids corporel.</li>
+                <li>Itinéraires alternatifs et zones inondables.</li>
+                <li>Check pré-départ: eau, médocs, lampe, radio.</li>
+              </ul>
+            </details>
+          </div>
+        </section>
+
+        <section id="eau" class="panel" data-title="Eau">
+          <h2>
+            Eau
+            <span class="info-bubble" data-tooltip="4L/jour/pers., 72h minimum.">ⓘ</span>
+          </h2>
+          <p>
+            Priorité absolue: stockage, purification et calcul des besoins selon
+            personnes, climat et activité.
+          </p>
+          <div class="tabs" data-tabs="eau">
+            <button class="tab is-active" data-target="eau-stockage">Stockage</button>
+            <button class="tab" data-target="eau-purification">Purification</button>
+            <button class="tab" data-target="eau-sources">Sources</button>
+          </div>
+          <div id="eau-stockage" class="tab-panel active-tab-panel">
+            <table>
+              <thead>
+                <tr><th>Profil</th><th>Besoin jour</th><th>Stock 72h</th></tr>
+              </thead>
+              <tbody>
+                <tr><td>Adulte</td><td>4L</td><td>12L</td></tr>
+                <tr><td>Enfant</td><td>2.5L</td><td>7.5L</td></tr>
+                <tr><td>Hiver froid</td><td>+15%</td><td>Adapter</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <div id="eau-purification" class="tab-panel">
+            <div class="accordion">
+              <details open>
+                <summary>Ébullition</summary>
+                <p>1 minute à gros bouillons (3 minutes si altitude).</p>
+              </details>
+              <details>
+                <summary>Filtration + chimie</summary>
+                <p>Filtre 0.1 micron puis pastilles selon notice.</p>
+              </details>
+              <details>
+                <summary>UV portable</summary>
+                <p>Efficace si eau claire; pré-filtrer l'eau trouble.</p>
+              </details>
+            </div>
+          </div>
+          <div id="eau-sources" class="tab-panel">
+            <ul>
+              <li>Récupération pluie (préfiltre tissu + traitement).</li>
+              <li>Neige fondue (toujours purifier ensuite).</li>
+              <li>Cours d'eau: éviter aval industriel/agricole.</li>
+            </ul>
+          </div>
+        </section>
+
+        <section id="nourriture" class="panel" data-title="Nourriture">
+          <h2>Nourriture et rationnement</h2>
+          <p>
+            Conservez des aliments stables, faciles à préparer et adaptés au froid
+            québécois. Visez une rotation mensuelle des stocks.
+          </p>
+          <div class="calculator card">
+            <h3>Calculatrice calories/jour</h3>
+            <label>Poids (kg) <input id="poidsInput" type="number" min="30" max="200" value="70" /></label>
+            <label>Âge <input id="ageInput" type="number" min="10" max="99" value="35" /></label>
+            <button id="calcCaloriesBtn">Calculer</button>
+            <p id="caloriesOutput" class="result"></p>
+          </div>
+        </section>
+
+        <section id="abri-feu" class="panel" data-title="Abri / Feu">
+          <h2>Abri et feu</h2>
+          <p>
+            Gérez d'abord la protection thermique: isolation, coupe-vent, humidité,
+            puis production de chaleur contrôlée.
+          </p>
+          <div class="accordion">
+            <details open>
+              <summary>Abri d'urgence intérieur</summary>
+              <p>Isoler une pièce centrale, calfeutrer, limiter les déperditions.</p>
+            </details>
+            <details>
+              <summary>Feu sécurisé</summary>
+              <p>Toujours prévoir ventilation, extincteur et détecteurs actifs.</p>
+            </details>
+          </div>
+        </section>
+
+        <section id="sante" class="panel" data-title="Santé">
+          <h2>Santé et premiers soins</h2>
+          <p>
+            Préparez une trousse médicale modulée (famille, allergies, hiver) et des
+            fiches de protocoles simples.
+          </p>
+          <button id="openGlossaryModal">Glossaire rapide</button>
+        </section>
+
+        <section id="outils" class="panel" data-title="Outils">
+          <h2>Outils & checklists interactives</h2>
+          <p>
+            Cochez vos éléments BOB. La progression est sauvegardée localement pour
+            usage hors ligne.
+          </p>
+          <div class="card">
+            <h3>Checklist BOB (Québec)</h3>
+            <div id="bobChecklist" class="checklist" data-key="checklist-bob">
+              <label><input type="checkbox" value="Eau 2L portable" /> Eau 2L portable</label>
+              <label><input type="checkbox" value="Filtre/pastilles" /> Filtre/pastilles</label>
+              <label><input type="checkbox" value="Vêtements thermiques" /> Vêtements thermiques</label>
+              <label><input type="checkbox" value="Trousse premiers soins" /> Trousse premiers soins</label>
+              <label><input type="checkbox" value="Lampe + piles" /> Lampe + piles</label>
+              <label><input type="checkbox" value="Radio manivelle" /> Radio manivelle</label>
+              <label><input type="checkbox" value="Copie des papiers" /> Copie des papiers</label>
+            </div>
+            <div class="checklist-actions">
+              <p id="bobProgress" class="result">0% complété</p>
+              <button id="exportPdfBtn">Exporter PDF</button>
+              <button id="resetChecklistBtn">Réinitialiser</button>
+            </div>
+          </div>
+          <div class="card">
+            <h3>Calculatrice eau 72h</h3>
+            <label>Nombre de personnes <input id="personnesInput" type="number" min="1" max="20" value="2" /></label>
+            <label>Jours <input id="joursInput" type="number" min="1" max="14" value="3" /></label>
+            <button id="calcEauBtn">Calculer volume</button>
+            <p id="eauOutput" class="result"></p>
+          </div>
+        </section>
+
+        <section id="securite" class="panel" data-title="Sécurité">
+          <h2>Sécurité</h2>
+          <p>
+            Sécurisez l'information, les accès et l'organisation familiale sans ajouter
+            de complexité inutile.
+          </p>
+          <ul>
+            <li>Double clé physique + sauvegarde hors site.</li>
+            <li>Liste de contacts imprimée et laminée.</li>
+            <li>Procédure de veille météo locale.</li>
+          </ul>
+          <button id="notifBtn">Activer notifications d'alerte</button>
+          <p id="notifStatus" class="result"></p>
+        </section>
+
+        <section id="competences" class="panel" data-title="Compétences">
+          <h2>Compétences progressives</h2>
+          <p>
+            Travaillez en cycles courts: eau, feu, orientation, communication, premiers
+            soins et résilience psychologique.
+          </p>
+        </section>
+
+        <section id="annexes" class="panel" data-title="Annexes">
+          <h2>Annexes & téléchargements</h2>
+          <p>
+            Téléchargez des synthèses PDF thématiques. En mode hors ligne, utilisez la
+            version locale en cache.
+          </p>
+          <ul>
+            <li><a href="#" download>PDF Eau - guide rapide</a></li>
+            <li><a href="#" download>PDF Plan 72h familial</a></li>
+            <li><a href="#" download>PDF Checklist BOB</a></li>
+          </ul>
+        </section>
+
+        <section id="forum" class="panel" data-title="Forum">
+          <h2>Forum / communauté</h2>
+          <p>
+            Intégration prévue avec Discourse ou Disqus. Filtrez les discussions par
+            région: Québec, Montréal, Rive-Sud.
+          </p>
+          <div class="card">
+            <p>
+              Espace démo: connectez votre instance Discourse pour activer les
+              échanges communautaires.
+            </p>
+            <a href="https://www.discourse.org/" target="_blank" rel="noopener noreferrer"
+              >Découvrir Discourse</a
+            >
+          </div>
+        </section>
+      </main>
+
+      <aside class="sidebar" aria-label="Raccourcis">
+        <article class="card">
+          <h2>Checklist express</h2>
+          <ul>
+            <li>✅ Eau 72h</li>
+            <li>✅ Trousse premiers soins</li>
+            <li>⬜ Radio manivelle</li>
+            <li>⬜ Plan évacuation</li>
+          </ul>
+        </article>
+        <article class="card low-tech">
+          <h2>Partenaire low-tech</h2>
+          <p>Poêles compacts, filtres gravitaires, solutions hors réseau.</p>
+        </article>
+      </aside>
+    </div>
+
+    <footer class="footer">
+      <a href="mailto:contact@carnet-survivaliste.local">Contacts</a>
+      <a href="#">Mises à jour RSS</a>
+      <a href="#annexes">Téléchargements PDF</a>
+      <a href="https://www.quebec.ca/securite-situations-urgence" target="_blank" rel="noopener noreferrer"
+        >Urgence Québec</a
+      >
+    </footer>
+
+    <div id="glossaryModal" class="modal" aria-hidden="true" role="dialog" aria-label="Glossaire survivaliste">
+      <div class="modal-content">
+        <button id="closeGlossaryModal" class="close-btn" aria-label="Fermer">✕</button>
+        <h2>Glossaire express</h2>
+        <ul>
+          <li><strong>BOB:</strong> Bug Out Bag, sac d'évacuation 72h.</li>
+          <li><strong>EDC:</strong> Every Day Carry, kit quotidien minimal.</li>
+          <li><strong>Règle des 3:</strong> Air, abri/chaleur, eau, nourriture.</li>
+        </ul>
+      </div>
+    </div>
+
+    <noscript>
+      <div class="noscript-box">
+        Mode survie statique actif (JavaScript désactivé): utilisez le menu et les sections
+        essentielles, le contenu principal reste consultable hors ligne.
+      </div>
+    </noscript>
+
+    <script src="app.js" defer></script>
+  </body>
+</html>
