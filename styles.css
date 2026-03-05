@@ -761,15 +761,17 @@ body {
 
 .subpage-screen {
   position: absolute;
-  left: 0.8rem;
-  right: 0.8rem;
+  left: 0.4rem;
+  right: 0.4rem;
   top: 102px;
   bottom: calc(178px + env(safe-area-inset-bottom));
-  background: #e2e0dd;
-  border: 1px solid #8d7b60;
+  background: #e5e1d8;
+  border: 1px solid #7f6f56;
+  border-radius: 12px 12px 0 0;
   display: none;
   z-index: 34;
   overflow: hidden;
+  box-shadow: 0 8px 22px rgba(38, 28, 15, 0.28);
 }
 
 .subpage-screen.show {
@@ -777,14 +779,14 @@ body {
 }
 
 .subpage-topbar {
-  height: 46px;
+  height: 48px;
   background: linear-gradient(180deg, #1f5f9f, #184e83);
   color: #fff;
   display: grid;
-  grid-template-columns: 40px 1fr 40px;
+  grid-template-columns: 40px 1fr 68px;
   align-items: center;
   border-bottom: 1px solid #123d66;
-  padding: 0 0.25rem;
+  padding: 0 0.3rem;
 }
 
 .subpage-title {
@@ -806,9 +808,15 @@ body {
   font-size: 12px;
 }
 
-.subpage-spacer {
-  width: 30px;
+.subpage-journal-btn {
   height: 30px;
+  border: 1px solid rgba(255, 255, 255, 0.75);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
 }
 
 .subpage-content {
@@ -820,13 +828,13 @@ body {
 }
 
 .subpage-block {
-  border: 1px solid #b8a689;
-  background: #f2ead8;
+  border: 1px solid #b9a98f;
+  background: #f5ecda;
 }
 
 .subpage-block-title {
   margin: 0;
-  background: #6e6c68;
+  background: #6f6d69;
   color: #f6f3ec;
   font-size: 0.76rem;
   font-weight: 700;
@@ -837,7 +845,7 @@ body {
 }
 
 .subpage-block-body {
-  padding: 0.32rem;
+  padding: 0.28rem;
 }
 
 .card {
