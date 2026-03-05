@@ -4541,11 +4541,11 @@
   function renderMilitaryBranches() {
     if (!ui.professionMilitaryRoot) return;
     const branches = [
-      { icon: "🛡️", name: "Army" },
-      { icon: "✈️", name: "Air Force" },
-      { icon: "⚓", name: "Navy" },
-      { icon: "💪", name: "Marines" },
-      { icon: "🚤", name: "Coast Guard" }
+      { icon: "🛡️", name: "Infanterie seigneuriale" },
+      { icon: "🏹", name: "Compagnies d'archers" },
+      { icon: "🐎", name: "Cavalerie lourde" },
+      { icon: "🏰", name: "Garde du château" },
+      { icon: "⚓", name: "Marine royale" }
     ];
     ui.professionMilitaryRoot.innerHTML = "";
     branches.forEach((entry) => {
