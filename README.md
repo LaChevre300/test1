@@ -29,19 +29,21 @@ Puis ouvrir `http://localhost:8080`.
 - **Crafting** : `C`
 - **Pause + sauvegarde manuelle + switch FR/EN** : `Esc`
 - **Accélération du temps x4** : maintenir `Espace`
+- **Dormir** : interagir (`E`) avec le lit dans la maison (optionnel)
 
 ## Fonctionnalités implémentées
 
 - Résolution fixe **1280x720**, rendu pixel (tuiles 16x16), boucle **60 FPS**
-- Monde complet 5 zones sans chargement (Ferme, Village, Forêt, Rivière, Colline)
-- Cycle jour/nuit, saisons (28 jours), météo aléatoire, énergie (coût x2 la nuit)
+- Monde complet 5 zones sans chargement, **agrandi** + bande d'intérieurs visitables
+- Cycle jour/nuit, saisons (28 jours), météo aléatoire, énergie (coût x2 la nuit), **repos seulement si le joueur dort**
 - HUD permanent (argent, énergie, heure, saison, outil, graine)
-- Champs 20x20, 12 cultures, engrais, récoltes, regrowth
+- Champs 24x24, 12 cultures, engrais, récoltes, regrowth
 - Inventaire 36 slots, coffre 100 slots, boîte de vente 10 slots
-- Boutique de Pierre (graines, animaux, bâtiments, amélioration arrosoir, déco)
+- **Hutte aux Herbes** (nouveau design UI + bâtiment + intérieur), graines, animaux, bâtiments, amélioration arrosoir, déco
 - Ressources (bois, pierre, fibre), pêche (mini-jeu), limites journalières
 - Animaux (poule, vache, mouton, cochon, canard), bonheur/soin/produits
 - Crafting (12 recettes), machines posables et transformation des produits
 - 6 PNJ, amitié (cœurs), cadeaux, 20 quêtes, festivals saisonniers
+- Intérieurs meublés (maison, hutte, taverne, mairie) avec collisions mobilier
 - Sauvegarde JSON locale : auto fin de journée + manuelle
 - Fin de jeu + écran de stats + **New Game+**

@@ -8,21 +8,117 @@ const SAVE_KEY = "ferme-des-quatre-brumes-save-v1";
 const TOOL_KEYS = ["Hoe", "WateringCan", "Axe", "Pickaxe", "Scythe", "FishingRod"];
 
 const ZONES = [
-  { id: "farm", x: 0, y: 0, w: 40, h: 30, label: "Ferme" },
-  { id: "village", x: 45, y: 0, w: 30, h: 25, label: "Village" },
-  { id: "forest", x: 0, y: 35, w: 35, h: 35, label: "Forêt Brumeuse" },
-  { id: "river", x: 45, y: 30, w: 25, h: 20, label: "Rivière" },
-  { id: "hill", x: 75, y: 30, w: 20, h: 20, label: "Colline Mystique" },
+  { id: "farm", x: 0, y: 0, w: 56, h: 40, label: "Ferme" },
+  { id: "village", x: 60, y: 0, w: 40, h: 34, label: "Village" },
+  { id: "forest", x: 0, y: 44, w: 50, h: 48, label: "Forêt Brumeuse" },
+  { id: "river", x: 60, y: 38, w: 34, h: 24, label: "Rivière" },
+  { id: "hill", x: 98, y: 38, w: 28, h: 24, label: "Colline Mystique" },
 ];
 
-const WORLD_WIDTH = 95;
-const WORLD_HEIGHT = 70;
-const LABORABLE = { x: 9, y: 8, w: 20, h: 20 };
+const WORLD_WIDTH = 130;
+const WORLD_HEIGHT = 122;
+const LABORABLE = { x: 12, y: 10, w: 24, h: 24 };
 const BRIDGE_TILES = [
-  { x: 56, y: 36 },
-  { x: 57, y: 36 },
-  { x: 58, y: 36 },
-  { x: 59, y: 36 },
+  { x: 74, y: 46 },
+  { x: 75, y: 46 },
+  { x: 76, y: 46 },
+  { x: 77, y: 46 },
+  { x: 78, y: 46 },
+];
+
+const BUILDINGS = {
+  house: { x: 4, y: 4, w: 10, h: 8, door: { x: 8, y: 11 } },
+  herbHut: { x: 64, y: 6, w: 12, h: 8, door: { x: 69, y: 13 } },
+  tavern: { x: 80, y: 6, w: 12, h: 8, door: { x: 86, y: 13 } },
+  townHall: { x: 74, y: 17, w: 14, h: 9, door: { x: 80, y: 25 } },
+  coop: { x: 42, y: 10, w: 10, h: 7, door: { x: 46, y: 16 } },
+  barn: { x: 41, y: 20, w: 11, h: 8, door: { x: 46, y: 27 } },
+};
+
+const STORAGE_TILES = {
+  chest: { x: 15, y: 11 },
+  shipping: { x: 17, y: 11 },
+};
+
+const WATER_AREAS = [
+  { x: 60, y: 42, w: 34, h: 16 },
+  { x: 7, y: 30, w: 12, h: 8 },
+  { x: 8, y: 58, w: 12, h: 10 },
+];
+
+const CAVE_RECT = { x: 30, y: 76, w: 10, h: 10 };
+const RITUAL_RECT = { x: 108, y: 48, w: 4, h: 4 };
+const INTERIOR_BAND_Y = 96;
+
+const INTERIOR_ROOMS = [
+  {
+    id: "farmhouse",
+    x: 4,
+    y: 98,
+    w: 18,
+    h: 14,
+    outsideDoor: BUILDINGS.house.door,
+    insideDoor: { x: 12, y: 111 },
+    bed: { x: 7, y: 100, w: 3, h: 2 },
+    furniture: [
+      { x: 6, y: 100, w: 4, h: 2, color: "#8a5c46", blocking: true },
+      { x: 13, y: 102, w: 4, h: 3, color: "#946c4c", blocking: true },
+      { x: 16, y: 99, w: 2, h: 4, color: "#755736", blocking: true },
+      { x: 6, y: 106, w: 6, h: 3, color: "#81624d", blocking: false },
+      { x: 14, y: 106, w: 3, h: 2, color: "#6f7a57", blocking: true },
+    ],
+  },
+  {
+    id: "herbHut",
+    x: 26,
+    y: 98,
+    w: 20,
+    h: 14,
+    outsideDoor: BUILDINGS.herbHut.door,
+    insideDoor: { x: 36, y: 111 },
+    bed: null,
+    furniture: [
+      { x: 28, y: 100, w: 16, h: 2, color: "#55734d", blocking: true },
+      { x: 28, y: 103, w: 3, h: 5, color: "#6e8a61", blocking: true },
+      { x: 33, y: 103, w: 3, h: 5, color: "#6e8a61", blocking: true },
+      { x: 38, y: 103, w: 3, h: 5, color: "#6e8a61", blocking: true },
+      { x: 42, y: 103, w: 2, h: 4, color: "#857b58", blocking: true },
+      { x: 30, y: 108, w: 11, h: 2, color: "#7f684f", blocking: false },
+    ],
+  },
+  {
+    id: "tavern",
+    x: 50,
+    y: 98,
+    w: 22,
+    h: 14,
+    outsideDoor: BUILDINGS.tavern.door,
+    insideDoor: { x: 61, y: 111 },
+    bed: null,
+    furniture: [
+      { x: 52, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true },
+      { x: 58, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true },
+      { x: 64, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true },
+      { x: 52, y: 105, w: 16, h: 2, color: "#6f553f", blocking: true },
+      { x: 55, y: 108, w: 11, h: 2, color: "#8d6a48", blocking: false },
+    ],
+  },
+  {
+    id: "townHall",
+    x: 76,
+    y: 98,
+    w: 20,
+    h: 14,
+    outsideDoor: BUILDINGS.townHall.door,
+    insideDoor: { x: 86, y: 111 },
+    bed: null,
+    furniture: [
+      { x: 78, y: 100, w: 16, h: 2, color: "#6f6a58", blocking: true },
+      { x: 79, y: 104, w: 6, h: 3, color: "#8f6f4f", blocking: true },
+      { x: 88, y: 104, w: 6, h: 3, color: "#8f6f4f", blocking: true },
+      { x: 83, y: 108, w: 7, h: 2, color: "#7a5f49", blocking: false },
+    ],
+  },
 ];
 
 const WEATHER_TABLE = [
@@ -64,8 +160,8 @@ const TRANSLATIONS = {
     transferInv: "Vers inventaire",
     sellOne: "Vendre x1",
     questCompleted: "Quête terminée",
-    shopClosed: "La boutique est fermée (09:00-18:00).",
-    shopTitle: "Boutique de Pierre",
+    shopClosed: "La Hutte aux Herbes est fermée (09:00-18:00).",
+    shopTitle: "Hutte aux Herbes",
     buy: "Acheter",
     build: "Construire",
     openInventory: "Tab: inventaire",
@@ -90,6 +186,9 @@ const TRANSLATIONS = {
     notEnoughEnergy: "Pas assez d'énergie.",
     cropOutSeason: "Cette culture n'aime pas cette saison.",
     noSeedSelected: "Choisis une graine dans l'inventaire.",
+    sleepNoRest: "Tu as veillé jusqu'à l'aube, sans repos...",
+    sleepRested: "Bonne nuit. Tu te sens reposé.",
+    bedHint: "Lit confortable (E pour dormir).",
     quest: "Quête",
     hearts: "Cœurs",
   },
@@ -119,8 +218,8 @@ const TRANSLATIONS = {
     transferInv: "To inventory",
     sellOne: "Ship x1",
     questCompleted: "Quest completed",
-    shopClosed: "The shop is closed (09:00-18:00).",
-    shopTitle: "Pierre's Shop",
+    shopClosed: "The Herb Hut is closed (09:00-18:00).",
+    shopTitle: "Herb Hut",
     buy: "Buy",
     build: "Build",
     openInventory: "Tab: inventory",
@@ -145,6 +244,9 @@ const TRANSLATIONS = {
     notEnoughEnergy: "Not enough energy.",
     cropOutSeason: "This crop does not grow this season.",
     noSeedSelected: "Select a seed from inventory.",
+    sleepNoRest: "You stayed up all night and got no rest...",
+    sleepRested: "Good night. You feel rested.",
+    bedHint: "Cozy bed (press E to sleep).",
     quest: "Quest",
     hearts: "Hearts",
   },
@@ -249,12 +351,12 @@ const QUESTS = [
 ];
 
 const NPCS = [
-  npc("Pierre", "Marchand", "gem", { x: 55, y: 8 }),
-  npc("Marie", "Aubergiste", "egg", { x: 63, y: 9 }),
-  npc("Lucas", "Maire", "carrot_crop", { x: 59, y: 14 }),
-  npc("Elodie", "Botaniste", "mushroom_crop", { x: 50, y: 18 }),
-  npc("Nino", "Pêcheur", "fish_river", { x: 52, y: 34 }),
-  npc("Iris", "Artisane", "cloth", { x: 67, y: 16 }),
+  npc("Pierre", "Herboriste", "gem", { x: 68, y: 14 }),
+  npc("Marie", "Aubergiste", "egg", { x: 86, y: 15 }),
+  npc("Lucas", "Maire", "carrot_crop", { x: 80, y: 26 }),
+  npc("Elodie", "Botaniste", "mushroom_crop", { x: 66, y: 24 }),
+  npc("Nino", "Pêcheur", "fish_river", { x: 68, y: 45 }),
+  npc("Iris", "Artisane", "cloth", { x: 92, y: 21 }),
 ];
 
 class Game {
@@ -296,6 +398,7 @@ class Game {
     this.day = 1;
     this.seasonIndex = 0;
     this.weather = "sunny";
+    this.sleptThisNight = false;
     this.player = {
       x: 8 * TILE_SIZE,
       y: 7 * TILE_SIZE,
@@ -450,6 +553,7 @@ class Game {
     this.day = 1;
     this.seasonIndex = 0;
     this.weather = this.rollWeather();
+    this.sleptThisNight = false;
     this.player.x = 8 * TILE_SIZE;
     this.player.y = 7 * TILE_SIZE;
     this.player.energy = 100;
@@ -604,6 +708,7 @@ class Game {
       day: this.day,
       seasonIndex: this.seasonIndex,
       weather: this.weather,
+      sleptThisNight: this.sleptThisNight,
       player: this.player,
       farmPlots: this.farmPlots,
       resources: this.resources,
@@ -630,6 +735,7 @@ class Game {
       this.day = data.day ?? 1;
       this.seasonIndex = data.seasonIndex ?? 0;
       this.weather = data.weather ?? "sunny";
+      this.sleptThisNight = data.sleptThisNight ?? false;
       this.player = data.player;
       this.farmPlots = data.farmPlots ?? {};
       this.resources = data.resources ?? { trees: [], rocks: [], grass: [] };
@@ -829,7 +935,7 @@ class Game {
       const price = this.dynamicPrice(c.seedPrice, c.season === season);
       const out = c.season !== season;
       return `
-        <div class="quest">
+        <div class="quest hut-card">
           <strong>${itemName(c.seedItem, this.lang)}</strong> <span class="badge">${price}$</span>
           <div class="small">${SEASON_LABELS[this.lang][c.season]} | ${out ? "Hors saison (rare +10%)" : "Abondant (-20%)"}</div>
           <button data-action="buy:${c.seedItem}" data-payload="${c.seedItem}">${this.t("buy")}</button>
@@ -838,7 +944,7 @@ class Game {
     }).join("");
 
     const animalItems = Object.values(ANIMALS).map((a) => `
-      <div class="quest">
+      <div class="quest hut-card">
         <strong>${this.lang === "fr" ? a.nameFr : a.nameEn}</strong>
         <div class="small">${a.price}$ | ${a.building === "coop" ? "Poulailler" : "Grange"}</div>
         <button data-action="buy:animal_${a.id}" data-payload="animal_${a.id}">${this.t("buy")}</button>
@@ -846,29 +952,31 @@ class Game {
     `).join("");
 
     overlay.innerHTML = `
-      <div class="window">
+      <div class="window hut-shop">
         <h2>${this.t("shopTitle")} - ${this.player.money}$</h2>
-        <div class="row">
-          <h3>Graines</h3>
+        <p class="small">Un parfum de menthe, de sauge et de pluie flotte dans la pièce.</p>
+        <div class="row hut-row">
+          <h3>Graines de saison</h3>
+          <span class="badge">Ouvert 09:00 → 18:00</span>
         </div>
-        ${seedItems}
+        <div class="shop-grid">${seedItems}</div>
         <h3>Animaux</h3>
-        ${animalItems}
+        <div class="shop-grid">${animalItems}</div>
         <h3>Améliorations / Déco</h3>
-        <div class="quest">
+        <div class="quest hut-card">
           <strong>Arrosoir cuivre</strong> <span class="badge">2000$</span>
           <div class="small">Vitesse arrosage x1.5</div>
           <button data-action="buy:upgrade_watering" data-payload="upgrade_watering">${this.t("buy")}</button>
         </div>
-        <div class="quest">
+        <div class="quest hut-card">
           <strong>${this.t("build")} Poulailler</strong> <span class="badge">500 bois + 200 pierre</span>
           <button data-action="buy:build_coop" data-payload="build_coop">${this.t("build")}</button>
         </div>
-        <div class="quest">
+        <div class="quest hut-card">
           <strong>${this.t("build")} Grange</strong> <span class="badge">1000 bois + 500 pierre</span>
           <button data-action="buy:build_barn" data-payload="build_barn">${this.t("build")}</button>
         </div>
-        <div class="quest">
+        <div class="quest hut-card">
           <strong>Lampe</strong> <span class="badge">100$</span>
           <button data-action="buy:lamp" data-payload="lamp">${this.t("buy")}</button>
         </div>
@@ -999,8 +1107,8 @@ class Game {
         fed: false,
         petted: false,
         hasProduct: true,
-        x: def.building === "coop" ? 33 + Math.random() * 4 : 34 + Math.random() * 5,
-        y: def.building === "coop" ? 9 + Math.random() * 3 : 16 + Math.random() * 3,
+        x: def.building === "coop" ? BUILDINGS.coop.x + 1 + Math.random() * 6 : BUILDINGS.barn.x + 1 + Math.random() * 7,
+        y: def.building === "coop" ? BUILDINGS.coop.y + 1 + Math.random() * 4 : BUILDINGS.barn.y + 1 + Math.random() * 5,
       });
       this.stats.animalOwned = this.animals.length;
       this.stats.chickenOwned = this.animals.filter((a) => a.type === "chicken").length;
@@ -1036,27 +1144,27 @@ class Game {
     this.resources.trees = [];
     this.resources.rocks = [];
     this.resources.grass = [];
-    for (let i = 0; i < 56; i += 1) {
+    for (let i = 0; i < 84; i += 1) {
       this.resources.trees.push({
         id: `tree_${i}`,
-        x: 2 + Math.floor(Math.random() * 30),
-        y: 37 + Math.floor(Math.random() * 30),
+        x: 2 + Math.floor(Math.random() * 44),
+        y: 46 + Math.floor(Math.random() * 44),
         alive: true,
       });
     }
-    for (let i = 0; i < 34; i += 1) {
+    for (let i = 0; i < 50; i += 1) {
       this.resources.rocks.push({
         id: `rock_${i}`,
-        x: 2 + Math.floor(Math.random() * 30),
-        y: 37 + Math.floor(Math.random() * 30),
+        x: 3 + Math.floor(Math.random() * 42),
+        y: 47 + Math.floor(Math.random() * 40),
         alive: true,
       });
     }
-    for (let i = 0; i < 90; i += 1) {
+    for (let i = 0; i < 140; i += 1) {
       this.resources.grass.push({
         id: `grass_${i}`,
-        x: 1 + Math.floor(Math.random() * 35),
-        y: 35 + Math.floor(Math.random() * 35),
+        x: 1 + Math.floor(Math.random() * 50),
+        y: 44 + Math.floor(Math.random() * 48),
         alive: true,
       });
     }
@@ -1064,10 +1172,10 @@ class Game {
 
   updateTime(dt) {
     this.dayMinute += dt * 60;
-    if (this.dayMinute >= DAY_END) this.endDay();
+    if (this.dayMinute >= DAY_END) this.endDay(this.sleptThisNight);
   }
 
-  endDay() {
+  endDay(rested) {
     this.resolveShipping();
     this.advanceCrops();
     this.advanceAnimalsDay();
@@ -1079,13 +1187,28 @@ class Game {
       this.seasonIndex = (this.seasonIndex + 1) % SEASONS.length;
     }
     this.weather = this.rollWeather();
-    this.player.energy = 100;
+    if (rested) {
+      this.player.energy = 100;
+      this.say(this.t("sleepRested"));
+    } else {
+      this.say(this.t("sleepNoRest"));
+    }
+    this.sleptThisNight = false;
     this.dailyCounters = { treeCut: 0, rocksBroken: 0, fishCaught: 0, giftedToday: {} };
     for (const npc of this.npcs) npc.talkedToday = false;
     this.regenResources();
     this.checkFestival();
     this.saveGame();
-    this.say(this.t("autoSaveDone"));
+  }
+
+  sleepNow() {
+    const h = this.displayHourMinutes().hour;
+    if (h < 18 && h >= 6) {
+      this.say(this.t("bedHint"));
+      return;
+    }
+    this.sleptThisNight = true;
+    this.endDay(true);
   }
 
   resolveShipping() {
@@ -1166,11 +1289,11 @@ class Game {
         npc.y = npc.home.y + 1;
       } else if (hour < 18) {
         if (npc.name === "Pierre") {
-          npc.x = 56;
-          npc.y = 8;
+          npc.x = 69;
+          npc.y = 14;
         } else if (npc.name === "Nino") {
-          npc.x = 53;
-          npc.y = 35;
+          npc.x = 69;
+          npc.y = 46;
         } else {
           npc.x = npc.home.x;
           npc.y = npc.home.y;
@@ -1184,12 +1307,12 @@ class Game {
 
   updateAnimals() {
     for (const a of this.animals) {
-      const homeX = ANIMALS[a.type].building === "coop" ? 33 : 34;
-      const homeY = ANIMALS[a.type].building === "coop" ? 9 : 16;
+      const homeX = ANIMALS[a.type].building === "coop" ? BUILDINGS.coop.x + 1 : BUILDINGS.barn.x + 1;
+      const homeY = ANIMALS[a.type].building === "coop" ? BUILDINGS.coop.y + 1 : BUILDINGS.barn.y + 1;
       a.x += (Math.random() - 0.5) * 0.02;
       a.y += (Math.random() - 0.5) * 0.02;
-      a.x = clamp(a.x, homeX, homeX + 5);
-      a.y = clamp(a.y, homeY, homeY + 4);
+      a.x = clamp(a.x, homeX, homeX + 7);
+      a.y = clamp(a.y, homeY, homeY + 5);
     }
   }
 
@@ -1226,19 +1349,26 @@ class Game {
   }
 
   tilePassable(tx, ty) {
-    if (isInRect(tx, ty, 2, 2, 6, 5)) return false;
-    if (isInRect(tx, ty, 31, 6, 8, 5) && this.flags.coopBuilt) return false;
-    if (isInRect(tx, ty, 30, 14, 9, 6) && this.flags.barnBuilt) return false;
-    if (isInRect(tx, ty, 48, 4, 8, 5)) return false;
-    if (isInRect(tx, ty, 58, 5, 8, 5)) return false;
-    if (isInRect(tx, ty, 58, 12, 10, 6)) return false;
-    if (isInRect(tx, ty, 19, 52, 8, 8) && !this.flags.caveOpen) return false;
-    if (inZone(tx, ty, "hill") && !this.flags.hillUnlocked) return false;
-    if (inZone(tx, ty, "river")) {
-      const riverWalk = isInRect(tx, ty, 45, 30, 25, 3) || isInRect(tx, ty, 45, 47, 25, 3) || isBridgeTile(tx, ty, this.flags.bridgeRepaired);
-      if (!riverWalk) return false;
+    const room = interiorRoomAt(tx, ty);
+    if (room) {
+      if (isRoomWallTile(room, tx, ty)) return false;
+      if (room.furniture.some((f) => f.blocking && isInRect(tx, ty, f.x, f.y, f.w, f.h))) return false;
+      return true;
     }
-    if (isInRect(tx, ty, 3, 20, 8, 8)) return false;
+    if (ty >= INTERIOR_BAND_Y) return false;
+
+    if (isInRect(tx, ty, BUILDINGS.house.x, BUILDINGS.house.y, BUILDINGS.house.w, BUILDINGS.house.h)) return false;
+    if (isInRect(tx, ty, BUILDINGS.herbHut.x, BUILDINGS.herbHut.y, BUILDINGS.herbHut.w, BUILDINGS.herbHut.h)) return false;
+    if (isInRect(tx, ty, BUILDINGS.tavern.x, BUILDINGS.tavern.y, BUILDINGS.tavern.w, BUILDINGS.tavern.h)) return false;
+    if (isInRect(tx, ty, BUILDINGS.townHall.x, BUILDINGS.townHall.y, BUILDINGS.townHall.w, BUILDINGS.townHall.h)) return false;
+    if (this.flags.coopBuilt && isInRect(tx, ty, BUILDINGS.coop.x, BUILDINGS.coop.y, BUILDINGS.coop.w, BUILDINGS.coop.h)) return false;
+    if (this.flags.barnBuilt && isInRect(tx, ty, BUILDINGS.barn.x, BUILDINGS.barn.y, BUILDINGS.barn.w, BUILDINGS.barn.h)) return false;
+    if (isInRect(tx, ty, CAVE_RECT.x, CAVE_RECT.y, CAVE_RECT.w, CAVE_RECT.h) && !this.flags.caveOpen) return false;
+    if (inZone(tx, ty, "hill") && !this.flags.hillUnlocked) return false;
+
+    if (isBridgeSpot(tx, ty)) return this.flags.bridgeRepaired;
+    if (WATER_AREAS.some((rect) => isInRect(tx, ty, rect.x, rect.y, rect.w, rect.h))) return false;
+
     if (this.resources.trees.some((t) => t.alive && t.x === tx && t.y === ty)) return false;
     if (this.resources.rocks.some((r) => r.alive && r.x === tx && r.y === ty)) return false;
     return true;
@@ -1313,7 +1443,7 @@ class Game {
 
   randomNpcLine(name) {
     const lines = {
-      Pierre: ["Le marché est calme aujourd'hui.", "Les graines fraîches sentent le printemps."],
+      Pierre: ["Bienvenue dans la Hutte aux Herbes.", "J'ai reçu une infusion pour les longues journées."],
       Marie: ["Je garde un gâteau pour les bons voisins.", "Un œuf chaud, ça apaise tout."],
       Lucas: ["La colline attend les cœurs courageux.", "Le village compte sur toi."],
       Elodie: ["Les brumes chantent près des baies.", "La forêt te connaît déjà."],
@@ -1336,19 +1466,50 @@ class Game {
   }
 
   tryObjectInteraction(tx, ty) {
-    if (isInRect(tx, ty, 8, 5, 1, 1)) {
+    const insideRoom = interiorRoomAt(tx, ty);
+    if (insideRoom?.id === "herbHut" && isInRect(tx, ty, 28, 100, 16, 2)) {
+      if (this.isShopOpen()) {
+        this.openMenu = "shop";
+        this.showOverlay("shop");
+        this.renderShop();
+      } else {
+        this.say(this.t("shopClosed"));
+      }
+      return true;
+    }
+    if (insideRoom && tileEq(insideRoom.insideDoor, tx, ty)) {
+      this.player.x = insideRoom.outsideDoor.x * TILE_SIZE;
+      this.player.y = (insideRoom.outsideDoor.y + 1) * TILE_SIZE;
+      return true;
+    }
+
+    const farmhouse = INTERIOR_ROOMS.find((r) => r.id === "farmhouse");
+    if (farmhouse && isInRect(tx, ty, farmhouse.bed.x, farmhouse.bed.y, farmhouse.bed.w, farmhouse.bed.h)) {
+      this.sleepNow();
+      return true;
+    }
+
+    const roomFromDoor = interiorRoomByOutsideDoor(tx, ty);
+    if (roomFromDoor) {
+      this.player.x = roomFromDoor.insideDoor.x * TILE_SIZE;
+      this.player.y = (roomFromDoor.insideDoor.y - 1) * TILE_SIZE;
+      if (roomFromDoor.id === "farmhouse") this.say(this.t("bedHint"));
+      return true;
+    }
+
+    if (tileEq(STORAGE_TILES.chest, tx, ty)) {
       this.openMenu = "inventory";
       this.showOverlay("inventory");
       this.renderInventory();
       return true;
     }
-    if (isInRect(tx, ty, 10, 5, 1, 1)) {
+    if (tileEq(STORAGE_TILES.shipping, tx, ty)) {
       this.openMenu = "inventory";
       this.showOverlay("inventory");
       this.renderInventory();
       return true;
     }
-    if (isInRect(tx, ty, 19, 52, 8, 8)) {
+    if (isInRect(tx, ty, CAVE_RECT.x, CAVE_RECT.y, CAVE_RECT.w, CAVE_RECT.h)) {
       this.flags.caveOpen = true;
       this.stats.caveVisited = 1;
       this.say("La grotte murmure un ancien souvenir.");
@@ -1369,7 +1530,7 @@ class Game {
       this.say(this.t("hillLocked"));
       return true;
     }
-    if (isInRect(tx, ty, 82, 37, 3, 3)) {
+    if (isInRect(tx, ty, RITUAL_RECT.x, RITUAL_RECT.y, RITUAL_RECT.w, RITUAL_RECT.h)) {
       this.tryFinalRitual();
       return true;
     }
@@ -1761,9 +1922,15 @@ class Game {
     const season = this.currentSeason();
     const night = this.dayMinute >= 22 * 60 || this.dayMinute < 6 * 60;
 
-    if (isInRect(tx, ty, 45, 33, 25, 14)) return "#4b84a5";
+    const room = interiorRoomAt(tx, ty);
+    if (room) {
+      if (isRoomWallTile(room, tx, ty)) return "#5d4a3b";
+      return "#9d825f";
+    }
+    if (ty >= INTERIOR_BAND_Y) return "#0e1318";
+
+    if (WATER_AREAS.some((rect) => isInRect(tx, ty, rect.x, rect.y, rect.w, rect.h))) return "#4b84a5";
     if (isBridgeSpot(tx, ty)) return this.flags.bridgeRepaired ? "#8d6443" : "#553f2a";
-    if (isInRect(tx, ty, 3, 20, 8, 8)) return "#4f8ab4";
     if (inZone(tx, ty, "village")) return "#7e8450";
     if (inZone(tx, ty, "forest")) return season === "winter" ? "#6d7f74" : "#5e8456";
     if (inZone(tx, ty, "hill")) return "#6a7d63";
@@ -1795,29 +1962,43 @@ class Game {
   }
 
   drawBuildings() {
-    const b = [
-      { x: 2, y: 2, w: 6, h: 5, c: "#8b5f47" },
-      { x: 48, y: 4, w: 8, h: 5, c: "#8b5f47" },
-      { x: 58, y: 5, w: 8, h: 5, c: "#8b5f47" },
-      { x: 58, y: 12, w: 10, h: 6, c: "#7a5540" },
+    const buildingDefs = [
+      { ...BUILDINGS.house, wall: "#8f6548", roof: "#5a4436", window: "#a4c8db" },
+      { ...BUILDINGS.herbHut, wall: "#6f7f4b", roof: "#3f5131", window: "#b9d8c8" },
+      { ...BUILDINGS.tavern, wall: "#7c5a44", roof: "#4a352b", window: "#e4c6a2" },
+      { ...BUILDINGS.townHall, wall: "#7a6d5d", roof: "#4f4a40", window: "#d4cdbf" },
     ];
-    if (this.flags.coopBuilt) b.push({ x: 31, y: 6, w: 8, h: 5, c: "#866040" });
-    if (this.flags.barnBuilt) b.push({ x: 30, y: 14, w: 9, h: 6, c: "#6f4e39" });
-    for (const obj of b) {
-      this.ctx.fillStyle = obj.c;
+    if (this.flags.coopBuilt) buildingDefs.push({ ...BUILDINGS.coop, wall: "#8a6a4d", roof: "#5f4634", window: "#f0ddb9" });
+    if (this.flags.barnBuilt) buildingDefs.push({ ...BUILDINGS.barn, wall: "#74533f", roof: "#4d382d", window: "#f0d1a9" });
+
+    for (const b of buildingDefs) {
+      this.ctx.fillStyle = b.roof;
       this.ctx.fillRect(
-        obj.x * TILE_SIZE - this.camera.x,
-        obj.y * TILE_SIZE - this.camera.y,
-        obj.w * TILE_SIZE,
-        obj.h * TILE_SIZE,
+        b.x * TILE_SIZE - this.camera.x,
+        b.y * TILE_SIZE - this.camera.y,
+        b.w * TILE_SIZE,
+        TILE_SIZE * 2,
       );
+      this.ctx.fillStyle = b.wall;
+      this.ctx.fillRect(
+        b.x * TILE_SIZE - this.camera.x,
+        (b.y + 2) * TILE_SIZE - this.camera.y,
+        b.w * TILE_SIZE,
+        (b.h - 2) * TILE_SIZE,
+      );
+      this.ctx.fillStyle = b.window;
+      this.ctx.fillRect((b.x + 2) * TILE_SIZE - this.camera.x, (b.y + 3) * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
+      this.ctx.fillRect((b.x + b.w - 3) * TILE_SIZE - this.camera.x, (b.y + 3) * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
+      this.ctx.fillStyle = "#3b2d22";
+      this.ctx.fillRect(b.door.x * TILE_SIZE - this.camera.x, b.door.y * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
     }
+
     this.ctx.fillStyle = "#7a5d38";
-    this.ctx.fillRect(8 * TILE_SIZE - this.camera.x, 5 * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
+    this.ctx.fillRect(STORAGE_TILES.chest.x * TILE_SIZE - this.camera.x, STORAGE_TILES.chest.y * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
     this.ctx.fillStyle = "#75674a";
-    this.ctx.fillRect(10 * TILE_SIZE - this.camera.x, 5 * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
+    this.ctx.fillRect(STORAGE_TILES.shipping.x * TILE_SIZE - this.camera.x, STORAGE_TILES.shipping.y * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
     this.ctx.fillStyle = "#6e5e46";
-    this.ctx.fillRect(82 * TILE_SIZE - this.camera.x, 37 * TILE_SIZE - this.camera.y, 3 * TILE_SIZE, 3 * TILE_SIZE);
+    this.ctx.fillRect(RITUAL_RECT.x * TILE_SIZE - this.camera.x, RITUAL_RECT.y * TILE_SIZE - this.camera.y, RITUAL_RECT.w * TILE_SIZE, RITUAL_RECT.h * TILE_SIZE);
   }
 
   drawDecor() {
@@ -1832,6 +2013,56 @@ class Game {
     for (const r of this.resources.rocks) {
       if (!r.alive) continue;
       drawNode(this.ctx, r.x, r.y, this.camera, "#83888f", 13, 10);
+    }
+
+    const outdoorFurniture = [
+      { x: 62, y: 16, w: 2, h: 1, c: "#7a5d3f" },
+      { x: 66, y: 16, w: 2, h: 1, c: "#7a5d3f" },
+      { x: 72, y: 15, w: 1, h: 2, c: "#6d8f6a" },
+      { x: 83, y: 16, w: 2, h: 1, c: "#7f6145" },
+      { x: 88, y: 16, w: 2, h: 1, c: "#7f6145" },
+      { x: 76, y: 29, w: 3, h: 1, c: "#6e5a47" },
+      { x: 82, y: 29, w: 3, h: 1, c: "#6e5a47" },
+      { x: 14, y: 14, w: 2, h: 1, c: "#74573c" },
+      { x: 20, y: 14, w: 2, h: 1, c: "#74573c" },
+      { x: 18, y: 18, w: 1, h: 2, c: "#6a8e65" },
+    ];
+    for (const deco of outdoorFurniture) {
+      this.ctx.fillStyle = deco.c;
+      this.ctx.fillRect(
+        deco.x * TILE_SIZE - this.camera.x,
+        deco.y * TILE_SIZE - this.camera.y,
+        deco.w * TILE_SIZE,
+        deco.h * TILE_SIZE,
+      );
+    }
+
+    for (const room of INTERIOR_ROOMS) {
+      for (const f of room.furniture) {
+        this.ctx.fillStyle = f.color;
+        this.ctx.fillRect(
+          f.x * TILE_SIZE - this.camera.x,
+          f.y * TILE_SIZE - this.camera.y,
+          f.w * TILE_SIZE,
+          f.h * TILE_SIZE,
+        );
+      }
+      this.ctx.fillStyle = "#2e2521";
+      this.ctx.fillRect(
+        room.insideDoor.x * TILE_SIZE - this.camera.x,
+        room.insideDoor.y * TILE_SIZE - this.camera.y,
+        TILE_SIZE,
+        TILE_SIZE,
+      );
+      if (room.bed) {
+        this.ctx.fillStyle = "#d9c4ad";
+        this.ctx.fillRect(
+          room.bed.x * TILE_SIZE - this.camera.x,
+          room.bed.y * TILE_SIZE - this.camera.y,
+          room.bed.w * TILE_SIZE,
+          room.bed.h * TILE_SIZE,
+        );
+      }
     }
 
     for (const m of this.machines) {
@@ -2009,6 +2240,24 @@ function inZone(tx, ty, zoneId) {
   return isInRect(tx, ty, z.x, z.y, z.w, z.h);
 }
 
+function tileEq(tile, tx, ty) {
+  return tile.x === tx && tile.y === ty;
+}
+
+function interiorRoomAt(tx, ty) {
+  return INTERIOR_ROOMS.find((room) => isInRect(tx, ty, room.x, room.y, room.w, room.h)) || null;
+}
+
+function interiorRoomByOutsideDoor(tx, ty) {
+  return INTERIOR_ROOMS.find((room) => tileEq(room.outsideDoor, tx, ty)) || null;
+}
+
+function isRoomWallTile(room, tx, ty) {
+  const onLeftRight = tx === room.x || tx === room.x + room.w - 1;
+  const onTopBottom = ty === room.y || ty === room.y + room.h - 1;
+  return onLeftRight || onTopBottom;
+}
+
 function isBridgeTile(tx, ty, enabled) {
   if (!isBridgeSpot(tx, ty)) return false;
   return !!enabled;
@@ -2019,8 +2268,7 @@ function isBridgeSpot(tx, ty) {
 }
 
 function isNearWater(tx, ty, bridgeRepaired) {
-  if (isInRect(tx, ty, 45, 33, 25, 14)) return true;
-  if (isInRect(tx, ty, 3, 20, 8, 8)) return true;
+  if (WATER_AREAS.some((rect) => isInRect(tx, ty, rect.x, rect.y, rect.w, rect.h))) return true;
   if (!bridgeRepaired && BRIDGE_TILES.some((b) => b.x === tx && b.y === ty)) return true;
   return false;
 }

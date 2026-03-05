@@ -227,3 +227,33 @@ button:hover {
 .success {
   color: #b4f7ad;
 }
+
+.hut-shop {
+  border-color: #8cae7b;
+  background: linear-gradient(180deg, rgba(26, 46, 29, 0.95), rgba(17, 34, 23, 0.95));
+}
+
+.hut-row {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.shop-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.hut-card {
+  border-color: #5f7e54;
+  background: rgba(28, 48, 30, 0.85);
+}
+
+.hut-card button {
+  background: #355234;
+  border-color: #7d9a71;
+}
+
+.hut-card button:hover {
+  background: #486e43;
+}
