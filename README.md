@@ -45,6 +45,19 @@ default.project.json
 3. Dans Roblox Studio, ouvre ton `.rbxl/.rbxlx` puis connecte Rojo.
 4. Lance Play Test.
 
+## Publication Roblox (important)
+
+Tu as un guide complet pas-a-pas ici :
+
+- `INSTALL_ROBLOX.md`
+
+Ce guide explique :
+
+- comment installer Rojo + plugin Studio,
+- comment synchroniser le projet dans Studio,
+- comment publier ton monde sur Roblox,
+- comment faire sans Rojo (methode manuelle).
+
 ## Reglages gameplay
 
 Les principaux parametres sont dans `src/Shared/Config/TycoonConfig.lua` :
