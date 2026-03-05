@@ -51,11 +51,23 @@
       </header>
 
       <section id="screen-home" class="screen active">
+        <article class="card event-card">
+          <h2>Événement</h2>
+          <p id="event-text" class="event-text"></p>
+          <div id="event-choices" class="event-choices-inline"></div>
+        </article>
+
         <article class="card">
-          <h2>Profession</h2>
-          <ul id="profession-summary-list" class="compact-list"></ul>
+          <h2>Journal</h2>
+          <div id="log" class="log"></div>
+        </article>
+      </section>
+
+      <section id="screen-activity" class="screen">
+        <article class="card">
+          <h2>Catégories</h2>
           <div class="nav-tree">
-            <div class="nav-group-title">Orientation</div>
+            <div class="nav-group-title">Profession</div>
             <details class="nav-section">
               <summary data-subpage="profession-education" data-subpage-title="Éducation">
                 <span class="nav-icon">🎓</span>
@@ -80,8 +92,6 @@
                 <div id="school-people-root" class="person-grid"></div>
               </details>
             </details>
-
-            <div class="nav-group-title">Carrières</div>
             <details class="nav-section">
               <summary data-subpage="profession-jobs" data-subpage-title="Métiers">
                 <span class="nav-icon">💰</span>
@@ -106,37 +116,18 @@
                 <div id="profession-colleagues-root" class="person-grid"></div>
               </details>
             </details>
-
-            <div class="nav-group-title">Ordres armés</div>
             <details class="nav-section">
               <summary data-subpage="profession-military" data-subpage-title="Ordres armés">
                 <span class="nav-icon">🛡️</span>
                 <span class="nav-main">
-                  <span class="nav-title">Militaire</span>
+                  <span class="nav-title">Ordres armés</span>
                   <span class="nav-sub">Choisir une branche</span>
                 </span>
                 <span class="nav-arrow">›</span>
               </summary>
               <div id="profession-military-root"></div>
             </details>
-          </div>
-        </article>
 
-        <article class="card event-card">
-          <p id="event-text" class="event-text"></p>
-          <div id="event-choices" class="event-choices-inline"></div>
-        </article>
-
-        <article class="card">
-          <h2>Journal</h2>
-          <div id="log" class="log"></div>
-        </article>
-      </section>
-
-      <section id="screen-activity" class="screen">
-        <article class="card">
-          <h2>Activités</h2>
-          <div class="nav-tree">
             <div class="nav-group-title">Vie quotidienne</div>
             <details class="nav-section">
               <summary data-subpage="activity-civil" data-subpage-title="Activités civiles">
@@ -307,9 +298,9 @@
       <section class="stats-bar" id="status-strip"></section>
 
       <nav class="tabbar" id="tabbar">
-        <button class="tab-btn is-active" data-tab="home" data-accent="green" aria-label="Profession">
-          <span class="tab-icon">⚒️</span>
-          <span class="tab-label">Profession</span>
+        <button class="tab-btn is-active" data-tab="home" data-accent="green" aria-label="Journal">
+          <span class="tab-icon">📜</span>
+          <span class="tab-label">Journal</span>
           <span class="badge" id="badge-home"></span>
         </button>
         <button class="tab-btn" data-tab="assets" data-accent="gray" aria-label="Assets">
@@ -326,9 +317,9 @@
           <span class="tab-label">Relationships</span>
           <span class="badge" id="badge-relationships"></span>
         </button>
-        <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Activities">
+        <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Catégories">
           <span class="tab-icon">🎯</span>
-          <span class="tab-label">Activities</span>
+          <span class="tab-label">Catégories</span>
           <span class="badge" id="badge-activities"></span>
         </button>
       </nav>
