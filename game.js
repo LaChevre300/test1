@@ -1927,47 +1927,258 @@
     }
   }
 
-  function buildMassEvent(c, text, index) {
-    const bias = EVENT_BIASES[index % EVENT_BIASES.length];
+  function inferMassEventTheme(text, fallbackTheme = "city") {
+    const lower = text.toLowerCase();
+    if (
+      lower.includes("geôlier") ||
+      lower.includes("détenu") ||
+      lower.includes("cellule") ||
+      lower.includes("évasion") ||
+      lower.includes("gardien")
+    ) {
+      return "prison";
+    }
+    if (
+      lower.includes("partenaire") ||
+      lower.includes("couple") ||
+      lower.includes("jalousie") ||
+      lower.includes("foyer")
+    ) {
+      return "romance";
+    }
+    if (
+      lower.includes("école") ||
+      lower.includes("instituteur") ||
+      lower.includes("apprenti") ||
+      lower.includes("érudit") ||
+      lower.includes("maître")
+    ) {
+      return "school";
+    }
+    if (
+      lower.includes("guilde") ||
+      lower.includes("atelier") ||
+      lower.includes("employeur") ||
+      lower.includes("collègue") ||
+      lower.includes("client")
+    ) {
+      return "work";
+    }
+    if (
+      lower.includes("marchand") ||
+      lower.includes("taxe") ||
+      lower.includes("contrat") ||
+      lower.includes("banquier") ||
+      lower.includes("prix") ||
+      lower.includes("port")
+    ) {
+      return "trade";
+    }
+    if (
+      lower.includes("évêque") ||
+      lower.includes("abbaye") ||
+      lower.includes("paroisse") ||
+      lower.includes("procession") ||
+      lower.includes("relique")
+    ) {
+      return "spiritual";
+    }
+    if (
+      lower.includes("roi") ||
+      lower.includes("noble") ||
+      lower.includes("conseil") ||
+      lower.includes("bailli") ||
+      lower.includes("cour")
+    ) {
+      return "politics";
+    }
+    if (
+      lower.includes("famille") ||
+      lower.includes("héritage") ||
+      lower.includes("cousin") ||
+      lower.includes("serment")
+    ) {
+      return "family";
+    }
+    if (
+      lower.includes("contrebandier") ||
+      lower.includes("complot") ||
+      lower.includes("fouille") ||
+      lower.includes("rapport disciplinaire")
+    ) {
+      return "crime";
+    }
+    return fallbackTheme;
+  }
+
+  function biasForTheme(theme, index) {
+    const byTheme = {
+      school: "learning",
+      work: "reputation",
+      trade: "money",
+      family: "family",
+      romance: "family",
+      prison: "crime",
+      crime: "crime",
+      spiritual: "spiritual",
+      politics: "politics",
+      health: "health",
+      city: "reputation",
+      senior: "reputation"
+    };
+    return byTheme[theme] || EVENT_BIASES[index % EVENT_BIASES.length];
+  }
+
+  function buildThemedMassChoices(c, theme, bias, index) {
+    const makeChoice = (label, approach, extra) => ({
+      label,
+      run: () => {
+        applyMassEventOutcome(c, bias, approach);
+        if (typeof extra === "function") {
+          extra();
+        }
+      }
+    });
+
+    const wantsFourth = index % 3 === 0;
+    const choices = [];
+
+    if (theme === "school") {
+      choices.push(makeChoice("Étudier sérieusement", "safe"));
+      choices.push(makeChoice("Demander l'aide d'un mentor", "balanced"));
+      choices.push(makeChoice("Tricher pour avancer", "risky", () => changeStat("reputation", -2)));
+      if (wantsFourth) {
+        choices.push(makeChoice("Sécher discrètement", "balanced", () => changeStat("happiness", 2)));
+      }
+      return choices;
+    }
+
+    if (theme === "work") {
+      choices.push(makeChoice("Accepter la mission", "safe"));
+      choices.push(makeChoice("Renégocier les conditions", "balanced"));
+      choices.push(makeChoice("Saboter un rival", "risky", () => changeStat("reputation", -2)));
+      if (wantsFourth) {
+        choices.push(makeChoice("Passer par un contact influent", "balanced", () => changeMoney(-rnd(1, 8))));
+      }
+      return choices;
+    }
+
+    if (theme === "trade") {
+      choices.push(makeChoice("Signer un accord prudent", "safe"));
+      choices.push(makeChoice("Négocier agressivement", "balanced"));
+      choices.push(makeChoice("Spéculer lourdement", "risky"));
+      if (wantsFourth) {
+        choices.push(makeChoice("Cacher une partie des comptes", "risky", () => changeStat("reputation", -3)));
+      }
+      return choices;
+    }
+
+    if (theme === "family") {
+      choices.push(makeChoice("Dialoguer calmement", "safe"));
+      choices.push(makeChoice("Faire un geste concret", "balanced", () => changeMoney(-rnd(1, 10))));
+      choices.push(makeChoice("Imposer ton point de vue", "risky"));
+      if (wantsFourth) {
+        choices.push(makeChoice("Couper les ponts pour un temps", "risky", () => changeStat("sanity", -1)));
+      }
+      return choices;
+    }
+
+    if (theme === "romance") {
+      choices.push(makeChoice("Être totalement honnête", "safe"));
+      choices.push(makeChoice("Faire un geste romantique", "balanced", () => changeMoney(-rnd(2, 12))));
+      choices.push(makeChoice("Mentir pour gagner du temps", "risky"));
+      if (wantsFourth) {
+        choices.push(makeChoice("Prendre de la distance", "balanced", () => changeStat("happiness", -2)));
+      }
+      return choices;
+    }
+
+    if (theme === "prison") {
+      choices.push(makeChoice("Rester discret", "safe"));
+      choices.push(makeChoice("Payer pour une protection", "balanced", () => changeMoney(-rnd(2, 14))));
+      choices.push(makeChoice("Participer au plan risqué", "risky"));
+      if (wantsFourth) {
+        choices.push(makeChoice("Dénoncer un meneur", "risky", () => changeStat("reputation", -4)));
+      }
+      return choices;
+    }
+
+    if (theme === "crime") {
+      choices.push(makeChoice("Refuser l'affaire", "safe"));
+      choices.push(makeChoice("Aider discrètement", "balanced"));
+      choices.push(makeChoice("Plonger dans le coup", "risky"));
+      if (wantsFourth) {
+        choices.push(makeChoice("Piéger un complice", "risky", () => changeStat("sanity", -2)));
+      }
+      return choices;
+    }
+
+    if (theme === "spiritual") {
+      choices.push(makeChoice("Chercher conseil spirituel", "safe"));
+      choices.push(makeChoice("Faire un don modéré", "balanced", () => changeMoney(-rnd(1, 9))));
+      choices.push(makeChoice("Exploiter la situation", "risky"));
+      if (wantsFourth) {
+        choices.push(makeChoice("Ignorer entièrement", "balanced", () => changeStat("happiness", -1)));
+      }
+      return choices;
+    }
+
+    if (theme === "politics") {
+      choices.push(makeChoice("Respecter le protocole", "safe"));
+      choices.push(makeChoice("Négocier en coulisses", "balanced"));
+      choices.push(makeChoice("Manipuler l'opinion", "risky"));
+      if (wantsFourth) {
+        choices.push(makeChoice("Rester neutre publiquement", "balanced", () => changeStat("reputation", -1)));
+      }
+      return choices;
+    }
+
+    choices.push(makeChoice("Rester prudent", "safe"));
+    choices.push(makeChoice("Chercher un compromis", "balanced"));
+    choices.push(makeChoice("Profiter de la confusion", "risky"));
+    if (wantsFourth) {
+      choices.push(makeChoice("Ignorer l'affaire", "balanced", () => changeStat("happiness", -1)));
+    }
+    return choices;
+  }
+
+  function buildMassEvent(c, text, index, fallbackTheme) {
+    const theme = inferMassEventTheme(text, fallbackTheme);
+    const bias = biasForTheme(theme, index);
     return {
       text,
-      choices: [
-        {
-          label: "Prudence",
-          run: () => applyMassEventOutcome(c, bias, "safe")
-        },
-        {
-          label: "Négocier",
-          run: () => applyMassEventOutcome(c, bias, "balanced")
-        },
-        {
-          label: "Forcer le destin",
-          run: () => applyMassEventOutcome(c, bias, "risky")
-        }
-      ]
+      choices: buildThemedMassChoices(c, theme, bias, index)
     };
   }
 
   function addMassEventsToPool(pool, c) {
     let idx = 0;
-    const pushTextEvents = (texts) => {
+    const pushTextEvents = (texts, fallbackTheme) => {
       texts.forEach((text) => {
-        pool.push(buildMassEvent(c, text, idx));
+        pool.push(buildMassEvent(c, text, idx, fallbackTheme));
         idx += 1;
       });
     };
 
-    if (c.age <= 10) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.child));
-    else if (c.age <= 17) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.teen));
-    else if (c.age <= 54) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.adult));
-    else pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.senior));
+    if (c.age <= 10) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.child), "school");
+    else if (c.age <= 17) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.teen), "school");
+    else if (c.age <= 54) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.adult), "politics");
+    else pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.senior), "senior");
 
     const classTexts = MASS_CLASS_EVENT_TEXTS[c.socialClass] || [];
-    pushTextEvents(classTexts);
-    if (c.job) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.job);
-    if (c.criminal.inPrison) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.prison);
-    else pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.city);
-    if (c.family.spouse?.alive) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.spouse);
+    const classThemeMap = {
+      Paysannerie: "family",
+      Artisanat: "work",
+      "Bourgeoisie marchande": "trade",
+      "Petite noblesse": "politics",
+      "Haute noblesse": "politics",
+      Clergé: "spiritual"
+    };
+    pushTextEvents(classTexts, classThemeMap[c.socialClass] || "city");
+    if (c.job) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.job, "work");
+    if (c.criminal.inPrison) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.prison, "prison");
+    else pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.city, "city");
+    if (c.family.spouse?.alive) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.spouse, "romance");
   }
 
   function randomEventPool() {
