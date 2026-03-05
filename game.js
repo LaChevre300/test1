@@ -791,6 +791,9 @@
     profileMoney: document.getElementById("profile-money"),
     openAvatarEditorInlineBtn: document.getElementById("open-avatar-editor-inline-btn"),
     statusStrip: document.getElementById("status-strip"),
+    professionSummaryList: document.getElementById("profession-summary-list"),
+    professionRoot: document.getElementById("profession-root"),
+    schoolPeopleRoot: document.getElementById("school-people-root"),
     eventText: document.getElementById("event-text"),
     eventChoices: document.getElementById("event-choices"),
     activityRoot: document.getElementById("activity-root"),
@@ -799,6 +802,7 @@
     resourcesList: document.getElementById("resources-list"),
     conditionsList: document.getElementById("conditions-list"),
     relationsList: document.getElementById("relations-list"),
+    relationPeopleRoot: document.getElementById("relation-people-root"),
     log: document.getElementById("log"),
     inventoryList: document.getElementById("inventory-list"),
     animalsList: document.getElementById("animals-list"),
@@ -1046,6 +1050,8 @@
       run: null
     }));
     game.character.avatar = normalizedAvatarConfig(game.character.sex, game.character.avatar);
+    ensureCharacterIntegrity(game.character);
+    ensureSchoolNetwork(game.character);
     currentSaveId = save.id;
     activeTab = "home";
     isCharacterModalOpen = false;
@@ -1222,7 +1228,10 @@
         enrolled: age >= 5 && age < 16,
         expelled: false,
         grade: rnd(35, 75),
-        clubs: []
+        clubs: [],
+        teacher: null,
+        classmates: [],
+        classroomSize: rnd(5, 9)
       },
       educationLevel: inherited?.educationLevel || 0,
       universityDebt: 0,
@@ -1281,6 +1290,8 @@
       achievements: []
     };
     game.dynastyName = game.character.surname;
+    ensureCharacterIntegrity(game.character);
+    ensureSchoolNetwork(game.character);
     activeTab = "home";
     previousTabBeforeSettings = "home";
     actionResultState = null;
@@ -1411,6 +1422,103 @@
     c.social.friends = Array.from({ length: friendCount }, () =>
       newPerson("Ami", 5, 50, pick(SURNAMES))
     );
+  }
+
+  function ensurePersonIdentity(person) {
+    if (!person) return;
+    if (!person.id) {
+      person.id = crypto.randomUUID();
+    }
+    if (typeof person.closeness !== "number" && typeof person.bond !== "number") {
+      person.closeness = rnd(30, 75);
+    }
+  }
+
+  function ensureCharacterIntegrity(c) {
+    if (!c.school) {
+      c.school = { enrolled: false, expelled: false, grade: 50, clubs: [], teacher: null, classmates: [], classroomSize: 7 };
+    }
+    c.school.clubs = Array.isArray(c.school.clubs) ? c.school.clubs : [];
+    c.school.classmates = Array.isArray(c.school.classmates) ? c.school.classmates : [];
+    c.school.classroomSize = c.school.classroomSize || rnd(5, 9);
+
+    if (!c.family) c.family = { parents: [], siblings: [], spouse: null, inlaws: [], children: [] };
+    c.family.parents = Array.isArray(c.family.parents) ? c.family.parents : [];
+    c.family.siblings = Array.isArray(c.family.siblings) ? c.family.siblings : [];
+    c.family.inlaws = Array.isArray(c.family.inlaws) ? c.family.inlaws : [];
+    c.family.children = Array.isArray(c.family.children) ? c.family.children : [];
+    c.family.parents.forEach(ensurePersonIdentity);
+    c.family.siblings.forEach(ensurePersonIdentity);
+    c.family.inlaws.forEach(ensurePersonIdentity);
+    c.family.children.forEach(ensurePersonIdentity);
+    if (c.family.spouse) ensurePersonIdentity(c.family.spouse);
+
+    if (!c.social) c.social = { friends: [], enemies: [], neighbors: [], colleagues: [] };
+    c.social.friends = Array.isArray(c.social.friends) ? c.social.friends : [];
+    c.social.enemies = Array.isArray(c.social.enemies) ? c.social.enemies : [];
+    c.social.neighbors = Array.isArray(c.social.neighbors) ? c.social.neighbors : [];
+    c.social.colleagues = Array.isArray(c.social.colleagues) ? c.social.colleagues : [];
+    c.social.friends.forEach(ensurePersonIdentity);
+    c.social.enemies.forEach(ensurePersonIdentity);
+    c.social.neighbors.forEach(ensurePersonIdentity);
+    c.social.colleagues.forEach(ensurePersonIdentity);
+    if (c.school.teacher) ensurePersonIdentity(c.school.teacher);
+    c.school.classmates.forEach(ensurePersonIdentity);
+  }
+
+  function ensureSchoolNetwork(c) {
+    const canAttend = c.age >= 5 && c.age < 18 && c.school.enrolled && !c.school.expelled;
+    if (!canAttend) {
+      c.school.teacher = null;
+      c.school.classmates = [];
+      return;
+    }
+
+    if (!c.school.classroomSize) {
+      c.school.classroomSize = rnd(5, 9);
+    }
+
+    if (!c.school.teacher || !c.school.teacher.alive) {
+      c.school.teacher = newPerson(
+        "Professeur",
+        Math.max(24, c.age + 10),
+        Math.max(36, c.age + 22),
+        pick(SURNAMES)
+      );
+      c.school.teacher.closeness = rnd(30, 70);
+    }
+    ensurePersonIdentity(c.school.teacher);
+
+    c.school.classmates = c.school.classmates.filter((student) => student.alive);
+    while (c.school.classmates.length < c.school.classroomSize) {
+      const classmate = newPerson("Élève", Math.max(5, c.age - 2), Math.min(17, c.age + 2), pick(SURNAMES));
+      classmate.closeness = rnd(25, 78);
+      c.school.classmates.push(classmate);
+    }
+    if (c.school.classmates.length > c.school.classroomSize) {
+      c.school.classmates = c.school.classmates.slice(0, c.school.classroomSize);
+    }
+    c.school.classmates.forEach(ensurePersonIdentity);
+  }
+
+  function relationValue(person) {
+    if (!person) return 0;
+    if (typeof person.closeness === "number") return person.closeness;
+    if (typeof person.bond === "number") return person.bond;
+    return 50;
+  }
+
+  function setRelationValue(person, value) {
+    if (!person) return;
+    if (typeof person.closeness === "number") {
+      person.closeness = clamp(value, 0, 100);
+      return;
+    }
+    if (typeof person.bond === "number") {
+      person.bond = clamp(value, 0, 100);
+      return;
+    }
+    person.closeness = clamp(value, 0, 100);
   }
 
   function randomFertilityChance() {
@@ -1560,6 +1668,18 @@
     if (c.age >= 5 && c.age < 16 && !c.school.expelled) {
       c.school.enrolled = true;
       c.school.grade = clamp(c.school.grade + rnd(-5, 6));
+      ensureSchoolNetwork(c);
+      if (c.school.teacher?.alive) {
+        c.school.teacher.age += 1;
+      }
+      c.school.classmates.forEach((student) => {
+        if (student.alive) {
+          student.age += 1;
+          if (chance(0.06)) {
+            student.closeness = clamp(student.closeness + rnd(-5, 5), 0, 100);
+          }
+        }
+      });
       if (chance(0.05)) {
         addLog("Une altercation éclate à l'école.", "warn");
         if (chance(0.3)) {
@@ -1569,6 +1689,7 @@
       }
     } else {
       c.school.enrolled = false;
+      ensureSchoolNetwork(c);
     }
 
     if (c.age >= 16 && c.job && !c.criminal.inPrison) {
@@ -4087,6 +4208,264 @@
     });
   }
 
+  function personInteractionOptions(scope) {
+    if (scope === "teacher") {
+      return [
+        { action: "ask_teacher", label: "Demander aide" },
+        { action: "challenge_teacher", label: "Contester cours" },
+        { action: "gift_teacher", label: "Offrir un présent" }
+      ];
+    }
+    if (scope === "classmate") {
+      return [
+        { action: "study_together", label: "Étudier ensemble" },
+        { action: "chat", label: "Discuter" },
+        { action: "bully", label: "Provoquer" }
+      ];
+    }
+    if (scope === "child") {
+      return [
+        { action: "chat", label: "Parler" },
+        { action: "gift", label: "Cadeau" },
+        { action: "scold", label: "Gronder" }
+      ];
+    }
+    if (scope === "spouse") {
+      return [
+        { action: "chat", label: "Discuter" },
+        { action: "gift", label: "Cadeau" },
+        { action: "flirt", label: "Flirter" }
+      ];
+    }
+    return [
+      { action: "chat", label: "Parler" },
+      { action: "gift", label: "Cadeau" },
+      { action: "insult", label: "Insulter" }
+    ];
+  }
+
+  function makePersonCard(person, scope, titlePrefix = "") {
+    const card = document.createElement("article");
+    card.className = "person-card";
+
+    const title = document.createElement("p");
+    title.className = "person-name";
+    title.textContent = `${titlePrefix}${person.name}`;
+
+    const meta = document.createElement("p");
+    meta.className = "person-meta";
+    const relation = Math.round(relationValue(person));
+    meta.textContent = `${person.role || "Relation"} · ${person.age} ans · Lien ${relation}/100`;
+
+    const actions = document.createElement("div");
+    actions.className = "person-actions";
+    personInteractionOptions(scope).forEach((entry) => {
+      const btn = document.createElement("button");
+      btn.className = "person-btn";
+      btn.textContent = entry.label;
+      btn.dataset.personAction = entry.action;
+      btn.dataset.personId = person.id;
+      btn.dataset.personScope = scope;
+      btn.disabled = !game.character.alive;
+      actions.append(btn);
+    });
+
+    card.append(title, meta, actions);
+    return card;
+  }
+
+  function findPersonByScope(scope, personId) {
+    const c = game.character;
+    if (!personId) return null;
+    if (scope === "parent") return c.family.parents.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "sibling") return c.family.siblings.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "inlaw") return c.family.inlaws.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "friend") return c.social.friends.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "enemy") return c.social.enemies.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "neighbor") return c.social.neighbors.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "colleague") return c.social.colleagues.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "classmate") return c.school.classmates.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "child") return c.family.children.find((person) => person.id === personId && person.alive) || null;
+    if (scope === "spouse") {
+      return c.family.spouse?.alive && c.family.spouse.id === personId ? c.family.spouse : null;
+    }
+    if (scope === "teacher") {
+      return c.school.teacher?.alive && c.school.teacher.id === personId ? c.school.teacher : null;
+    }
+    return null;
+  }
+
+  function applyPersonInteraction(scope, person, action) {
+    const c = game.character;
+    if (!consumeAction()) return;
+
+    const current = relationValue(person);
+    if (action === "chat") {
+      setRelationValue(person, current + rnd(3, 7));
+      changeStat("happiness", 2);
+      addLog(`Tu échanges avec ${person.name}.`, "good");
+    } else if (action === "gift") {
+      spend(rnd(2, 12));
+      setRelationValue(person, current + rnd(5, 10));
+      changeStat("reputation", 1);
+      addLog(`Tu offres un présent à ${person.name}.`, "good");
+    } else if (action === "insult") {
+      setRelationValue(person, current - rnd(8, 15));
+      changeStat("reputation", -3);
+      changeStat("happiness", chance(0.4) ? 1 : -3);
+      addLog(`Tu blesses ${person.name} avec tes mots.`, "bad");
+    } else if (action === "scold") {
+      setRelationValue(person, current - rnd(4, 9));
+      changeStat("sanity", -1);
+      addLog(`Tu grondes ${person.name}.`, "warn");
+    } else if (action === "flirt") {
+      if (chance(0.62)) {
+        setRelationValue(person, current + rnd(6, 12));
+        changeStat("happiness", 4);
+        addLog(`Le moment avec ${person.name} rapproche votre couple.`, "good");
+      } else {
+        setRelationValue(person, current - rnd(4, 10));
+        changeStat("happiness", -3);
+        addLog(`Ta tentative de charme avec ${person.name} tombe à plat.`, "warn");
+      }
+    } else if (action === "ask_teacher") {
+      setRelationValue(person, current + rnd(4, 9));
+      c.school.grade = clamp(c.school.grade + rnd(2, 6));
+      changeStat("intelligence", rnd(1, 4));
+      addLog(`Ton professeur ${person.name} t'accorde du temps.`, "good");
+    } else if (action === "challenge_teacher") {
+      if (chance(0.45 + c.stats.intelligence / 320)) {
+        setRelationValue(person, current - rnd(1, 6));
+        c.school.grade = clamp(c.school.grade + rnd(1, 5));
+        changeStat("reputation", 2);
+        addLog(`Ton débat avec ${person.name} impressionne la classe.`, "good");
+      } else {
+        setRelationValue(person, current - rnd(6, 12));
+        c.school.grade = clamp(c.school.grade - rnd(2, 7));
+        changeStat("reputation", -2);
+        addLog(`${person.name} te recadre sévèrement en cours.`, "warn");
+      }
+    } else if (action === "gift_teacher") {
+      spend(rnd(3, 10));
+      setRelationValue(person, current + rnd(3, 8));
+      c.school.grade = clamp(c.school.grade + rnd(1, 3));
+      addLog(`Tu offres un petit présent à ${person.name}.`, "neutral");
+    } else if (action === "study_together") {
+      setRelationValue(person, current + rnd(4, 9));
+      c.school.grade = clamp(c.school.grade + rnd(1, 5));
+      changeStat("intelligence", rnd(1, 3));
+      addLog(`Tu révises avec ${person.name} après la classe.`, "good");
+    } else if (action === "bully") {
+      if (chance(0.45)) {
+        setRelationValue(person, current - rnd(8, 16));
+        changeStat("reputation", -4);
+        changeStat("happiness", 1);
+        addLog(`Tu provoques ${person.name} et la tension grimpe.`, "warn");
+      } else {
+        setRelationValue(person, current - rnd(6, 12));
+        addCondition("injuries", pick(INJURIES));
+        changeStat("health", -5);
+        addLog(`Ta provocation contre ${person.name} finit en blessure.`, "bad");
+      }
+    }
+
+    if (scope === "enemy" && action === "chat" && chance(0.3)) {
+      const before = relationValue(person);
+      setRelationValue(person, before + 8);
+      addLog(`Le ton baisse: ${person.name} devient moins hostile.`, "good");
+    }
+
+    ensureSchoolNetwork(c);
+    autoSaveIfLinked();
+    render();
+  }
+
+  function renderSchoolPeople() {
+    const c = game.character;
+    if (!ui.schoolPeopleRoot) return;
+    ui.schoolPeopleRoot.innerHTML = "";
+
+    if (!c.school.enrolled || c.school.expelled || c.age < 5 || c.age >= 18) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Pas de classe active pour le moment.";
+      ui.schoolPeopleRoot.append(empty);
+      return;
+    }
+
+    ensureSchoolNetwork(c);
+    if (c.school.teacher?.alive) {
+      ui.schoolPeopleRoot.append(makePersonCard(c.school.teacher, "teacher", "Professeur · "));
+    }
+    const aliveStudents = c.school.classmates.filter((student) => student.alive);
+    if (!aliveStudents.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Aucun élève disponible aujourd'hui.";
+      ui.schoolPeopleRoot.append(empty);
+      return;
+    }
+    aliveStudents.slice(0, 8).forEach((student) => {
+      ui.schoolPeopleRoot.append(makePersonCard(student, "classmate", "Élève · "));
+    });
+  }
+
+  function renderProfessionPanel() {
+    const c = game.character;
+    if (!ui.professionSummaryList) return;
+    const lines = [
+      `École: ${
+        c.school.expelled
+          ? "Renvoyé(e)"
+          : c.school.enrolled
+            ? `Inscrit(e) · note ${Math.round(c.school.grade)}/100`
+            : "Non inscrit(e)"
+      }`,
+      `Études: ${EDU_LEVELS[c.educationLevel]}`,
+      `Travail: ${c.job || "Aucun"}${c.job ? ` · salaire ${Math.round(c.salary)}` : ""}`,
+      `Rang de carrière: ${c.careerLevel} · Dette universitaire: ${Math.round(c.universityDebt)}`
+    ];
+    ui.professionSummaryList.innerHTML = "";
+    lines.forEach((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      ui.professionSummaryList.append(li);
+    });
+  }
+
+  function renderRelationPeople() {
+    const c = game.character;
+    if (!ui.relationPeopleRoot) return;
+    ui.relationPeopleRoot.innerHTML = "";
+
+    const groups = [
+      { scope: "parent", people: c.family.parents.filter((person) => person.alive) },
+      { scope: "sibling", people: c.family.siblings.filter((person) => person.alive) },
+      { scope: "spouse", people: c.family.spouse?.alive ? [c.family.spouse] : [] },
+      { scope: "child", people: c.family.children.filter((person) => person.alive) },
+      { scope: "inlaw", people: c.family.inlaws.filter((person) => person.alive) },
+      { scope: "friend", people: c.social.friends.filter((person) => person.alive) },
+      { scope: "enemy", people: c.social.enemies.filter((person) => person.alive) },
+      { scope: "neighbor", people: c.social.neighbors.filter((person) => person.alive) },
+      { scope: "colleague", people: c.social.colleagues.filter((person) => person.alive) }
+    ];
+
+    const flattened = groups.flatMap((entry) =>
+      entry.people.map((person) => ({ scope: entry.scope, person }))
+    );
+    if (!flattened.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Aucune relation détaillée à afficher pour le moment.";
+      ui.relationPeopleRoot.append(empty);
+      return;
+    }
+
+    flattened.slice(0, 30).forEach(({ scope, person }) => {
+      ui.relationPeopleRoot.append(makePersonCard(person, scope));
+    });
+  }
+
   function renderRelations() {
     const c = game.character;
     const lines = [];
@@ -4099,12 +4478,14 @@
     lines.push(`Amis: ${c.social.friends.filter((f) => f.alive).length}`);
     lines.push(`Ennemis: ${c.social.enemies.filter((f) => f.alive).length}`);
     lines.push(`Voisins: ${c.social.neighbors.filter((f) => f.alive).length}`);
+    lines.push(`Collègues: ${c.social.colleagues.filter((f) => f.alive).length}`);
     ui.relationsList.innerHTML = "";
     lines.forEach((line) => {
       const li = document.createElement("li");
       li.textContent = line;
       ui.relationsList.append(li);
     });
+    renderRelationPeople();
   }
 
   function renderEvent() {
@@ -4121,9 +4502,9 @@
       return;
     }
     ui.eventText.textContent = game.pendingEvent.text;
-    const classes = ["choice-accept", "choice-refuse", "choice-skip"];
+    const classes = ["choice-accept", "choice-refuse", "choice-skip", "choice-refuse"];
     ui.eventChoices.innerHTML = "";
-    game.pendingEvent.choices.slice(0, 3).forEach((choice, index) => {
+    game.pendingEvent.choices.slice(0, 4).forEach((choice, index) => {
       const btn = document.createElement("button");
       btn.className = `event-choice-btn ${classes[index] || "choice-skip"}`;
       btn.textContent = choice.label;
@@ -4157,6 +4538,7 @@
   }
 
   function renderActionCategories(target, categoryEntries) {
+    if (!target) return;
     const c = game.character;
     target.innerHTML = "";
     categoryEntries.forEach(([categoryName, actions]) => {
@@ -4185,13 +4567,22 @@
 
   function renderActions() {
     const categories = Object.entries(getActionsByCategory());
+    const professionEntries = categories.filter(
+      ([name]) => name === "École & carrière" || name === "Argent & biens"
+    );
     const crimeEntries = categories.filter(([name]) => name === "Crime & prison");
     const relationEntries = categories.filter(
       ([name]) => name === "Famille" || name === "Relations & amour"
     );
     const activityEntries = categories.filter(
-      ([name]) => name !== "Crime & prison" && name !== "Famille" && name !== "Relations & amour"
+      ([name]) =>
+        name !== "Crime & prison" &&
+        name !== "Famille" &&
+        name !== "Relations & amour" &&
+        name !== "École & carrière" &&
+        name !== "Argent & biens"
     );
+    renderActionCategories(ui.professionRoot, professionEntries);
     renderActionCategories(ui.activityRoot, activityEntries);
     renderActionCategories(ui.crimeRoot, crimeEntries);
     renderActionCategories(ui.relationRoot, relationEntries);
@@ -4425,9 +4816,11 @@
     renderTopProfile();
     renderStatus();
     renderDetailMenu();
+    renderProfessionPanel();
     renderResources();
     renderConditions();
     renderRelations();
+    renderSchoolPeople();
     renderEvent();
     renderLog();
     renderActions();
@@ -4441,6 +4834,21 @@
     if (!isAvatarEditorOpen) {
       ui.avatarEditorModal?.classList.remove("show");
     }
+  }
+
+  function handlePersonInteractionClick(event) {
+    const button = event.target.closest("button[data-person-id][data-person-action][data-person-scope]");
+    if (!button) return;
+    const personId = button.dataset.personId;
+    const action = button.dataset.personAction;
+    const scope = button.dataset.personScope;
+    const person = findPersonByScope(scope, personId);
+    if (!person) {
+      addLog("Cette interaction n'est plus disponible.", "warn");
+      render();
+      return;
+    }
+    applyPersonInteraction(scope, person, action);
   }
 
   if (ui.newLifeBtn) {
@@ -4464,6 +4872,12 @@
   }
   if (ui.settingsSavesList) {
     ui.settingsSavesList.addEventListener("click", handleSaveListClick);
+  }
+  if (ui.relationPeopleRoot) {
+    ui.relationPeopleRoot.addEventListener("click", handlePersonInteractionClick);
+  }
+  if (ui.schoolPeopleRoot) {
+    ui.schoolPeopleRoot.addEventListener("click", handlePersonInteractionClick);
   }
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {

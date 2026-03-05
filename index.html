@@ -51,6 +51,15 @@
       </header>
 
       <section id="screen-home" class="screen active">
+        <article class="card">
+          <h2>Profession</h2>
+          <ul id="profession-summary-list" class="compact-list"></ul>
+          <h3>Tâches</h3>
+          <div id="profession-root"></div>
+          <h3>École</h3>
+          <div id="school-people-root" class="person-grid"></div>
+        </article>
+
         <article class="card event-card">
           <p id="event-text" class="event-text"></p>
           <div id="event-choices" class="event-choices-inline"></div>
@@ -95,6 +104,8 @@
         <article class="card">
           <h2>Relationships</h2>
           <ul id="relations-list" class="compact-list"></ul>
+          <h3>Personnes</h3>
+          <div id="relation-people-root" class="person-grid"></div>
           <h3>Descendance</h3>
           <ul id="children-list" class="compact-list"></ul>
         </article>
@@ -124,9 +135,9 @@
       <section class="stats-bar" id="status-strip"></section>
 
       <nav class="tabbar" id="tabbar">
-        <button class="tab-btn is-active" data-tab="home" data-accent="green" aria-label="Infant">
-          <span class="tab-icon">👶</span>
-          <span class="tab-label">Infant</span>
+        <button class="tab-btn is-active" data-tab="home" data-accent="green" aria-label="Profession">
+          <span class="tab-icon">⚒️</span>
+          <span class="tab-label">Profession</span>
           <span class="badge" id="badge-home"></span>
         </button>
         <button class="tab-btn" data-tab="assets" data-accent="gray" aria-label="Assets">
