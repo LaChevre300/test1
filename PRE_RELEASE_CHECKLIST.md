@@ -16,6 +16,8 @@ Utilise cette checklist avant publication.
 - [ ] Le bonus de connexion (streak) se met a jour d'un jour a l'autre.
 - [ ] L'event rotatif du jour applique bien ses bonus.
 - [ ] Le classement hebdo affiche des scores coherents.
+- [ ] Le rendu V4 est stable (lighting + post-processing + audio ambience).
+- [ ] Les nouveaux models machines/ramens restent performants en multi.
 - [ ] Le save/load fonctionne (test sortie + rejoin).
 
 ## 2) Roblox Studio settings

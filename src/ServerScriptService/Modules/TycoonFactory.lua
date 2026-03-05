@@ -1,4 +1,6 @@
+local Lighting = game:GetService("Lighting")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 
 local sharedFolder = ReplicatedStorage:WaitForChild("Shared")
 local configFolder = sharedFolder:WaitForChild("Config")
@@ -92,6 +94,140 @@ local function createPrompt(parent, actionText, objectText)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = parent
 	return prompt
+end
+
+local function addPointLight(part, color, brightness, range)
+	local light = Instance.new("PointLight")
+	light.Color = color
+	light.Brightness = brightness
+	light.Range = range
+	light.Shadows = true
+	light.Parent = part
+	return light
+end
+
+local function addSparkParticles(parent, color)
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Rate = 8
+	emitter.Lifetime = NumberRange.new(0.35, 0.9)
+	emitter.Speed = NumberRange.new(1.2, 2.8)
+	emitter.SpreadAngle = Vector2.new(30, 30)
+	emitter.RotSpeed = NumberRange.new(-140, 140)
+	emitter.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.18),
+		NumberSequenceKeypoint.new(1, 0),
+	})
+	emitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.2),
+		NumberSequenceKeypoint.new(0.5, 0.4),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Color = ColorSequence.new(lighten(color, 0.35), lighten(color, 0.8))
+	emitter.Parent = parent
+	return emitter
+end
+
+local function ensurePostEffect(className, name)
+	local existing = Lighting:FindFirstChild(name)
+	if existing and existing.ClassName == className then
+		return existing
+	end
+	if existing then
+		existing:Destroy()
+	end
+	local created = Instance.new(className)
+	created.Name = name
+	created.Parent = Lighting
+	return created
+end
+
+local function applyV4LightingProfile()
+	Lighting.Technology = Enum.Technology.Future
+	Lighting.Brightness = 3.2
+	Lighting.ClockTime = 20.8
+	Lighting.GlobalShadows = true
+	Lighting.EnvironmentDiffuseScale = 0.25
+	Lighting.EnvironmentSpecularScale = 1
+	Lighting.OutdoorAmbient = Color3.fromRGB(42, 52, 70)
+	Lighting.Ambient = Color3.fromRGB(22, 24, 36)
+
+	local atmosphere = ensurePostEffect("Atmosphere", "TycoonAtmosphere")
+	atmosphere.Density = 0.39
+	atmosphere.Offset = 0.12
+	atmosphere.Color = Color3.fromRGB(124, 144, 173)
+	atmosphere.Decay = Color3.fromRGB(39, 47, 66)
+	atmosphere.Glare = 0.28
+	atmosphere.Haze = 2.1
+
+	local bloom = ensurePostEffect("BloomEffect", "TycoonBloom")
+	bloom.Enabled = true
+	bloom.Intensity = 0.9
+	bloom.Size = 34
+	bloom.Threshold = 1.4
+
+	local colorCorrection = ensurePostEffect("ColorCorrectionEffect", "TycoonColorCorrection")
+	colorCorrection.Enabled = true
+	colorCorrection.Brightness = -0.02
+	colorCorrection.Contrast = 0.18
+	colorCorrection.Saturation = 0.12
+	colorCorrection.TintColor = Color3.fromRGB(206, 224, 255)
+
+	local sunRays = ensurePostEffect("SunRaysEffect", "TycoonSunRays")
+	sunRays.Enabled = true
+	sunRays.Intensity = 0.06
+	sunRays.Spread = 0.65
+
+	local depthOfField = ensurePostEffect("DepthOfFieldEffect", "TycoonDepth")
+	depthOfField.Enabled = true
+	depthOfField.FarIntensity = 0.08
+	depthOfField.FocusDistance = 82
+	depthOfField.InFocusRadius = 32
+	depthOfField.NearIntensity = 0
+end
+
+local function applyV4AudioProfile()
+	local folder = SoundService:FindFirstChild("TycoonAudio")
+	if not folder then
+		folder = Instance.new("Folder")
+		folder.Name = "TycoonAudio"
+		folder.Parent = SoundService
+	end
+
+	local tracks = {
+		{
+			Name = "CityHum",
+			SoundId = "rbxassetid://1843522434",
+			Volume = 0.08,
+			Looped = true,
+			PlaybackSpeed = 1,
+		},
+		{
+			Name = "FactoryDrone",
+			SoundId = "rbxassetid://9118823100",
+			Volume = 0.06,
+			Looped = true,
+			PlaybackSpeed = 0.92,
+		},
+	}
+
+	for _, track in ipairs(tracks) do
+		local sound = folder:FindFirstChild(track.Name)
+		if not sound then
+			sound = Instance.new("Sound")
+			sound.Name = track.Name
+			sound.Parent = folder
+		end
+		sound.SoundId = track.SoundId
+		sound.Volume = track.Volume
+		sound.Looped = track.Looped
+		sound.RollOffMaxDistance = 10000
+		sound.PlaybackSpeed = track.PlaybackSpeed
+		if not sound.IsPlaying then
+			pcall(function()
+				sound:Play()
+			end)
+		end
+	end
 end
 
 local function addSteam(parent, origin)
@@ -204,12 +340,39 @@ local function addRamenBowl(parent, cframe, scale)
 		Enum.Material.SmoothPlastic,
 		parent
 	)
+	local chashu = createPart(
+		"Chashu",
+		Vector3.new(0.9 * scale, 0.14 * scale, 0.55 * scale),
+		cframe * CFrame.new(0.22 * scale, 0.63 * scale, -0.48 * scale),
+		Color3.fromRGB(176, 114, 90),
+		Enum.Material.SmoothPlastic,
+		parent
+	)
+	local chopstickA = createPart(
+		"ChopstickA",
+		Vector3.new(0.08 * scale, 2.1 * scale, 0.08 * scale),
+		cframe * CFrame.new(0.95 * scale, 1.15 * scale, 0.32 * scale) * CFrame.Angles(math.rad(-16), 0, math.rad(8)),
+		Color3.fromRGB(168, 130, 82),
+		Enum.Material.Wood,
+		parent
+	)
+	local chopstickB = createPart(
+		"ChopstickB",
+		Vector3.new(0.08 * scale, 2.1 * scale, 0.08 * scale),
+		cframe * CFrame.new(0.82 * scale, 1.12 * scale, 0.44 * scale) * CFrame.Angles(math.rad(-16), 0, math.rad(8)),
+		Color3.fromRGB(168, 130, 82),
+		Enum.Material.Wood,
+		parent
+	)
 	bowl.Reflectance = 0.05
 	broth.Transparency = 0.08
 	noodleA.Material = Enum.Material.SmoothPlastic
 	noodleB.Material = Enum.Material.SmoothPlastic
 	egg.Material = Enum.Material.SmoothPlastic
 	onion.Material = Enum.Material.SmoothPlastic
+	chashu.Material = Enum.Material.SmoothPlastic
+	chopstickA.CastShadow = true
+	chopstickB.CastShadow = true
 end
 
 local function addDecorativeFacade(parent, origin, accentColor)
@@ -238,9 +401,10 @@ local function addDecorativeFacade(parent, origin, accentColor)
 		parent
 	)
 	createBillboard(neonSign, "NEON NOODLE WORKS", Color3.fromRGB(255, 255, 255))
+	addPointLight(neonSign, lighten(accentColor, 0.25), 1.2, 26)
 
 	for index = -2, 2 do
-		createPart(
+		local window = createPart(
 			("Window_%d"):format(index),
 			Vector3.new(16, 7, 0.35),
 			CFrame.new(origin + Vector3.new(index * 21, 9, -66.6)),
@@ -248,6 +412,7 @@ local function addDecorativeFacade(parent, origin, accentColor)
 			Enum.Material.Glass,
 			parent
 		)
+		window.Transparency = 0.3
 	end
 
 	backWall.CastShadow = true
@@ -313,6 +478,48 @@ local function addWorkshopProps(parent, origin)
 			parent
 		)
 		crate.CastShadow = true
+	end
+end
+
+local function addStreetLamp(parent, cframe, tint)
+	local pole = createPart("LampPole", Vector3.new(1, 12, 1), cframe * CFrame.new(0, 6, 0), Color3.fromRGB(63, 68, 83), Enum.Material.Metal, parent)
+	local arm = createPart("LampArm", Vector3.new(0.6, 0.6, 4.2), pole.CFrame * CFrame.new(0, 5, -1.7), Color3.fromRGB(66, 71, 88), Enum.Material.Metal, parent)
+	local lamp = createPart("LampHead", Vector3.new(2.2, 0.8, 2.2), arm.CFrame * CFrame.new(0, 0, -2), tint, Enum.Material.Neon, parent)
+	addPointLight(lamp, tint, 1.9, 46)
+	pole.CastShadow = true
+	arm.CastShadow = true
+	lamp.CastShadow = false
+end
+
+local function addRoadDetails(parent)
+	for index = -6, 6 do
+		local offset = index * 62
+		local puddleA = createPart(
+			("PuddleA_%d"):format(index),
+			Vector3.new(18, 0.08, 9),
+			CFrame.new(offset + 24, -1.38, -18),
+			Color3.fromRGB(95, 129, 173),
+			Enum.Material.Glass,
+			parent
+		)
+		puddleA.Transparency = 0.45
+
+		local puddleB = createPart(
+			("PuddleB_%d"):format(index),
+			Vector3.new(14, 0.08, 7),
+			CFrame.new(-18, -1.38, offset + 26),
+			Color3.fromRGB(105, 135, 178),
+			Enum.Material.Glass,
+			parent
+		)
+		puddleB.Transparency = 0.5
+	end
+
+	for lane = -3, 3 do
+		addStreetLamp(parent, CFrame.new(-430, 0, lane * 120), Color3.fromRGB(121, 188, 255))
+		addStreetLamp(parent, CFrame.new(430, 0, lane * 120), Color3.fromRGB(121, 188, 255))
+		addStreetLamp(parent, CFrame.new(lane * 120, 0, -430), Color3.fromRGB(255, 195, 120))
+		addStreetLamp(parent, CFrame.new(lane * 120, 0, 430), Color3.fromRGB(255, 195, 120))
 	end
 end
 
@@ -471,6 +678,18 @@ function TycoonFactory.BuildUnlock(plot, unlock)
 	)
 	machineBody.CastShadow = true
 
+	local machineHum = Instance.new("Sound")
+	machineHum.Name = "MachineHum"
+	machineHum.SoundId = "rbxassetid://9118823100"
+	machineHum.Volume = 0.04
+	machineHum.Looped = true
+	machineHum.RollOffMaxDistance = 68
+	machineHum.PlaybackSpeed = 0.85 + (seed % 25) / 100
+	machineHum.Parent = machineBody
+	pcall(function()
+		machineHum:Play()
+	end)
+
 	local glassPanel = createPart(
 		"GlassPanel",
 		Vector3.new(5.8, 2.6, 0.25),
@@ -490,6 +709,7 @@ function TycoonFactory.BuildUnlock(plot, unlock)
 		model
 	)
 	neonStrip.CastShadow = false
+	addPointLight(neonStrip, lighten(accent, 0.25), 1.3, 20)
 
 	local monitor = createPart(
 		"ControlMonitor",
@@ -527,6 +747,7 @@ function TycoonFactory.BuildUnlock(plot, unlock)
 			model
 		)
 		flow.CastShadow = false
+		addSparkParticles(flow, Color3.fromRGB(241, 224, 148))
 
 		local conveyor = createPart(
 			"MiniConveyor",
@@ -574,6 +795,8 @@ function TycoonFactory.BuildUnlock(plot, unlock)
 			model
 		)
 		orb.CastShadow = false
+		addPointLight(orb, lighten(accent, 0.2), 1.6, 18)
+		addSparkParticles(orb, Color3.fromRGB(255, 218, 149))
 	end
 
 	if string.find(unlock.Id, "Lab") or string.find(unlock.Id, "Reactor") or string.find(unlock.Id, "Engine") then
@@ -631,6 +854,7 @@ function TycoonFactory.BuildUnlock(plot, unlock)
 			model
 		)
 		addSteam(model, canopy.Position + Vector3.new(0, 0.6, 0))
+		addPointLight(canopy, lighten(accent, 0.2), 0.8, 15)
 	end
 
 	local bowlStation = createPart(
@@ -657,6 +881,9 @@ function TycoonFactory.BuildUnlock(plot, unlock)
 end
 
 function TycoonFactory.CreateWorld()
+	applyV4LightingProfile()
+	applyV4AudioProfile()
+
 	local old = workspace:FindFirstChild("NeonNoodleTycoonWorld")
 	if old then
 		old:Destroy()
@@ -711,6 +938,8 @@ function TycoonFactory.CreateWorld()
 			root
 		)
 	end
+
+	addRoadDetails(root)
 
 	local plots = {}
 	local columns = 2
