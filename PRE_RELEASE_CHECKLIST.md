@@ -18,6 +18,8 @@ Utilise cette checklist avant publication.
 - [ ] Le classement hebdo affiche des scores coherents.
 - [ ] Le rendu V4 est stable (lighting + post-processing + audio ambience).
 - [ ] Les nouveaux models machines/ramens restent performants en multi.
+- [ ] Le mode qualite (Low/Medium/High) ajuste bien les effets localement.
+- [ ] L'objectif dynamique HUD se met a jour selon la progression.
 - [ ] Le save/load fonctionne (test sortie + rejoin).
 
 ## 2) Roblox Studio settings

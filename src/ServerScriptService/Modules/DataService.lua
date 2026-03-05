@@ -30,6 +30,9 @@ local function makeDefaultData()
 		LastLoginDay = -1,
 		LoginStreak = 0,
 		DailyQuest = nil,
+		Settings = {
+			QualityMode = "High",
+		},
 		Weekly = {
 			WeekIndex = -1,
 			Score = 0,
@@ -138,6 +141,12 @@ local function mergeData(raw)
 			WeekIndex = math.floor(tonumber(raw.Weekly.WeekIndex) or -1),
 			Score = math.max(0, math.floor(tonumber(raw.Weekly.Score) or 0)),
 		}
+	end
+
+	if type(raw.Settings) == "table" and type(raw.Settings.QualityMode) == "string" then
+		if raw.Settings.QualityMode == "Low" or raw.Settings.QualityMode == "Medium" or raw.Settings.QualityMode == "High" then
+			data.Settings.QualityMode = raw.Settings.QualityMode
+		end
 	end
 
 	return data

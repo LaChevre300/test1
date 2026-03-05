@@ -14,6 +14,19 @@ TycoonService.__index = TycoonService
 local REMOTES_FOLDER_NAME = "Remotes"
 local RETENTION_REMOTE_NAME = "TycoonRetentionRequest"
 local WEEKLY_SCORE_MULTIPLIER = 1_000_000_000_000
+local QUALITY_MODES = {
+	Low = true,
+	Medium = true,
+	High = true,
+}
+
+local FIRST_NON_STARTER_UNLOCK_ID = nil
+for _, unlock in ipairs(TycoonConfig.Unlocks) do
+	if not unlock.Starter then
+		FIRST_NON_STARTER_UNLOCK_ID = unlock.Id
+		break
+	end
+end
 
 local function hasAllRequirements(owned, requirements)
 	for _, requirement in ipairs(requirements or {}) do
@@ -166,11 +179,13 @@ function TycoonService:_wirePlotPrompts()
 end
 
 function TycoonService:_wireRetentionRemote()
-	self.Connections[#self.Connections + 1] = self.RetentionRemote.OnServerEvent:Connect(function(player, action)
+	self.Connections[#self.Connections + 1] = self.RetentionRemote.OnServerEvent:Connect(function(player, action, payload)
 		if action == "claim_daily_quest" then
 			self:ClaimDailyQuest(player)
 		elseif action == "refresh_weekly" then
 			self:_syncWeeklyLeaderboard(true)
+		elseif action == "set_quality_mode" then
+			self:SetQualityMode(player, payload)
 		end
 	end)
 end
@@ -670,6 +685,39 @@ function TycoonService:_getDailyQuestLabel(state)
 	return status
 end
 
+function TycoonService:_computeObjectiveText(state)
+	if FIRST_NON_STARTER_UNLOCK_ID and not state.OwnedUnlocks[FIRST_NON_STARTER_UNLOCK_ID] then
+		return "Objectif: Achete ta premiere machine."
+	end
+
+	if (state.Data.Uncollected or 0) >= math.max(1500, (state.IncomePerSecond or 1) * 6) then
+		return "Objectif: Collecte ton cash au pad jaune."
+	end
+
+	if not state.OwnedUnlocks[TycoonConfig.ResearchUnlockId] then
+		return "Objectif: Debloque la recherche avancee."
+	end
+
+	local quest = state.DailyQuest
+	if quest and (not quest.Claimed) and quest.Progress >= quest.Target then
+		return "Objectif: Claim la quete du jour."
+	end
+
+	if not state.OwnedUnlocks[TycoonConfig.OverclockUnlockId] then
+		return "Objectif: Continue pour debloquer Overclock."
+	end
+
+	if not state.OwnedUnlocks.PrestigeTerminal then
+		return "Objectif: Atteins le Terminal de Prestige."
+	end
+
+	if (state.Data.Rebirths or 0) < 1 then
+		return "Objectif: Lance ton premier rebirth."
+	end
+
+	return "Objectif: Monte ton score hebdo et optimise ton usine."
+end
+
 function TycoonService:_updatePlayerStats(state)
 	local player = state.Player
 	self:_ensureWeeklyBucket(state)
@@ -700,6 +748,8 @@ function TycoonService:_updatePlayerStats(state)
 	player:SetAttribute("TycoonDailyQuestReady", state.DailyQuest and state.DailyQuest.Progress >= state.DailyQuest.Target and not state.DailyQuest.Claimed)
 	player:SetAttribute("TycoonWeeklyScore", toShortInteger(state.WeeklyScore))
 	player:SetAttribute("TycoonWeeklyTop", self.CachedWeeklyTopText)
+	player:SetAttribute("TycoonQualityMode", state.QualityMode or "High")
+	player:SetAttribute("TycoonObjectiveText", self:_computeObjectiveText(state))
 
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if leaderstats then
@@ -777,6 +827,15 @@ function TycoonService:BindPlayer(player, data)
 		end
 	end
 
+	if type(data.Settings) ~= "table" then
+		data.Settings = {}
+	end
+	local qualityMode = type(data.Settings.QualityMode) == "string" and data.Settings.QualityMode or "High"
+	if not QUALITY_MODES[qualityMode] then
+		qualityMode = "High"
+	end
+	data.Settings.QualityMode = qualityMode
+
 	local state = {
 		Player = player,
 		Plot = plot,
@@ -786,6 +845,7 @@ function TycoonService:BindPlayer(player, data)
 		ClaimedMilestones = claimedMilestones,
 		ClaimedMilestoneCount = claimedMilestoneCount,
 		DailyQuest = copyDailyQuest(data.DailyQuest),
+		QualityMode = qualityMode,
 		IncomePerSecond = 1,
 		Multiplier = 1,
 		BaseIncome = 0,
@@ -1146,6 +1206,25 @@ function TycoonService:SetAutoCollect(player, enabled)
 	return true
 end
 
+function TycoonService:SetQualityMode(player, qualityMode)
+	local state = self:_getOwnedState(player)
+	if not state then
+		return false
+	end
+	if type(qualityMode) ~= "string" or not QUALITY_MODES[qualityMode] then
+		return false
+	end
+
+	state.QualityMode = qualityMode
+	if type(state.Data.Settings) ~= "table" then
+		state.Data.Settings = {}
+	end
+	state.Data.Settings.QualityMode = qualityMode
+	self:_updatePlayerStats(state)
+	self:_setToast(player, ("Qualite graphique: %s"):format(qualityMode))
+	return true
+end
+
 function TycoonService:ExportPlayerData(player)
 	local state = self.PlayerStates[player]
 	if not state then
@@ -1156,6 +1235,9 @@ function TycoonService:ExportPlayerData(player)
 	state.Data.ResearchLevels = copyResearchLevels(state.ResearchLevels)
 	state.Data.ClaimedMilestones = milestoneListFromSet(state.ClaimedMilestones)
 	state.Data.DailyQuest = copyDailyQuest(state.DailyQuest)
+	state.Data.Settings = {
+		QualityMode = state.QualityMode or "High",
+	}
 	state.Data.Weekly = {
 		WeekIndex = getCurrentWeekIndex(),
 		Score = toShortInteger(state.WeeklyScore),
@@ -1173,6 +1255,7 @@ function TycoonService:ExportPlayerData(player)
 		LastLoginDay = toShortInteger(state.Data.LastLoginDay),
 		LoginStreak = toShortInteger(state.Data.LoginStreak),
 		DailyQuest = state.Data.DailyQuest,
+		Settings = state.Data.Settings,
 		Weekly = state.Data.Weekly,
 	}
 end
@@ -1206,7 +1289,6 @@ function TycoonService:_startIncomeLoop()
 						state.Data.Uncollected += state.IncomePerSecond
 					end
 					self:_refreshOverclockStatus(state)
-					self:_refreshResearchButtons(state)
 					self:_updatePlayerStats(state)
 				end
 			end

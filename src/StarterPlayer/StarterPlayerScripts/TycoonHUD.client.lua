@@ -1,8 +1,18 @@
+local Lighting = game:GetService("Lighting")
 local Players = game:GetService("Players")
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local SoundService = game:GetService("SoundService")
 local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
+
+local POST_EFFECT_NAMES = {
+	"TycoonBloom",
+	"TycoonColorCorrection",
+	"TycoonSunRays",
+	"TycoonDepth",
+	"TycoonAtmosphere",
+}
 
 local function shortNumber(value)
 	local number = math.max(0, math.floor(tonumber(value) or 0))
@@ -43,7 +53,7 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.fromOffset(390, 580)
+frame.Size = UDim2.fromOffset(420, 680)
 frame.Position = UDim2.fromOffset(20, 20)
 frame.BackgroundColor3 = Color3.fromRGB(17, 18, 24)
 frame.BorderSizePixel = 0
@@ -66,7 +76,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 21
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Text = "Neon Noodle Tycoon V3"
+title.Text = "Neon Noodle Tycoon V4"
 title.Parent = frame
 
 local subtitle = Instance.new("TextLabel")
@@ -77,7 +87,7 @@ subtitle.Font = Enum.Font.Gotham
 subtitle.TextSize = 14
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
 subtitle.TextColor3 = Color3.fromRGB(170, 176, 205)
-subtitle.Text = "Daily quests - Event rotatif - Leaderboard hebdo"
+subtitle.Text = "Objectifs dynamiques - Daily quests - Event - Weekly top"
 subtitle.Parent = frame
 
 local stats = {}
@@ -97,12 +107,15 @@ local labels = {
 	"Quest",
 	"Weekly score",
 	"Top hebdo",
+	"Objectif",
+	"Qualite",
 }
-for i, labelName in ipairs(labels) do
+
+for index, labelName in ipairs(labels) do
 	local text = Instance.new("TextLabel")
-	text.Name = ("Row%d"):format(i)
+	text.Name = ("Row%d"):format(index)
 	text.Size = UDim2.new(1, -14, 0, 22)
-	text.Position = UDim2.fromOffset(7, 62 + (i - 1) * 22)
+	text.Position = UDim2.fromOffset(7, 62 + (index - 1) * 22)
 	text.BackgroundTransparency = 1
 	text.Font = Enum.Font.GothamSemibold
 	text.TextSize = 15
@@ -113,16 +126,16 @@ for i, labelName in ipairs(labels) do
 	stats[labelName] = text
 end
 
-local shopTitle = Instance.new("TextLabel")
-shopTitle.Size = UDim2.new(1, -14, 0, 22)
-shopTitle.Position = UDim2.fromOffset(7, 398)
-shopTitle.BackgroundTransparency = 1
-shopTitle.Font = Enum.Font.GothamBold
-shopTitle.TextSize = 15
-shopTitle.TextXAlignment = Enum.TextXAlignment.Left
-shopTitle.TextColor3 = Color3.fromRGB(255, 227, 107)
-shopTitle.Text = "Actions & Boutique"
-shopTitle.Parent = frame
+local panelTitle = Instance.new("TextLabel")
+panelTitle.Size = UDim2.new(1, -14, 0, 22)
+panelTitle.Position = UDim2.fromOffset(7, 438)
+panelTitle.BackgroundTransparency = 1
+panelTitle.Font = Enum.Font.GothamBold
+panelTitle.TextSize = 15
+panelTitle.TextXAlignment = Enum.TextXAlignment.Left
+panelTitle.TextColor3 = Color3.fromRGB(255, 227, 107)
+panelTitle.Text = "Actions / Boutique / Graphismes"
+panelTitle.Parent = frame
 
 local function createButton(text, x, y, width, onClick)
 	local button = Instance.new("TextButton")
@@ -176,44 +189,151 @@ local function requestPurchase(action, itemKey)
 	monetizationRemote:FireServer(action, itemKey)
 end
 
-local function requestRetention(action)
+local function requestRetention(action, payload)
 	if not retentionRemote then
-		toast("Retention system indisponible.")
+		toast("Systeme retention indisponible.")
 		return
 	end
-	retentionRemote:FireServer(action)
+	retentionRemote:FireServer(action, payload)
 end
 
-createButton("Claim Quest", 7, 426, 120, function()
+local trackedEmitters = {}
+local trackedSounds = {}
+
+local function cacheSceneEffects()
+	for _, descendant in ipairs(workspace:GetDescendants()) do
+		if descendant:IsA("ParticleEmitter") then
+			trackedEmitters[descendant] = {
+				Enabled = descendant.Enabled,
+				Rate = descendant.Rate,
+			}
+		end
+	end
+
+	for _, descendant in ipairs(SoundService:GetDescendants()) do
+		if descendant:IsA("Sound") and descendant.Name ~= "MachineHum" then
+			trackedSounds[descendant] = {
+				Volume = descendant.Volume,
+			}
+		end
+	end
+end
+
+cacheSceneEffects()
+
+workspace.DescendantAdded:Connect(function(descendant)
+	if descendant:IsA("ParticleEmitter") then
+		trackedEmitters[descendant] = {
+			Enabled = descendant.Enabled,
+			Rate = descendant.Rate,
+		}
+	elseif descendant:IsA("Sound") and descendant.Name ~= "MachineHum" then
+		trackedSounds[descendant] = {
+			Volume = descendant.Volume,
+		}
+	end
+end)
+
+local function applyQualityMode(mode)
+	local quality = mode or "High"
+
+	local disableHeavyEffects = quality == "Low"
+	local mediumMode = quality == "Medium"
+
+	for _, effectName in ipairs(POST_EFFECT_NAMES) do
+		local effect = Lighting:FindFirstChild(effectName)
+		if effect and effect:IsA("PostEffect") then
+			if disableHeavyEffects then
+				effect.Enabled = false
+			elseif mediumMode then
+				effect.Enabled = effectName ~= "TycoonDepth"
+			else
+				effect.Enabled = true
+			end
+		elseif effect and effect.ClassName == "Atmosphere" then
+			effect.Parent = Lighting
+			if disableHeavyEffects then
+				effect.Density = 0.2
+				effect.Haze = 1.1
+			elseif mediumMode then
+				effect.Density = 0.3
+				effect.Haze = 1.6
+			else
+				effect.Density = 0.39
+				effect.Haze = 2.1
+			end
+		end
+	end
+
+	for emitter, defaults in pairs(trackedEmitters) do
+		if emitter.Parent then
+			if disableHeavyEffects then
+				emitter.Enabled = false
+			elseif mediumMode then
+				emitter.Enabled = defaults.Enabled
+				emitter.Rate = defaults.Rate * 0.45
+			else
+				emitter.Enabled = defaults.Enabled
+				emitter.Rate = defaults.Rate
+			end
+		end
+	end
+
+	for sound, defaults in pairs(trackedSounds) do
+		if sound.Parent then
+			if disableHeavyEffects then
+				sound.Volume = defaults.Volume * 0.45
+			elseif mediumMode then
+				sound.Volume = defaults.Volume * 0.7
+			else
+				sound.Volume = defaults.Volume
+			end
+		end
+	end
+end
+
+createButton("Claim Quest", 7, 466, 128, function()
 	requestRetention("claim_daily_quest")
 end)
 
-createButton("Refresh Weekly", 135, 426, 120, function()
+createButton("Refresh Weekly", 144, 466, 128, function()
 	requestRetention("refresh_weekly")
 end)
 
-createButton("Cash +2.5K", 263, 426, 120, function()
+createButton("Cash +2.5K", 281, 466, 128, function()
 	requestPurchase("prompt_product", "CashSmall")
 end)
 
-createButton("Cash +10K", 7, 466, 120, function()
+createButton("Cash +10K", 7, 506, 128, function()
 	requestPurchase("prompt_product", "CashMedium")
 end)
 
-createButton("Cash +50K", 135, 466, 120, function()
+createButton("Cash +50K", 144, 506, 128, function()
 	requestPurchase("prompt_product", "CashLarge")
 end)
 
-createButton("Instant RB", 263, 466, 120, function()
+createButton("Instant RB", 281, 506, 128, function()
 	requestPurchase("prompt_product", "InstantRebirth")
 end)
 
-createButton("VIP x2 revenu", 7, 506, 184, function()
+createButton("VIP x2 revenu", 7, 546, 200, function()
 	requestPurchase("prompt_gamepass", "VipIncomeX2")
 end)
 
-createButton("Auto Collect", 199, 506, 184, function()
+createButton("Auto Collect", 209, 546, 200, function()
 	requestPurchase("prompt_gamepass", "AutoCollector")
+end)
+
+createButton("LOW", 7, 586, 132, function()
+	requestRetention("set_quality_mode", "Low")
+end)
+
+createButton("MEDIUM", 144, 586, 132, function()
+	requestRetention("set_quality_mode", "Medium")
+end)
+
+createButton("HIGH", 281, 586, 128, function()
+	requestRetention("set_quality_mode", "High")
 end)
 
 local function refresh()
@@ -234,10 +354,15 @@ local function refresh()
 	stats["Discount"].Text = ("Discount achats: %s%%"):format(shortNumber(player:GetAttribute("TycoonCostDiscountPct")))
 	stats["Auto collect"].Text = ("Auto collect: %s"):format((player:GetAttribute("TycoonAutoCollect") and "ON") or "OFF")
 	stats["Streak"].Text = ("Streak: J%s"):format(shortNumber(player:GetAttribute("TycoonLoginStreak")))
-	stats["Event"].Text = ("Event: %s"):format(truncate(player:GetAttribute("TycoonEventName"), 30))
-	stats["Quest"].Text = ("Quest: %s"):format(truncate(player:GetAttribute("TycoonDailyQuestText"), 45))
+	stats["Event"].Text = ("Event: %s"):format(truncate(player:GetAttribute("TycoonEventName"), 34))
+	stats["Quest"].Text = ("Quest: %s"):format(truncate(player:GetAttribute("TycoonDailyQuestText"), 52))
 	stats["Weekly score"].Text = ("Weekly score: %s"):format(shortNumber(player:GetAttribute("TycoonWeeklyScore")))
-	stats["Top hebdo"].Text = ("Top hebdo: %s"):format(truncate(player:GetAttribute("TycoonWeeklyTop"), 65))
+	stats["Top hebdo"].Text = ("Top hebdo: %s"):format(truncate(player:GetAttribute("TycoonWeeklyTop"), 70))
+	stats["Objectif"].Text = ("Objectif: %s"):format(truncate(player:GetAttribute("TycoonObjectiveText"), 60))
+
+	local qualityMode = tostring(player:GetAttribute("TycoonQualityMode") or "High")
+	stats["Qualite"].Text = ("Qualite: %s"):format(qualityMode)
+	applyQualityMode(qualityMode)
 end
 
 local lastToastToken = ""
@@ -267,6 +392,8 @@ player:GetAttributeChangedSignal("TycoonEventName"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonDailyQuestText"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonWeeklyScore"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonWeeklyTop"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonObjectiveText"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonQualityMode"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonToast"):Connect(onToastChanged)
 
 refresh()

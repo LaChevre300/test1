@@ -13,6 +13,8 @@ Tycoon complet au style **cyberpunk / usine de ramen futuriste** :
 - event rotatif quotidien (bonus variables),
 - classement hebdomadaire (top scores),
 - rendu V4 (lighting futuriste, post-processing, ambiance sonore, machines detaillees),
+- mode qualite graphique (Low/Medium/High) sauvegarde par joueur,
+- objectif dynamique en HUD pour guider la progression,
 - sauvegarde DataStore (cash, rebirths, unlocks),
 - HUD client en temps reel,
 - generation automatique de 4 parcelles de tycoon.
