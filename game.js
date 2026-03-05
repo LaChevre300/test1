@@ -801,6 +801,7 @@
     subpageBackBtn: document.getElementById("subpage-back-btn"),
     subpageTitle: document.getElementById("subpage-title"),
     subpageContent: document.getElementById("subpage-content"),
+    journalEventBlock: document.getElementById("journal-event-block"),
     eventText: document.getElementById("event-text"),
     eventChoices: document.getElementById("event-choices"),
     activityRoot: document.getElementById("activity-root"),
@@ -4646,16 +4647,29 @@
 
   function renderEvent() {
     const c = game.character;
+    if (!ui.eventText || !ui.eventChoices) {
+      return;
+    }
+    const block = ui.journalEventBlock;
     if (!c.alive) {
-      ui.eventText.textContent = "Votre histoire est terminée.";
+      if (block) {
+        block.classList.add("is-hidden");
+      }
+      ui.eventText.textContent = "";
       ui.eventChoices.innerHTML = "";
       return;
     }
 
     if (!game.pendingEvent) {
-      ui.eventText.textContent = "Aucun événement en attente. Utilise « Vieillir » pour continuer.";
+      if (block) {
+        block.classList.add("is-hidden");
+      }
+      ui.eventText.textContent = "";
       ui.eventChoices.innerHTML = "";
       return;
+    }
+    if (block) {
+      block.classList.remove("is-hidden");
     }
     ui.eventText.textContent = game.pendingEvent.text;
     const classes = ["choice-accept", "choice-refuse", "choice-skip", "choice-refuse"];

@@ -876,6 +876,25 @@ body {
   line-height: 1.35;
 }
 
+.journal-event-block {
+  border: 1px solid #c5ae86;
+  border-radius: 12px;
+  background: #f8ecd4;
+  padding: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.journal-event-block .event-text {
+  width: 100%;
+  margin: 0;
+  font-size: 0.86rem;
+  color: #3b2c18;
+}
+
+.journal-event-block .event-choices-inline {
+  margin-top: 0.42rem;
+}
+
 .event-choices-inline {
   margin-top: 0.5rem;
   display: grid;
