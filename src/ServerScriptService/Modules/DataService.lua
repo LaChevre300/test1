@@ -33,6 +33,11 @@ local function makeDefaultData()
 		Settings = {
 			QualityMode = "High",
 		},
+		Contracts = {
+			Level = 1,
+			Progress = 0,
+			Target = 25000,
+		},
 		Weekly = {
 			WeekIndex = -1,
 			Score = 0,
@@ -147,6 +152,17 @@ local function mergeData(raw)
 		if raw.Settings.QualityMode == "Low" or raw.Settings.QualityMode == "Medium" or raw.Settings.QualityMode == "High" then
 			data.Settings.QualityMode = raw.Settings.QualityMode
 		end
+	end
+
+	if type(raw.Contracts) == "table" then
+		local level = math.max(1, math.floor(tonumber(raw.Contracts.Level) or 1))
+		local target = math.max(1, math.floor(tonumber(raw.Contracts.Target) or 25000))
+		local progress = math.clamp(math.floor(tonumber(raw.Contracts.Progress) or 0), 0, target)
+		data.Contracts = {
+			Level = level,
+			Progress = progress,
+			Target = target,
+		}
 	end
 
 	return data

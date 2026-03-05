@@ -14,6 +14,8 @@ TycoonService.__index = TycoonService
 local REMOTES_FOLDER_NAME = "Remotes"
 local RETENTION_REMOTE_NAME = "TycoonRetentionRequest"
 local WEEKLY_SCORE_MULTIPLIER = 1_000_000_000_000
+local COMBO_WINDOW_SECONDS = 8
+local COMBO_MAX_STACKS = 10
 local QUALITY_MODES = {
 	Low = true,
 	Medium = true,
@@ -26,6 +28,10 @@ for _, unlock in ipairs(TycoonConfig.Unlocks) do
 		FIRST_NON_STARTER_UNLOCK_ID = unlock.Id
 		break
 	end
+end
+
+local function getContractTarget(level)
+	return math.floor(25000 * (1.38 ^ math.max(0, level - 1)))
 end
 
 local function hasAllRequirements(owned, requirements)
@@ -441,6 +447,68 @@ function TycoonService:_shortNumber(value)
 	return tostring(number)
 end
 
+function TycoonService:_ensureContractData(state)
+	if type(state.Data.Contracts) ~= "table" then
+		state.Data.Contracts = {}
+	end
+	local level = math.max(1, toShortInteger(state.Data.Contracts.Level))
+	local target = toShortInteger(state.Data.Contracts.Target)
+	if target <= 0 then
+		target = getContractTarget(level)
+	end
+	local progress = math.clamp(toShortInteger(state.Data.Contracts.Progress), 0, target)
+	state.Data.Contracts.Level = level
+	state.Data.Contracts.Target = target
+	state.Data.Contracts.Progress = progress
+end
+
+function TycoonService:_addContractProgress(state, amount)
+	self:_ensureContractData(state)
+	local cleanAmount = toShortInteger(amount)
+	if cleanAmount <= 0 then
+		return
+	end
+
+	local contracts = state.Data.Contracts
+	contracts.Progress = math.min(contracts.Target, contracts.Progress + cleanAmount)
+
+	while contracts.Progress >= contracts.Target do
+		local completedTarget = contracts.Target
+		local level = contracts.Level
+		local rewardCash = math.max(4000, math.floor(completedTarget * 0.35))
+		local rewardShards = math.max(1, math.floor(level / 2))
+		rewardShards = math.max(1, math.floor(rewardShards * (state.EventShardMultiplier or 1)))
+
+		state.Data.Cash += rewardCash
+		state.Data.Shards += rewardShards
+		self:_addWeeklyScore(state, rewardCash)
+
+		contracts.Level += 1
+		contracts.Target = getContractTarget(contracts.Level)
+		contracts.Progress = math.max(0, contracts.Progress - completedTarget)
+		contracts.Progress = math.min(contracts.Progress, contracts.Target)
+
+		self:_setToast(state.Player, ("Contrat niveau %d complete: +$%d +%d shards"):format(level, rewardCash, rewardShards))
+	end
+end
+
+function TycoonService:_onManualCollect(state, uncollected)
+	local now = os.clock()
+	if now <= (state.ComboExpireAt or 0) then
+		state.CollectCombo = math.min(COMBO_MAX_STACKS, (state.CollectCombo or 0) + 1)
+	else
+		state.CollectCombo = 1
+	end
+	state.ComboExpireAt = now + COMBO_WINDOW_SECONDS
+
+	local comboBonus = math.min(COMBO_MAX_STACKS - 1, math.max(0, state.CollectCombo - 1)) * 0.12
+	state.CollectMultiplier = 1 + comboBonus
+
+	local payout = math.floor(uncollected * state.CollectMultiplier)
+	local bonus = payout - uncollected
+	return payout, bonus
+end
+
 function TycoonService:_generateDailyQuestForPlayer(userId, dayIndex)
 	local questPool = TycoonConfig.DailyQuestPool or {}
 	if #questPool == 0 then
@@ -686,6 +754,13 @@ function TycoonService:_getDailyQuestLabel(state)
 end
 
 function TycoonService:_computeObjectiveText(state)
+	self:_ensureContractData(state)
+	local contract = state.Data.Contracts
+
+	if contract and contract.Progress >= contract.Target then
+		return "Objectif: Contrat termine, continue pour le suivant."
+	end
+
 	if FIRST_NON_STARTER_UNLOCK_ID and not state.OwnedUnlocks[FIRST_NON_STARTER_UNLOCK_ID] then
 		return "Objectif: Achete ta premiere machine."
 	end
@@ -715,7 +790,7 @@ function TycoonService:_computeObjectiveText(state)
 		return "Objectif: Lance ton premier rebirth."
 	end
 
-	return "Objectif: Monte ton score hebdo et optimise ton usine."
+	return "Objectif: Avance ton contrat et monte ton score hebdo."
 end
 
 function TycoonService:_updatePlayerStats(state)
@@ -750,6 +825,12 @@ function TycoonService:_updatePlayerStats(state)
 	player:SetAttribute("TycoonWeeklyTop", self.CachedWeeklyTopText)
 	player:SetAttribute("TycoonQualityMode", state.QualityMode or "High")
 	player:SetAttribute("TycoonObjectiveText", self:_computeObjectiveText(state))
+	self:_ensureContractData(state)
+	player:SetAttribute("TycoonContractLevel", toShortInteger(state.Data.Contracts.Level))
+	player:SetAttribute("TycoonContractProgress", toShortInteger(state.Data.Contracts.Progress))
+	player:SetAttribute("TycoonContractTarget", toShortInteger(state.Data.Contracts.Target))
+	player:SetAttribute("TycoonCollectCombo", toShortInteger(state.CollectCombo))
+	player:SetAttribute("TycoonCollectComboMult", tonumber(state.CollectMultiplier) or 1)
 
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if leaderstats then
@@ -866,12 +947,16 @@ function TycoonService:BindPlayer(player, data)
 		EventOverclockCooldownMultiplier = 1,
 		WeeklyScore = 0,
 		WeeklyDirty = true,
+		CollectCombo = 0,
+		CollectMultiplier = 1,
+		ComboExpireAt = 0,
 	}
 
 	data.ResearchLevels = copyResearchLevels(state.ResearchLevels)
 	data.ClaimedMilestones = milestoneListFromSet(state.ClaimedMilestones)
 
 	self.PlayerStates[player] = state
+	self:_ensureContractData(state)
 	self:_applyEventToState(state, false)
 	self:_applyLoginReward(state)
 	self:_ensureDailyQuest(state)
@@ -967,20 +1052,31 @@ function TycoonService:Collect(player)
 		return false
 	end
 
-	state.Data.Cash += uncollected
+	local payout, bonus = self:_onManualCollect(state, uncollected)
+	state.Data.Cash += payout
 	state.Data.Uncollected = 0
-	state.Data.TotalEarnings += uncollected
-	self:_addWeeklyScore(state, uncollected)
-	self:_addDailyQuestProgress(state, "collect_cash", uncollected)
+	state.Data.TotalEarnings += payout
+	self:_addWeeklyScore(state, payout)
+	self:_addDailyQuestProgress(state, "collect_cash", payout)
+	self:_addContractProgress(state, payout)
 
 	local rewardCount, rewardCash, rewardShards = self:_checkMilestones(state)
 	self:_refreshResearchButtons(state)
 	self:_updatePlayerStats(state)
 
 	if rewardCount > 0 then
-		self:_setToast(player, ("+ $%d collectes | Milestones +$%d +%d shards"):format(uncollected, rewardCash, rewardShards))
+		self:_setToast(
+			player,
+			("+ $%d collectes (combo x%.2f, bonus $%d) | Milestones +$%d +%d shards"):format(
+				payout,
+				state.CollectMultiplier or 1,
+				bonus,
+				rewardCash,
+				rewardShards
+			)
+		)
 	else
-		self:_setToast(player, ("+ $%d collectes"):format(uncollected))
+		self:_setToast(player, ("+ $%d collectes (combo x%.2f, bonus $%d)"):format(payout, state.CollectMultiplier or 1, bonus))
 	end
 	return true
 end
@@ -1170,6 +1266,7 @@ function TycoonService:AddCash(player, amount, source, includeInTotalEarnings)
 		state.Data.TotalEarnings += cleanAmount
 		self:_addWeeklyScore(state, cleanAmount)
 		self:_addDailyQuestProgress(state, "collect_cash", cleanAmount)
+		self:_addContractProgress(state, cleanAmount)
 		self:_checkMilestones(state)
 	end
 
@@ -1238,6 +1335,12 @@ function TycoonService:ExportPlayerData(player)
 	state.Data.Settings = {
 		QualityMode = state.QualityMode or "High",
 	}
+	self:_ensureContractData(state)
+	state.Data.Contracts = {
+		Level = toShortInteger(state.Data.Contracts.Level),
+		Progress = toShortInteger(state.Data.Contracts.Progress),
+		Target = toShortInteger(state.Data.Contracts.Target),
+	}
 	state.Data.Weekly = {
 		WeekIndex = getCurrentWeekIndex(),
 		Score = toShortInteger(state.WeeklyScore),
@@ -1256,6 +1359,7 @@ function TycoonService:ExportPlayerData(player)
 		LoginStreak = toShortInteger(state.Data.LoginStreak),
 		DailyQuest = state.Data.DailyQuest,
 		Settings = state.Data.Settings,
+		Contracts = state.Data.Contracts,
 		Weekly = state.Data.Weekly,
 	}
 end
@@ -1275,18 +1379,25 @@ function TycoonService:_startIncomeLoop()
 				if player.Parent == Players then
 					self:_ensureDailyQuest(state)
 					self:_ensureWeeklyBucket(state)
+					self:_ensureContractData(state)
 					self:_recalculateIncome(state)
 					if state.AutoCollect then
 						state.Data.Cash += state.IncomePerSecond
 						state.Data.TotalEarnings += state.IncomePerSecond
 						self:_addWeeklyScore(state, state.IncomePerSecond)
 						self:_addDailyQuestProgress(state, "collect_cash", state.IncomePerSecond)
+						self:_addContractProgress(state, state.IncomePerSecond)
 						local rewardCount, rewardCash, rewardShards = self:_checkMilestones(state)
 						if rewardCount > 0 then
 							self:_setToast(player, ("Milestones auto: +$%d +%d shards"):format(rewardCash, rewardShards))
 						end
 					else
 						state.Data.Uncollected += state.IncomePerSecond
+					end
+
+					if state.CollectCombo > 0 and os.clock() > (state.ComboExpireAt or 0) then
+						state.CollectCombo = 0
+						state.CollectMultiplier = 1
 					end
 					self:_refreshOverclockStatus(state)
 					self:_updatePlayerStats(state)

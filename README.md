@@ -15,6 +15,8 @@ Tycoon complet au style **cyberpunk / usine de ramen futuriste** :
 - rendu V4 (lighting futuriste, post-processing, ambiance sonore, machines detaillees),
 - mode qualite graphique (Low/Medium/High) sauvegarde par joueur,
 - objectif dynamique en HUD pour guider la progression,
+- contrats infinis evolutifs (progression continue endgame),
+- combo de collecte manuel (reward skill-based),
 - sauvegarde DataStore (cash, rebirths, unlocks),
 - HUD client en temps reel,
 - generation automatique de 4 parcelles de tycoon.

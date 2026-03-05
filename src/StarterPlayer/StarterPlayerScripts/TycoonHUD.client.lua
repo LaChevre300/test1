@@ -53,7 +53,7 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.fromOffset(420, 680)
+frame.Size = UDim2.fromOffset(420, 730)
 frame.Position = UDim2.fromOffset(20, 20)
 frame.BackgroundColor3 = Color3.fromRGB(17, 18, 24)
 frame.BorderSizePixel = 0
@@ -108,6 +108,8 @@ local labels = {
 	"Weekly score",
 	"Top hebdo",
 	"Objectif",
+	"Contrat",
+	"Combo collect",
 	"Qualite",
 }
 
@@ -128,7 +130,7 @@ end
 
 local panelTitle = Instance.new("TextLabel")
 panelTitle.Size = UDim2.new(1, -14, 0, 22)
-panelTitle.Position = UDim2.fromOffset(7, 438)
+panelTitle.Position = UDim2.fromOffset(7, 482)
 panelTitle.BackgroundTransparency = 1
 panelTitle.Font = Enum.Font.GothamBold
 panelTitle.TextSize = 15
@@ -292,47 +294,47 @@ local function applyQualityMode(mode)
 	end
 end
 
-createButton("Claim Quest", 7, 466, 128, function()
+createButton("Claim Quest", 7, 510, 128, function()
 	requestRetention("claim_daily_quest")
 end)
 
-createButton("Refresh Weekly", 144, 466, 128, function()
+createButton("Refresh Weekly", 144, 510, 128, function()
 	requestRetention("refresh_weekly")
 end)
 
-createButton("Cash +2.5K", 281, 466, 128, function()
+createButton("Cash +2.5K", 281, 510, 128, function()
 	requestPurchase("prompt_product", "CashSmall")
 end)
 
-createButton("Cash +10K", 7, 506, 128, function()
+createButton("Cash +10K", 7, 550, 128, function()
 	requestPurchase("prompt_product", "CashMedium")
 end)
 
-createButton("Cash +50K", 144, 506, 128, function()
+createButton("Cash +50K", 144, 550, 128, function()
 	requestPurchase("prompt_product", "CashLarge")
 end)
 
-createButton("Instant RB", 281, 506, 128, function()
+createButton("Instant RB", 281, 550, 128, function()
 	requestPurchase("prompt_product", "InstantRebirth")
 end)
 
-createButton("VIP x2 revenu", 7, 546, 200, function()
+createButton("VIP x2 revenu", 7, 590, 200, function()
 	requestPurchase("prompt_gamepass", "VipIncomeX2")
 end)
 
-createButton("Auto Collect", 209, 546, 200, function()
+createButton("Auto Collect", 209, 590, 200, function()
 	requestPurchase("prompt_gamepass", "AutoCollector")
 end)
 
-createButton("LOW", 7, 586, 132, function()
+createButton("LOW", 7, 630, 132, function()
 	requestRetention("set_quality_mode", "Low")
 end)
 
-createButton("MEDIUM", 144, 586, 132, function()
+createButton("MEDIUM", 144, 630, 132, function()
 	requestRetention("set_quality_mode", "Medium")
 end)
 
-createButton("HIGH", 281, 586, 128, function()
+createButton("HIGH", 281, 630, 128, function()
 	requestRetention("set_quality_mode", "High")
 end)
 
@@ -359,6 +361,15 @@ local function refresh()
 	stats["Weekly score"].Text = ("Weekly score: %s"):format(shortNumber(player:GetAttribute("TycoonWeeklyScore")))
 	stats["Top hebdo"].Text = ("Top hebdo: %s"):format(truncate(player:GetAttribute("TycoonWeeklyTop"), 70))
 	stats["Objectif"].Text = ("Objectif: %s"):format(truncate(player:GetAttribute("TycoonObjectiveText"), 60))
+	stats["Contrat"].Text = ("Contrat: L%s (%s/%s)"):format(
+		shortNumber(player:GetAttribute("TycoonContractLevel")),
+		shortNumber(player:GetAttribute("TycoonContractProgress")),
+		shortNumber(player:GetAttribute("TycoonContractTarget"))
+	)
+	stats["Combo collect"].Text = ("Combo collect: x%.2f (%s)"):format(
+		tonumber(player:GetAttribute("TycoonCollectComboMult")) or 1,
+		shortNumber(player:GetAttribute("TycoonCollectCombo"))
+	)
 
 	local qualityMode = tostring(player:GetAttribute("TycoonQualityMode") or "High")
 	stats["Qualite"].Text = ("Qualite: %s"):format(qualityMode)
@@ -393,6 +404,11 @@ player:GetAttributeChangedSignal("TycoonDailyQuestText"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonWeeklyScore"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonWeeklyTop"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonObjectiveText"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonContractLevel"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonContractProgress"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonContractTarget"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonCollectCombo"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonCollectComboMult"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonQualityMode"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonToast"):Connect(onToastChanged)
 

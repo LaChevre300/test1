@@ -20,6 +20,8 @@ Utilise cette checklist avant publication.
 - [ ] Les nouveaux models machines/ramens restent performants en multi.
 - [ ] Le mode qualite (Low/Medium/High) ajuste bien les effets localement.
 - [ ] L'objectif dynamique HUD se met a jour selon la progression.
+- [ ] Les contrats evolutifs montent correctement de niveau et donnent leurs rewards.
+- [ ] Le combo de collecte augmente bien les gains lors de collectes rapides.
 - [ ] Le save/load fonctionne (test sortie + rejoin).
 
 ## 2) Roblox Studio settings
