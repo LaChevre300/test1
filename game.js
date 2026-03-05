@@ -188,6 +188,226 @@
     "Legacy multi-générationnel avec incarnation d'un enfant."
   ];
 
+  const EVENT_BIASES = ["money", "reputation", "health", "learning", "family", "crime", "spiritual", "politics"];
+  const MASS_AGE_EVENT_BLUEPRINTS = {
+    child: {
+      subjects: [
+        "Un camarade",
+        "Ton instituteur",
+        "Un voisin",
+        "Le fils du meunier",
+        "La fille du forgeron",
+        "Un garde municipal",
+        "Le sacristain"
+      ],
+      contexts: [
+        "à l'école du bourg",
+        "sur la place du marché",
+        "près des remparts",
+        "devant la taverne",
+        "dans la cour familiale"
+      ],
+      twists: [
+        "te confie un secret embarrassant.",
+        "te met au défi publiquement.",
+        "te réclame un service immédiat.",
+        "t'accuse d'une maladresse.",
+        "te propose un échange risqué."
+      ],
+      limit: 28
+    },
+    teen: {
+      subjects: [
+        "Un maître de guilde",
+        "Un apprenti rival",
+        "Un capitaine de garde",
+        "Une héritière locale",
+        "Un conteur itinérant",
+        "Un collecteur d'impôts",
+        "Un érudit"
+      ],
+      contexts: [
+        "pendant une foire régionale",
+        "à la sortie de l'atelier",
+        "dans une ruelle commerçante",
+        "au pied du château",
+        "dans la salle d'entraînement"
+      ],
+      twists: [
+        "te propose une faveur intéressée.",
+        "cherche à tester ton courage.",
+        "met ta réputation en jeu.",
+        "te promet un accès privilégié.",
+        "t'entraîne vers un choix délicat."
+      ],
+      limit: 28
+    },
+    adult: {
+      subjects: [
+        "Le conseil municipal",
+        "Un marchand étranger",
+        "Une corporation rivale",
+        "Un noble influent",
+        "Un banquier privé",
+        "Un bailli du roi",
+        "Une confrérie secrète"
+      ],
+      contexts: [
+        "au sujet d'un contrat majeur",
+        "dans un contexte de tension locale",
+        "après une plainte officielle",
+        "à la veille d'une décision publique",
+        "lors d'une négociation tendue"
+      ],
+      twists: [
+        "te demande de prendre parti vite.",
+        "te propose un accord ambigu.",
+        "cherche à t'utiliser comme intermédiaire.",
+        "fait peser une menace discrète.",
+        "ouvre une opportunité inattendue."
+      ],
+      limit: 30
+    },
+    senior: {
+      subjects: [
+        "Un chroniqueur",
+        "Un ancien compagnon",
+        "Un héritier lointain",
+        "Un juge local",
+        "Un abbé respecté",
+        "Un jeune ambitieux",
+        "Un notable de province"
+      ],
+      contexts: [
+        "pour trancher une vieille querelle",
+        "concernant des archives familiales",
+        "dans un débat sur ton héritage",
+        "au sujet de ton passé public",
+        "autour d'un engagement moral"
+      ],
+      twists: [
+        "ravive des souvenirs sensibles.",
+        "met ton autorité à l'épreuve.",
+        "pourrait changer ton image durablement.",
+        "te force à choisir entre paix et fermeté.",
+        "ouvre une dernière chance de réconciliation."
+      ],
+      limit: 22
+    }
+  };
+
+  const MASS_CLASS_EVENT_TEXTS = {
+    Paysannerie: [
+      "Le village organise une corvée imprévue sur les terres communes.",
+      "Le seigneur exige une part supplémentaire de récolte.",
+      "Un voisin veut partager un nouvel outil coûteux.",
+      "Une rumeur de famine pousse les familles à stocker en secret.",
+      "Un collecteur se montre étrangement indulgent avec ton foyer.",
+      "Un conflit éclate autour de l'usage du puits communal.",
+      "Une veillée paysanne tourne au débat politique.",
+      "Un ancien promet un terrain abandonné en échange d'un service."
+    ],
+    Artisanat: [
+      "La guilde locale lance un concours de maîtrise technique.",
+      "Un client noble réclame une commande impossible sous délai court.",
+      "Un apprenti casse une pièce essentielle de l'atelier.",
+      "Un concurrent vend des copies de ton travail.",
+      "Le maître de guilde soupçonne une fraude sur les matières.",
+      "Une commande religieuse peut faire grimper ton prestige.",
+      "Une pénurie de bois et de fer frappe les ateliers voisins.",
+      "Un marchand étranger offre de diffuser ton savoir-faire."
+    ],
+    "Bourgeoisie marchande": [
+      "Une caravane étrangère propose un partenariat exclusif.",
+      "Le prix des épices double en une semaine.",
+      "Un comptable signale des écarts dans les livres.",
+      "Une dette commerciale menace la réputation de ta maison.",
+      "Un rival tente de racheter discrètement tes fournisseurs.",
+      "Le port annonce une nouvelle taxe sur les cargaisons.",
+      "Un mécène exige une faveur en échange de son appui.",
+      "Un accord de monopole se négocie en coulisses."
+    ],
+    "Petite noblesse": [
+      "Un cousin réclame un droit sur un domaine secondaire.",
+      "Le bailli t'invite à soutenir publiquement une décision impopulaire.",
+      "Un tournoi local peut renforcer ton nom.",
+      "Une alliance matrimoniale te serait politiquement utile.",
+      "Un officier remet en cause ton autorité devant témoins.",
+      "Un banquet tourne à la compétition d'influence.",
+      "Une dette d'honneur est évoquée devant la cour.",
+      "Un ancien serment familial ressurgit opportunément."
+    ],
+    "Haute noblesse": [
+      "Le roi mandate discrètement ta maison pour une affaire sensible.",
+      "Un scandale de cour menace ton cercle proche.",
+      "Un rival aristocrate cherche à affaiblir ton blason.",
+      "Une fondation prestigieuse demande ton mécénat.",
+      "Une rumeur de trahison court dans les salons royaux.",
+      "Une charge protocolaire peut renforcer ton pouvoir.",
+      "Des vassaux réclament un arbitrage immédiat.",
+      "Un diplomate étranger te propose une alliance risquée."
+    ],
+    Clergé: [
+      "Un évêque souhaite t'impliquer dans une enquête doctrinale.",
+      "Des fidèles s'opposent à une réforme locale.",
+      "Un manuscrit controversé circule dans ton entourage.",
+      "Une abbaye réclame ton soutien financier.",
+      "Un prédicateur charismatique divise les paroisses voisines.",
+      "Une mission de médiation t'est confiée en urgence.",
+      "Un noble tente d'acheter ton silence sur un dossier.",
+      "Une procession attire autant d'espoir que de tensions."
+    ]
+  };
+
+  const MASS_CONTEXT_EVENT_TEXTS = {
+    city: [
+      "Une foire exceptionnelle attire des foules imprévisibles.",
+      "Une nouvelle patrouille inspecte sévèrement les quartiers.",
+      "Un incendie mineur bouleverse le marché central.",
+      "Un débat public oppose marchands et artisans.",
+      "Des pèlerins apportent des reliques controversées.",
+      "Un théâtre ambulant déclenche un scandale moral.",
+      "La rumeur d'un complot secoue les tavernes.",
+      "Une charte municipale doit être renégociée.",
+      "Un quartier réclame une baisse des impôts.",
+      "Des contrebandiers seraient actifs près des quais."
+    ],
+    job: [
+      "Ton employeur reçoit une commande prestigieuse à risque.",
+      "Un collègue tente de te faire porter sa faute.",
+      "Un client puissant exige un traitement préférentiel.",
+      "Un contrôle interne évalue ta loyauté.",
+      "Un bonus est promis si tu acceptes un délai impossible.",
+      "Un apprenti talentueux demande à travailler sous tes ordres.",
+      "Un fournisseur veut imposer de nouveaux tarifs.",
+      "Une innovation technique pourrait te donner l'avantage.",
+      "Un contrat secret circule entre les cadres.",
+      "Une délégation extérieure observe ton efficacité."
+    ],
+    prison: [
+      "Un geôlier te propose un arrangement discret.",
+      "Deux factions de détenus cherchent ton soutien.",
+      "Une fouille surprise cible ton quartier de cellule.",
+      "Un plan d'évasion circule dans le bloc.",
+      "Une bagarre générale éclate après le repas.",
+      "Un codétenu offre des informations compromettantes.",
+      "Le directeur annonce un durcissement des règles.",
+      "Un avocat inattendu veut négocier ta situation.",
+      "Ton nom apparaît dans un rapport disciplinaire.",
+      "Un gardien te demande un service dangereux."
+    ],
+    spouse: [
+      "Ton/ta partenaire réclame une décision sur votre avenir.",
+      "Un proche de ton couple attise la méfiance.",
+      "Un projet commun peut coûter cher mais unir davantage.",
+      "Une jalousie passagère crée une forte tension.",
+      "Un cadeau symbolique pourrait réparer un conflit récent.",
+      "Une proposition de voyage divise vos priorités.",
+      "Un secret du passé ressurgit dans votre foyer.",
+      "Votre entourage pousse vers un engagement plus net."
+    ]
+  };
+
   const ACTION_FOLLOWUP_EVENTS = {
     Famille: [
       { text: "Un oncle demande une aide urgente.", tone: "warn", run: () => { changeMoney(-rnd(2, 14)); changeStat("reputation", 2); } },
@@ -1527,6 +1747,229 @@
     return true;
   }
 
+  function textsFromBlueprint(blueprint) {
+    const output = [];
+    for (const subject of blueprint.subjects) {
+      for (const context of blueprint.contexts) {
+        for (const twist of blueprint.twists) {
+          output.push(`${subject} ${context} ${twist}`);
+          if (output.length >= blueprint.limit) {
+            return output;
+          }
+        }
+      }
+    }
+    return output;
+  }
+
+  function applyMassEventOutcome(c, bias, approach) {
+    const style = approach;
+    if (bias === "money") {
+      if (style === "safe") {
+        changeMoney(rnd(-3, 8));
+        changeStat("sanity", 1);
+      } else if (style === "balanced") {
+        if (chance(0.58)) changeMoney(rnd(5, 24));
+        else changeMoney(-rnd(4, 15));
+      } else if (chance(0.4)) {
+        changeMoney(rnd(18, 70));
+        game.character.notoriety = clamp(game.character.notoriety + rnd(2, 7), -100, 100);
+      } else {
+        changeMoney(-rnd(10, 32));
+        changeStat("reputation", -2);
+      }
+      return;
+    }
+
+    if (bias === "reputation") {
+      if (style === "safe") {
+        changeStat("reputation", rnd(1, 4));
+        changeStat("happiness", -1);
+      } else if (style === "balanced") {
+        if (chance(0.55)) changeStat("reputation", rnd(3, 8));
+        else changeStat("reputation", -rnd(2, 6));
+      } else if (chance(0.42)) {
+        changeStat("reputation", rnd(6, 12));
+        changeStat("happiness", 2);
+      } else {
+        changeStat("reputation", -rnd(6, 14));
+        changeStat("sanity", -2);
+      }
+      return;
+    }
+
+    if (bias === "health") {
+      if (style === "safe") {
+        changeStat("health", rnd(2, 7));
+        clearCondition("injuries");
+      } else if (style === "balanced") {
+        if (chance(0.6)) changeStat("health", rnd(1, 6));
+        else {
+          addCondition("injuries", pick(INJURIES));
+          changeStat("health", -rnd(3, 8));
+        }
+      } else if (chance(0.38)) {
+        changeStat("health", rnd(4, 10));
+        changeStat("strength", rnd(1, 4));
+      } else {
+        addCondition("injuries", pick(INJURIES));
+        if (chance(0.28)) addCondition("illnesses", pick(ILLNESSES));
+        changeStat("health", -rnd(8, 14));
+      }
+      return;
+    }
+
+    if (bias === "learning") {
+      if (style === "safe") {
+        changeStat("intelligence", rnd(2, 5));
+      } else if (style === "balanced") {
+        if (chance(0.62)) {
+          changeStat("intelligence", rnd(3, 8));
+          if (game.character.age >= 10 && chance(0.2)) {
+            game.character.educationLevel = Math.min(4, game.character.educationLevel + 1);
+          }
+        } else {
+          changeStat("sanity", -2);
+        }
+      } else if (chance(0.37)) {
+        changeStat("intelligence", rnd(5, 11));
+        changeStat("reputation", 2);
+      } else {
+        changeStat("sanity", -4);
+        changeStat("happiness", -3);
+      }
+      return;
+    }
+
+    if (bias === "family") {
+      if (style === "safe") {
+        relationshipPulse(c.family.parents, 4);
+        relationshipPulse(c.family.siblings, 3);
+        changeStat("happiness", 2);
+      } else if (style === "balanced") {
+        relationshipPulse(c.family.parents, chance(0.55) ? 6 : -4);
+        relationshipPulse(c.family.siblings, chance(0.55) ? 5 : -5);
+        changeStat("happiness", chance(0.55) ? 4 : -3);
+      } else if (chance(0.4)) {
+        relationshipPulse(c.family.parents, 8);
+        relationshipPulse(c.family.siblings, 7);
+        if (c.family.spouse?.alive) {
+          c.family.spouse.closeness = clamp(c.family.spouse.closeness + 10, 0, 100);
+        }
+      } else {
+        relationshipPulse(c.family.parents, -9);
+        relationshipPulse(c.family.siblings, -9);
+        if (c.family.spouse?.alive) {
+          c.family.spouse.closeness = clamp(c.family.spouse.closeness - 12, 0, 100);
+        }
+      }
+      return;
+    }
+
+    if (bias === "crime") {
+      if (style === "safe") {
+        changeStat("reputation", 2);
+        changeStat("sanity", 1);
+      } else if (style === "balanced") {
+        if (chance(0.5)) {
+          changeMoney(rnd(3, 18));
+          c.notoriety = clamp(c.notoriety + 3, -100, 100);
+        } else {
+          tryCrime("affaire louche", 2, 10, 0.26, 0.005, [1, 2]);
+        }
+      } else if (c.age >= 14) {
+        tryCrime("coup téméraire", 8, 35, 0.34, 0.015, [1, 4]);
+      } else {
+        changeStat("reputation", -3);
+        changeStat("happiness", -2);
+      }
+      return;
+    }
+
+    if (bias === "spiritual") {
+      if (style === "safe") {
+        changeStat("sanity", rnd(2, 6));
+        changeStat("happiness", 2);
+      } else if (style === "balanced") {
+        if (chance(0.58)) {
+          changeStat("sanity", rnd(3, 8));
+          changeStat("reputation", 2);
+        } else {
+          changeStat("sanity", -3);
+        }
+      } else if (chance(0.42)) {
+        clearCondition("mental");
+        changeStat("sanity", rnd(5, 10));
+      } else {
+        addCondition("mental", pick(MENTAL_ISSUES));
+        changeStat("sanity", -rnd(5, 10));
+      }
+      return;
+    }
+
+    if (style === "safe") {
+      changeStat("reputation", 1);
+      changeStat("happiness", 1);
+    } else if (style === "balanced") {
+      if (chance(0.55)) {
+        changeStat("reputation", 3);
+        changeMoney(rnd(2, 10));
+      } else {
+        changeStat("reputation", -3);
+      }
+    } else if (chance(0.35)) {
+      game.character.politicalLevel = clamp(game.character.politicalLevel + 1, 0, 10);
+      changeStat("reputation", 6);
+    } else {
+      game.character.politicalLevel = Math.max(0, game.character.politicalLevel - 1);
+      changeStat("reputation", -6);
+      changeStat("sanity", -2);
+    }
+  }
+
+  function buildMassEvent(c, text, index) {
+    const bias = EVENT_BIASES[index % EVENT_BIASES.length];
+    return {
+      text,
+      choices: [
+        {
+          label: "Prudence",
+          run: () => applyMassEventOutcome(c, bias, "safe")
+        },
+        {
+          label: "Négocier",
+          run: () => applyMassEventOutcome(c, bias, "balanced")
+        },
+        {
+          label: "Forcer le destin",
+          run: () => applyMassEventOutcome(c, bias, "risky")
+        }
+      ]
+    };
+  }
+
+  function addMassEventsToPool(pool, c) {
+    let idx = 0;
+    const pushTextEvents = (texts) => {
+      texts.forEach((text) => {
+        pool.push(buildMassEvent(c, text, idx));
+        idx += 1;
+      });
+    };
+
+    if (c.age <= 10) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.child));
+    else if (c.age <= 17) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.teen));
+    else if (c.age <= 54) pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.adult));
+    else pushTextEvents(textsFromBlueprint(MASS_AGE_EVENT_BLUEPRINTS.senior));
+
+    const classTexts = MASS_CLASS_EVENT_TEXTS[c.socialClass] || [];
+    pushTextEvents(classTexts);
+    if (c.job) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.job);
+    if (c.criminal.inPrison) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.prison);
+    else pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.city);
+    if (c.family.spouse?.alive) pushTextEvents(MASS_CONTEXT_EVENT_TEXTS.spouse);
+  }
+
   function randomEventPool() {
     const c = game.character;
     const pool = [];
@@ -1790,6 +2233,7 @@
         ]
       });
     }
+    addMassEventsToPool(pool, c);
     return pool;
   }
 
