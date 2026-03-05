@@ -8,6 +8,10 @@ Tycoon complet au style **cyberpunk / usine de ramen futuriste** :
 - systeme de **shards** et recherche permanente,
 - milestones de progression avec recompenses,
 - overclock temporaire activable en jeu,
+- quetes journalieres (claim en jeu),
+- bonus de connexion (streak),
+- event rotatif quotidien (bonus variables),
+- classement hebdomadaire (top scores),
 - sauvegarde DataStore (cash, rebirths, unlocks),
 - HUD client en temps reel,
 - generation automatique de 4 parcelles de tycoon.
@@ -22,6 +26,7 @@ Tu construis une chaine de production de nouilles ultra-tech :
 4. debloque le terminal prestige,
 5. fais un rebirth sur le pad rouge pour augmenter ton scaling.
 6. depense tes shards en recherche permanente.
+7. complete la quete du jour et conserve ta streak.
 
 ## Arborescence
 
@@ -93,6 +98,10 @@ Les principaux parametres sont dans `src/Shared/Config/TycoonConfig.lua` :
 - milestones et recompenses,
 - arbre de recherche (cout shards / effets),
 - overclock (duree / cooldown / multiplicateur),
+- daily login rewards,
+- daily quests pool,
+- rotation events,
+- weekly leaderboard datastore,
 - nombre de plots,
 - intervalle d'autosave.
 

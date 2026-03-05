@@ -9,7 +9,9 @@ TycoonConfig.StartingCash = 400
 TycoonConfig.IncomeTickSeconds = 1
 TycoonConfig.AutoSaveInterval = 60
 
-TycoonConfig.DataStoreName = "NeonNoodleTycoon_v2"
+TycoonConfig.DataStoreName = "NeonNoodleTycoon_v3"
+TycoonConfig.WeeklyLeaderboardDataStoreName = "NeonNoodleTycoonWeekly_v1"
+TycoonConfig.WeeklyLeaderboardRefreshInterval = 45
 
 TycoonConfig.RebirthBaseCost = 150000
 TycoonConfig.RebirthGrowth = 1.7
@@ -22,6 +24,116 @@ TycoonConfig.OverclockDuration = 20
 TycoonConfig.OverclockCooldown = 75
 TycoonConfig.OverclockUnlockId = "FusionControlHub"
 TycoonConfig.ResearchUnlockId = "FlavorAI"
+
+TycoonConfig.DailyLoginRewards = {
+	{ Cash = 1200, Shards = 1 },
+	{ Cash = 2400, Shards = 1 },
+	{ Cash = 4200, Shards = 2 },
+	{ Cash = 7000, Shards = 2 },
+	{ Cash = 11000, Shards = 3 },
+	{ Cash = 17000, Shards = 4 },
+	{ Cash = 26000, Shards = 5 },
+}
+
+TycoonConfig.DailyQuestPool = {
+	{
+		Id = "QCollectCash",
+		Type = "collect_cash",
+		DisplayName = "Collecter du cash",
+		TargetMin = 50000,
+		TargetMax = 220000,
+		RewardCash = 18000,
+		RewardShards = 2,
+	},
+	{
+		Id = "QBuyUpgrades",
+		Type = "buy_upgrades",
+		DisplayName = "Acheter des upgrades",
+		TargetMin = 4,
+		TargetMax = 14,
+		RewardCash = 16000,
+		RewardShards = 2,
+	},
+	{
+		Id = "QOverclock",
+		Type = "trigger_overclock",
+		DisplayName = "Activer Overclock",
+		TargetMin = 1,
+		TargetMax = 3,
+		RewardCash = 22000,
+		RewardShards = 3,
+	},
+	{
+		Id = "QRebirth",
+		Type = "do_rebirth",
+		DisplayName = "Faire des rebirths",
+		TargetMin = 1,
+		TargetMax = 2,
+		RewardCash = 30000,
+		RewardShards = 4,
+	},
+	{
+		Id = "QSpendShards",
+		Type = "spend_shards",
+		DisplayName = "Depenser des shards",
+		TargetMin = 8,
+		TargetMax = 30,
+		RewardCash = 25000,
+		RewardShards = 3,
+	},
+	{
+		Id = "QMilestones",
+		Type = "claim_milestones",
+		DisplayName = "Debloquer des milestones",
+		TargetMin = 1,
+		TargetMax = 3,
+		RewardCash = 21000,
+		RewardShards = 3,
+	},
+}
+
+TycoonConfig.RotationEvents = {
+	{
+		Id = "NeonRush",
+		DisplayName = "Neon Rush",
+		Description = "+22% revenu pendant l'event",
+		IncomeMultiplier = 1.22,
+		ShardMultiplier = 1.0,
+		CostDiscountBonus = 0.0,
+		OverclockDurationBonus = 0,
+		OverclockCooldownMultiplier = 1,
+	},
+	{
+		Id = "ShardStorm",
+		DisplayName = "Shard Storm",
+		Description = "x1.6 shards sur rebirth et quetes",
+		IncomeMultiplier = 1.0,
+		ShardMultiplier = 1.6,
+		CostDiscountBonus = 0.0,
+		OverclockDurationBonus = 0,
+		OverclockCooldownMultiplier = 1,
+	},
+	{
+		Id = "MarketCrash",
+		DisplayName = "Market Crash",
+		Description = "-12% sur le prix des upgrades",
+		IncomeMultiplier = 1.0,
+		ShardMultiplier = 1.0,
+		CostDiscountBonus = 0.12,
+		OverclockDurationBonus = 0,
+		OverclockCooldownMultiplier = 1,
+	},
+	{
+		Id = "OverclockFestival",
+		DisplayName = "Overclock Festival",
+		Description = "Overclock booste: duree et cooldown",
+		IncomeMultiplier = 1.05,
+		ShardMultiplier = 1.0,
+		CostDiscountBonus = 0.0,
+		OverclockDurationBonus = 8,
+		OverclockCooldownMultiplier = 0.72,
+	},
+}
 
 TycoonConfig.StarterUnlocks = { "BasicDropper" }
 
@@ -144,12 +256,21 @@ for _, research in ipairs(TycoonConfig.ResearchUpgrades) do
 	researchById[research.Id] = research
 end
 
+local dailyQuestById = {}
+for _, quest in ipairs(TycoonConfig.DailyQuestPool) do
+	dailyQuestById[quest.Id] = quest
+end
+
 function TycoonConfig.GetUnlockById(unlockId)
 	return unlockById[unlockId]
 end
 
 function TycoonConfig.GetResearchById(researchId)
 	return researchById[researchId]
+end
+
+function TycoonConfig.GetDailyQuestById(questId)
+	return dailyQuestById[questId]
 end
 
 function TycoonConfig.GetResearchLevelCost(researchId, currentLevel)

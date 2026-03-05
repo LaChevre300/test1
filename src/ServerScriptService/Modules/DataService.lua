@@ -27,6 +27,13 @@ local function makeDefaultData()
 		OwnedUnlocks = copyArray(TycoonConfig.StarterUnlocks),
 		ResearchLevels = {},
 		ClaimedMilestones = {},
+		LastLoginDay = -1,
+		LoginStreak = 0,
+		DailyQuest = nil,
+		Weekly = {
+			WeekIndex = -1,
+			Score = 0,
+		},
 	}
 end
 
@@ -50,6 +57,12 @@ local function mergeData(raw)
 	end
 	if type(raw.TotalEarnings) == "number" then
 		data.TotalEarnings = math.max(0, math.floor(raw.TotalEarnings))
+	end
+	if type(raw.LastLoginDay) == "number" then
+		data.LastLoginDay = math.floor(raw.LastLoginDay)
+	end
+	if type(raw.LoginStreak) == "number" then
+		data.LoginStreak = math.max(0, math.floor(raw.LoginStreak))
 	end
 
 	if type(raw.OwnedUnlocks) == "table" then
@@ -100,6 +113,31 @@ local function mergeData(raw)
 				table.insert(data.ClaimedMilestones, milestoneId)
 			end
 		end
+	end
+
+	if type(raw.DailyQuest) == "table" then
+		local questId = raw.DailyQuest.QuestId
+		local questTemplate = type(questId) == "string" and TycoonConfig.GetDailyQuestById(questId) or nil
+		if questTemplate then
+			local target = math.max(1, math.floor(tonumber(raw.DailyQuest.Target) or questTemplate.TargetMin))
+			local progress = math.clamp(math.floor(tonumber(raw.DailyQuest.Progress) or 0), 0, target)
+			data.DailyQuest = {
+				DayIndex = math.floor(tonumber(raw.DailyQuest.DayIndex) or -1),
+				QuestId = questId,
+				Target = target,
+				Progress = progress,
+				Claimed = raw.DailyQuest.Claimed == true,
+				RewardCash = math.max(0, math.floor(tonumber(raw.DailyQuest.RewardCash) or questTemplate.RewardCash or 0)),
+				RewardShards = math.max(0, math.floor(tonumber(raw.DailyQuest.RewardShards) or questTemplate.RewardShards or 0)),
+			}
+		end
+	end
+
+	if type(raw.Weekly) == "table" then
+		data.Weekly = {
+			WeekIndex = math.floor(tonumber(raw.Weekly.WeekIndex) or -1),
+			Score = math.max(0, math.floor(tonumber(raw.Weekly.Score) or 0)),
+		}
 	end
 
 	return data

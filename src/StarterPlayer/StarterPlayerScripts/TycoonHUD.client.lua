@@ -28,6 +28,14 @@ local function toast(message)
 	end)
 end
 
+local function truncate(text, maxLen)
+	local raw = tostring(text or "")
+	if #raw <= maxLen then
+		return raw
+	end
+	return raw:sub(1, maxLen - 3) .. "..."
+end
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TycoonHUD"
 screenGui.ResetOnSpawn = false
@@ -35,7 +43,7 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.fromOffset(360, 410)
+frame.Size = UDim2.fromOffset(390, 580)
 frame.Position = UDim2.fromOffset(20, 20)
 frame.BackgroundColor3 = Color3.fromRGB(17, 18, 24)
 frame.BorderSizePixel = 0
@@ -58,7 +66,7 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 21
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.TextColor3 = Color3.fromRGB(255, 255, 255)
-title.Text = "Neon Noodle Tycoon"
+title.Text = "Neon Noodle Tycoon V3"
 title.Parent = frame
 
 local subtitle = Instance.new("TextLabel")
@@ -69,7 +77,7 @@ subtitle.Font = Enum.Font.Gotham
 subtitle.TextSize = 14
 subtitle.TextXAlignment = Enum.TextXAlignment.Left
 subtitle.TextColor3 = Color3.fromRGB(170, 176, 205)
-subtitle.Text = "Collecte au pad jaune - Rebirth au pad rouge"
+subtitle.Text = "Daily quests - Event rotatif - Leaderboard hebdo"
 subtitle.Parent = frame
 
 local stats = {}
@@ -84,6 +92,11 @@ local labels = {
 	"Milestones",
 	"Discount",
 	"Auto collect",
+	"Streak",
+	"Event",
+	"Quest",
+	"Weekly score",
+	"Top hebdo",
 }
 for i, labelName in ipairs(labels) do
 	local text = Instance.new("TextLabel")
@@ -92,7 +105,7 @@ for i, labelName in ipairs(labels) do
 	text.Position = UDim2.fromOffset(7, 62 + (i - 1) * 22)
 	text.BackgroundTransparency = 1
 	text.Font = Enum.Font.GothamSemibold
-	text.TextSize = 16
+	text.TextSize = 15
 	text.TextXAlignment = Enum.TextXAlignment.Left
 	text.TextColor3 = Color3.fromRGB(230, 234, 255)
 	text.Text = ("%s: ..."):format(labelName)
@@ -100,44 +113,20 @@ for i, labelName in ipairs(labels) do
 	stats[labelName] = text
 end
 
-local monetizationRemote = nil
-task.spawn(function()
-	local shared = ReplicatedStorage:WaitForChild("Shared", 10)
-	if not shared then
-		return
-	end
-	local remotes = shared:WaitForChild("Remotes", 10)
-	if not remotes then
-		return
-	end
-	local remote = remotes:WaitForChild("TycoonMonetizationRequest", 10)
-	if remote and remote:IsA("RemoteEvent") then
-		monetizationRemote = remote
-	end
-end)
-
-local function requestPurchase(action, itemKey)
-	if not monetizationRemote then
-		toast("Boutique indisponible.")
-		return
-	end
-	monetizationRemote:FireServer(action, itemKey)
-end
-
 local shopTitle = Instance.new("TextLabel")
 shopTitle.Size = UDim2.new(1, -14, 0, 22)
-shopTitle.Position = UDim2.fromOffset(7, 286)
+shopTitle.Position = UDim2.fromOffset(7, 398)
 shopTitle.BackgroundTransparency = 1
 shopTitle.Font = Enum.Font.GothamBold
 shopTitle.TextSize = 15
 shopTitle.TextXAlignment = Enum.TextXAlignment.Left
 shopTitle.TextColor3 = Color3.fromRGB(255, 227, 107)
-shopTitle.Text = "Boutique"
+shopTitle.Text = "Actions & Boutique"
 shopTitle.Parent = frame
 
-local function createShopButton(text, x, y, onClick)
+local function createButton(text, x, y, width, onClick)
 	local button = Instance.new("TextButton")
-	button.Size = UDim2.fromOffset(112, 34)
+	button.Size = UDim2.fromOffset(width, 34)
 	button.Position = UDim2.fromOffset(x, y)
 	button.BackgroundColor3 = Color3.fromRGB(42, 47, 63)
 	button.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -155,28 +144,76 @@ local function createShopButton(text, x, y, onClick)
 	return button
 end
 
-createShopButton("Cash +2.5K", 7, 312, function()
+local monetizationRemote = nil
+local retentionRemote = nil
+
+task.spawn(function()
+	local shared = ReplicatedStorage:WaitForChild("Shared", 10)
+	if not shared then
+		return
+	end
+	local remotes = shared:WaitForChild("Remotes", 10)
+	if not remotes then
+		return
+	end
+
+	local moneyRemote = remotes:WaitForChild("TycoonMonetizationRequest", 10)
+	if moneyRemote and moneyRemote:IsA("RemoteEvent") then
+		monetizationRemote = moneyRemote
+	end
+
+	local retention = remotes:WaitForChild("TycoonRetentionRequest", 10)
+	if retention and retention:IsA("RemoteEvent") then
+		retentionRemote = retention
+	end
+end)
+
+local function requestPurchase(action, itemKey)
+	if not monetizationRemote then
+		toast("Boutique indisponible.")
+		return
+	end
+	monetizationRemote:FireServer(action, itemKey)
+end
+
+local function requestRetention(action)
+	if not retentionRemote then
+		toast("Retention system indisponible.")
+		return
+	end
+	retentionRemote:FireServer(action)
+end
+
+createButton("Claim Quest", 7, 426, 120, function()
+	requestRetention("claim_daily_quest")
+end)
+
+createButton("Refresh Weekly", 135, 426, 120, function()
+	requestRetention("refresh_weekly")
+end)
+
+createButton("Cash +2.5K", 263, 426, 120, function()
 	requestPurchase("prompt_product", "CashSmall")
 end)
 
-createShopButton("Cash +10K", 124, 312, function()
+createButton("Cash +10K", 7, 466, 120, function()
 	requestPurchase("prompt_product", "CashMedium")
 end)
 
-createShopButton("Cash +50K", 241, 312, function()
+createButton("Cash +50K", 135, 466, 120, function()
 	requestPurchase("prompt_product", "CashLarge")
 end)
 
-createShopButton("VIP x2 revenu", 7, 352, function()
+createButton("Instant RB", 263, 466, 120, function()
+	requestPurchase("prompt_product", "InstantRebirth")
+end)
+
+createButton("VIP x2 revenu", 7, 506, 184, function()
 	requestPurchase("prompt_gamepass", "VipIncomeX2")
 end)
 
-createShopButton("Auto Collect", 124, 352, function()
+createButton("Auto Collect", 199, 506, 184, function()
 	requestPurchase("prompt_gamepass", "AutoCollector")
-end)
-
-createShopButton("Instant Rebirth", 241, 352, function()
-	requestPurchase("prompt_product", "InstantRebirth")
 end)
 
 local function refresh()
@@ -196,6 +233,11 @@ local function refresh()
 	)
 	stats["Discount"].Text = ("Discount achats: %s%%"):format(shortNumber(player:GetAttribute("TycoonCostDiscountPct")))
 	stats["Auto collect"].Text = ("Auto collect: %s"):format((player:GetAttribute("TycoonAutoCollect") and "ON") or "OFF")
+	stats["Streak"].Text = ("Streak: J%s"):format(shortNumber(player:GetAttribute("TycoonLoginStreak")))
+	stats["Event"].Text = ("Event: %s"):format(truncate(player:GetAttribute("TycoonEventName"), 30))
+	stats["Quest"].Text = ("Quest: %s"):format(truncate(player:GetAttribute("TycoonDailyQuestText"), 45))
+	stats["Weekly score"].Text = ("Weekly score: %s"):format(shortNumber(player:GetAttribute("TycoonWeeklyScore")))
+	stats["Top hebdo"].Text = ("Top hebdo: %s"):format(truncate(player:GetAttribute("TycoonWeeklyTop"), 65))
 end
 
 local lastToastToken = ""
@@ -220,6 +262,11 @@ player:GetAttributeChangedSignal("TycoonMilestonesDone"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonMilestonesTotal"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonCostDiscountPct"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonAutoCollect"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonLoginStreak"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonEventName"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonDailyQuestText"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonWeeklyScore"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonWeeklyTop"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonToast"):Connect(onToastChanged)
 
 refresh()

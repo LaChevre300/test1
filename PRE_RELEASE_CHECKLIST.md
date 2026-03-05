@@ -12,6 +12,10 @@ Utilise cette checklist avant publication.
 - [ ] Les milestones se debloquent et donnent les recompenses.
 - [ ] La recherche permanente (shards) fonctionne.
 - [ ] Le pad overclock fonctionne (activation + cooldown).
+- [ ] La quete du jour se genere correctement et peut etre claim.
+- [ ] Le bonus de connexion (streak) se met a jour d'un jour a l'autre.
+- [ ] L'event rotatif du jour applique bien ses bonus.
+- [ ] Le classement hebdo affiche des scores coherents.
 - [ ] Le save/load fonctionne (test sortie + rejoin).
 
 ## 2) Roblox Studio settings
