@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Chroniques de Dynastie — Simulation de Vie Médiévale</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app">
+      <section id="start-screen" class="start-screen">
+        <article class="card">
+          <h2>Chroniques de Dynastie</h2>
+          <p class="muted">Choisis une progression existante ou crée un nouveau personnage.</p>
+          <button id="start-new-btn" class="btn btn-green">Créer un nouveau personnage</button>
+        </article>
+        <article class="card">
+          <h2>Anciennes progressions</h2>
+          <div id="start-saves-list" class="save-list"></div>
+        </article>
+      </section>
+
+      <div id="game-shell" class="game-shell">
+      <header class="app-top">
+        <div class="app-nav">
+          <button id="top-settings-btn" class="nav-btn" aria-label="Paramètres">⚙️</button>
+          <h1>E-LIFE SIMULATION</h1>
+          <span class="nav-spacer" aria-hidden="true"></span>
+        </div>
+        <div class="profile-strip">
+          <div class="profile-left profile-trigger" id="profile-trigger" role="button" tabindex="0">
+            <div class="avatar" id="profile-avatar" aria-hidden="true"></div>
+            <div class="profile-meta">
+              <div class="profile-name-row">
+                <span id="profile-name" class="profile-name">Anna David</span>
+                <span class="info-pill">i</span>
+                <button id="open-avatar-editor-inline-btn" class="mini-avatar-btn" aria-label="Modifier avatar">
+                  🎨
+                </button>
+              </div>
+              <div class="profile-sub">
+                <span id="profile-stage">Infant</span>
+              </div>
+            </div>
+          </div>
+          <div class="profile-right">
+            <div id="profile-money" class="profile-money">$0</div>
+            <div class="bank-label">Bank Balance</div>
+          </div>
+        </div>
+      </header>
+
+      <section id="screen-home" class="screen active">
+        <article class="card">
+          <h2>Journal</h2>
+          <div id="journal-event-block" class="journal-event-block is-hidden">
+            <p id="event-text" class="event-text"></p>
+            <div id="event-choices" class="event-choices-inline"></div>
+          </div>
+          <div id="log" class="log"></div>
+        </article>
+      </section>
+
+      <section id="screen-activity" class="screen">
+        <article class="card">
+          <h2>Catégories</h2>
+          <div class="nav-tree">
+            <div class="nav-group-title">Profession</div>
+            <details class="nav-section">
+              <summary data-subpage="profession-education" data-subpage-title="Éducation">
+                <span class="nav-icon">🎓</span>
+                <span class="nav-main">
+                  <span class="nav-title">Éducation</span>
+                  <span class="nav-sub">Retourner à l'école</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Cours & examens</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <div id="profession-school-root"></div>
+              </details>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Classe</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <div id="school-people-root" class="person-grid"></div>
+              </details>
+            </details>
+            <details class="nav-section">
+              <summary data-subpage="profession-jobs" data-subpage-title="Métiers">
+                <span class="nav-icon">💰</span>
+                <span class="nav-main">
+                  <span class="nav-title">Métiers</span>
+                  <span class="nav-sub">Trouver un office et progresser</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Tâches du métier</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <div id="profession-job-root"></div>
+              </details>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Collègues</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <div id="profession-colleagues-root" class="person-grid"></div>
+              </details>
+            </details>
+            <details class="nav-section">
+              <summary data-subpage="profession-military" data-subpage-title="Ordres armés">
+                <span class="nav-icon">🛡️</span>
+                <span class="nav-main">
+                  <span class="nav-title">Ordres armés</span>
+                  <span class="nav-sub">Choisir une branche</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="profession-military-root"></div>
+            </details>
+
+            <div class="nav-group-title">Vie quotidienne</div>
+            <details class="nav-section">
+              <summary data-subpage="activity-civil" data-subpage-title="Activités civiles">
+                <span class="nav-icon">🎯</span>
+                <span class="nav-main">
+                  <span class="nav-title">Activités civiles</span>
+                  <span class="nav-sub">Santé, loisirs, progression</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="activity-root"></div>
+            </details>
+            <div class="nav-group-title">Risques</div>
+            <details class="nav-section">
+              <summary data-subpage="activity-crime" data-subpage-title="Crime & prison">
+                <span class="nav-icon">🗡️</span>
+                <span class="nav-main">
+                  <span class="nav-title">Crime & prison</span>
+                  <span class="nav-sub">Actions illégales et détention</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="crime-root"></div>
+            </details>
+          </div>
+        </article>
+      </section>
+
+      <section id="screen-assets" class="screen">
+        <article class="card">
+          <h2>Patrimoine</h2>
+          <div class="nav-tree">
+            <div class="nav-group-title">Comptes</div>
+            <details class="nav-section">
+              <summary data-subpage="assets-overview" data-subpage-title="Vue d'ensemble">
+                <span class="nav-icon">📜</span>
+                <span class="nav-main">
+                  <span class="nav-title">Vue d'ensemble</span>
+                  <span class="nav-sub">Résumé de ta situation</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <ul id="detail-menu" class="detail-list"></ul>
+              <ul id="resources-list" class="compact-list"></ul>
+            </details>
+            <div class="nav-group-title">État de santé</div>
+            <details class="nav-section">
+              <summary data-subpage="assets-conditions" data-subpage-title="Conditions">
+                <span class="nav-icon">🧪</span>
+                <span class="nav-main">
+                  <span class="nav-title">Conditions</span>
+                  <span class="nav-sub">Maladies, blessures, mental</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <ul id="conditions-list" class="compact-list"></ul>
+            </details>
+            <div class="nav-group-title">Possessions</div>
+            <details class="nav-section">
+              <summary data-subpage="assets-goods" data-subpage-title="Possessions">
+                <span class="nav-icon">🎒</span>
+                <span class="nav-main">
+                  <span class="nav-title">Biens</span>
+                  <span class="nav-sub">Objets et animaux</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Inventaire</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <ul id="inventory-list" class="compact-list"></ul>
+              </details>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Animaux</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <ul id="animals-list" class="compact-list"></ul>
+              </details>
+            </details>
+          </div>
+        </article>
+      </section>
+
+      <section id="screen-relationships" class="screen">
+        <article class="card">
+          <h2>Relations</h2>
+          <div class="nav-tree">
+            <div class="nav-group-title">Vue rapide</div>
+            <details class="nav-section">
+              <summary data-subpage="relations-summary" data-subpage-title="Résumé des liens">
+                <span class="nav-icon">🤍</span>
+                <span class="nav-main">
+                  <span class="nav-title">Résumé des liens</span>
+                  <span class="nav-sub">Famille, amis, ennemis</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <ul id="relations-list" class="compact-list"></ul>
+            </details>
+            <div class="nav-group-title">Liens vivants</div>
+            <details class="nav-section">
+              <summary data-subpage="relations-people" data-subpage-title="Personnes">
+                <span class="nav-icon">👥</span>
+                <span class="nav-main">
+                  <span class="nav-title">Personnes</span>
+                  <span class="nav-sub">Interagir individuellement</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="relation-people-root" class="person-grid"></div>
+            </details>
+            <div class="nav-group-title">Gestion sociale</div>
+            <details class="nav-section">
+              <summary data-subpage="relations-actions" data-subpage-title="Interactions sociales">
+                <span class="nav-icon">💬</span>
+                <span class="nav-main">
+                  <span class="nav-title">Interactions sociales</span>
+                  <span class="nav-sub">Actions globales</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="relation-root"></div>
+            </details>
+            <details class="nav-section">
+              <summary data-subpage="relations-children" data-subpage-title="Descendance">
+                <span class="nav-icon">🧬</span>
+                <span class="nav-main">
+                  <span class="nav-title">Descendance</span>
+                  <span class="nav-sub">Enfants et héritiers</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <ul id="children-list" class="compact-list"></ul>
+            </details>
+          </div>
+        </article>
+      </section>
+
+      <section id="screen-settings" class="screen">
+        <article class="card">
+          <h2>Paramètres</h2>
+          <p class="muted">
+            Personnalise ton héros médiéval et redémarre une lignée si nécessaire.
+          </p>
+          <div class="save-actions">
+            <button id="save-current-btn" class="btn btn-green">Sauvegarder progression</button>
+            <button id="go-home-btn" class="btn btn-orange">Retour à l'accueil</button>
+          </div>
+          <h3>Sauvegardes disponibles</h3>
+          <div id="settings-saves-list" class="save-list"></div>
+          <button id="open-avatar-editor-btn" class="btn btn-blue">Créer / modifier avatar</button>
+          <button id="new-life-btn" class="btn btn-gray">Nouvelle vie</button>
+        </article>
+      </section>
+
+      <section id="subpage-screen" class="subpage-screen" aria-hidden="true">
+        <header class="subpage-topbar">
+          <button id="subpage-back-btn" class="subpage-back-btn" aria-label="Retour">◀</button>
+          <h2 id="subpage-title" class="subpage-title">Section</h2>
+          <span class="subpage-spacer" aria-hidden="true"></span>
+        </header>
+        <div id="subpage-content" class="subpage-content"></div>
+      </section>
+
+      <section class="stats-bar" id="status-strip"></section>
+
+      <nav class="tabbar" id="tabbar">
+        <button class="tab-btn is-active" data-tab="home" data-accent="green" aria-label="Journal">
+          <span class="tab-icon">📜</span>
+          <span class="tab-label">Journal</span>
+          <span class="badge" id="badge-home"></span>
+        </button>
+        <button class="tab-btn" data-tab="assets" data-accent="gray" aria-label="Assets">
+          <span class="tab-icon">🏠</span>
+          <span class="tab-label">Assets</span>
+          <span class="badge" id="badge-assets"></span>
+        </button>
+        <button class="tab-btn age-tab" id="age-tab-btn" data-action="age" aria-label="Age">
+          <span class="age-plus">＋</span>
+          <span class="tab-label">Age</span>
+        </button>
+        <button class="tab-btn" data-tab="relationships" data-accent="blue" aria-label="Relationships">
+          <span class="tab-icon">🤍</span>
+          <span class="tab-label">Relationships</span>
+          <span class="badge" id="badge-relationships"></span>
+        </button>
+        <button class="tab-btn" data-tab="activity" data-accent="gray" aria-label="Profession">
+          <span class="tab-icon">⚒️</span>
+          <span class="tab-label">Profession</span>
+          <span class="badge" id="badge-activities"></span>
+        </button>
+      </nav>
+
+      <div id="death-modal" class="death-modal">
+        <div class="death-card">
+          <h2 id="death-title"></h2>
+          <p id="death-stats" class="death-stats"></p>
+          <p id="death-recap" class="death-recap"></p>
+          <div class="death-actions">
+            <button id="death-new-life-btn" class="btn btn-green">Nouvelle vie</button>
+            <button id="death-legacy-btn" class="btn btn-orange">Legacy</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="character-modal" class="character-modal">
+        <div class="character-card">
+          <div class="character-head">
+            <h2>Fiche personnage</h2>
+            <div class="character-head-actions">
+              <button id="character-edit-avatar-btn" class="character-edit-btn">Modifier avatar</button>
+              <button id="character-close-btn" class="character-close-btn" aria-label="Fermer">✕</button>
+            </div>
+          </div>
+          <ul id="character-info-list" class="compact-list"></ul>
+        </div>
+      </div>
+
+      <div id="avatar-editor-modal" class="character-modal">
+        <div class="character-card">
+          <div class="character-head">
+            <h2>Créateur d'avatar</h2>
+            <button id="avatar-editor-close-btn" class="character-close-btn" aria-label="Fermer">✕</button>
+          </div>
+          <div class="avatar-editor-preview">
+            <div class="avatar avatar-large" id="avatar-editor-preview"></div>
+          </div>
+          <div class="avatar-form-grid">
+            <label>Teint
+              <select id="avatar-skin-select"></select>
+            </label>
+            <label>Cheveux
+              <select id="avatar-hair-style-select"></select>
+            </label>
+            <label>Couleur cheveux
+              <select id="avatar-hair-color-select"></select>
+            </label>
+            <label>Yeux
+              <select id="avatar-eye-color-select"></select>
+            </label>
+            <label>Barbe
+              <select id="avatar-beard-select"></select>
+            </label>
+            <label>Tenue
+              <select id="avatar-outfit-select"></select>
+            </label>
+            <label>Accessoire
+              <select id="avatar-accessory-select"></select>
+            </label>
+          </div>
+          <div class="death-actions">
+            <button id="avatar-editor-random-btn" class="btn btn-blue">Aléatoire</button>
+            <button id="avatar-editor-reset-btn" class="btn btn-orange">Réinitialiser</button>
+          </div>
+          <div class="death-actions">
+            <button id="avatar-editor-save-btn" class="btn btn-green">Enregistrer</button>
+            <button id="avatar-editor-cancel-btn" class="btn btn-gray">Annuler</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="action-result-modal" class="character-modal">
+        <div class="character-card">
+          <div class="character-head">
+            <h2 id="action-result-title">Résultat d'action</h2>
+            <button id="action-result-close-btn" class="character-close-btn" aria-label="Fermer">✕</button>
+          </div>
+          <p id="action-result-text" class="muted"></p>
+          <ul id="action-result-details" class="compact-list"></ul>
+        </div>
+      </div>
+      </div>
+    </main>
+
+    <template id="action-category-template">
+      <details class="action-category" open>
+        <summary></summary>
+        <div class="action-buttons"></div>
+      </details>
+    </template>
+
+    <script src="./game.js"></script>
+  </body>
+</html>
