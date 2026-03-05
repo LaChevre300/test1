@@ -45,5 +45,7 @@ Puis ouvrir `http://localhost:8080`.
 - Crafting (12 recettes), machines posables et transformation des produits
 - 6 PNJ, amitié (cœurs), cadeaux, 20 quêtes, festivals saisonniers
 - Intérieurs meublés (maison, hutte, taverne, mairie) avec collisions mobilier
+- Passe polish visuel : meubles plus variés et uniques par pièce, routes village retravaillées
+- Éclairage dynamique : ambiance jour/soir/nuit, météo, lueurs de fenêtres et lampadaires, glow intérieur
 - Sauvegarde JSON locale : auto fin de journée + manuelle
 - Fin de jeu + écran de stats + **New Game+**

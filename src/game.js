@@ -46,6 +46,25 @@ const WATER_AREAS = [
   { x: 8, y: 58, w: 12, h: 10 },
 ];
 
+const VILLAGE_PATHS = [
+  { x: 60, y: 27, w: 40, h: 3 },
+  { x: 68, y: 14, w: 3, h: 16 },
+  { x: 85, y: 14, w: 3, h: 16 },
+  { x: 79, y: 25, w: 3, h: 8 },
+  { x: 73, y: 30, w: 10, h: 3 },
+];
+
+const LAMP_POSTS = [
+  { x: 63, y: 28 },
+  { x: 69, y: 28 },
+  { x: 75, y: 28 },
+  { x: 81, y: 28 },
+  { x: 87, y: 28 },
+  { x: 93, y: 28 },
+  { x: 69, y: 18 },
+  { x: 86, y: 18 },
+];
+
 const CAVE_RECT = { x: 30, y: 76, w: 10, h: 10 };
 const RITUAL_RECT = { x: 108, y: 48, w: 4, h: 4 };
 const INTERIOR_BAND_Y = 96;
@@ -61,11 +80,16 @@ const INTERIOR_ROOMS = [
     insideDoor: { x: 12, y: 111 },
     bed: { x: 7, y: 100, w: 3, h: 2 },
     furniture: [
-      { x: 6, y: 100, w: 4, h: 2, color: "#8a5c46", blocking: true },
-      { x: 13, y: 102, w: 4, h: 3, color: "#946c4c", blocking: true },
-      { x: 16, y: 99, w: 2, h: 4, color: "#755736", blocking: true },
-      { x: 6, y: 106, w: 6, h: 3, color: "#81624d", blocking: false },
-      { x: 14, y: 106, w: 3, h: 2, color: "#6f7a57", blocking: true },
+      { x: 6, y: 100, w: 4, h: 2, color: "#8a5c46", blocking: true, kind: "bed" },
+      { x: 11, y: 99, w: 2, h: 3, color: "#7a6b51", blocking: true, kind: "wardrobe" },
+      { x: 15, y: 99, w: 3, h: 2, color: "#755736", blocking: true, kind: "bookshelf" },
+      { x: 14, y: 102, w: 4, h: 2, color: "#8f6a50", blocking: true, kind: "kitchen" },
+      { x: 16, y: 104, w: 2, h: 2, color: "#5d6654", blocking: true, kind: "stove" },
+      { x: 6, y: 104, w: 4, h: 2, color: "#9f7c5f", blocking: true, kind: "sofa" },
+      { x: 8, y: 107, w: 4, h: 2, color: "#7e5a43", blocking: true, kind: "table" },
+      { x: 6, y: 106, w: 8, h: 4, color: "#7c5f50", blocking: false, kind: "rug" },
+      { x: 15, y: 108, w: 2, h: 2, color: "#6f7a57", blocking: true, kind: "plant" },
+      { x: 13, y: 106, w: 1, h: 1, color: "#e6c58b", blocking: false, kind: "lamp" },
     ],
   },
   {
@@ -77,13 +101,18 @@ const INTERIOR_ROOMS = [
     outsideDoor: BUILDINGS.herbHut.door,
     insideDoor: { x: 36, y: 111 },
     bed: null,
+    shopCounter: { x: 28, y: 101, w: 16, h: 1 },
     furniture: [
-      { x: 28, y: 100, w: 16, h: 2, color: "#55734d", blocking: true },
-      { x: 28, y: 103, w: 3, h: 5, color: "#6e8a61", blocking: true },
-      { x: 33, y: 103, w: 3, h: 5, color: "#6e8a61", blocking: true },
-      { x: 38, y: 103, w: 3, h: 5, color: "#6e8a61", blocking: true },
-      { x: 42, y: 103, w: 2, h: 4, color: "#857b58", blocking: true },
-      { x: 30, y: 108, w: 11, h: 2, color: "#7f684f", blocking: false },
+      { x: 28, y: 100, w: 16, h: 2, color: "#55734d", blocking: true, kind: "counter" },
+      { x: 28, y: 103, w: 3, h: 6, color: "#6e8a61", blocking: true, kind: "shelf" },
+      { x: 33, y: 103, w: 3, h: 6, color: "#6e8a61", blocking: true, kind: "shelf" },
+      { x: 38, y: 103, w: 3, h: 6, color: "#6e8a61", blocking: true, kind: "shelf" },
+      { x: 42, y: 103, w: 2, h: 6, color: "#857b58", blocking: true, kind: "dryingRack" },
+      { x: 30, y: 108, w: 10, h: 2, color: "#7f684f", blocking: false, kind: "rug" },
+      { x: 30, y: 106, w: 2, h: 2, color: "#7f9f68", blocking: true, kind: "plant" },
+      { x: 35, y: 106, w: 2, h: 2, color: "#7f9f68", blocking: true, kind: "plant" },
+      { x: 40, y: 106, w: 2, h: 2, color: "#7f9f68", blocking: true, kind: "plant" },
+      { x: 43, y: 100, w: 1, h: 1, color: "#e6c58b", blocking: false, kind: "lamp" },
     ],
   },
   {
@@ -96,11 +125,16 @@ const INTERIOR_ROOMS = [
     insideDoor: { x: 61, y: 111 },
     bed: null,
     furniture: [
-      { x: 52, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true },
-      { x: 58, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true },
-      { x: 64, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true },
-      { x: 52, y: 105, w: 16, h: 2, color: "#6f553f", blocking: true },
-      { x: 55, y: 108, w: 11, h: 2, color: "#8d6a48", blocking: false },
+      { x: 52, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true, kind: "table" },
+      { x: 58, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true, kind: "table" },
+      { x: 64, y: 100, w: 4, h: 3, color: "#7d5b3d", blocking: true, kind: "table" },
+      { x: 52, y: 105, w: 16, h: 2, color: "#6f553f", blocking: true, kind: "bar" },
+      { x: 51, y: 104, w: 1, h: 4, color: "#594434", blocking: true, kind: "barrel" },
+      { x: 68, y: 104, w: 1, h: 4, color: "#594434", blocking: true, kind: "barrel" },
+      { x: 55, y: 108, w: 11, h: 2, color: "#8d6a48", blocking: false, kind: "rug" },
+      { x: 53, y: 108, w: 2, h: 2, color: "#6a4b37", blocking: true, kind: "bench" },
+      { x: 66, y: 108, w: 2, h: 2, color: "#6a4b37", blocking: true, kind: "bench" },
+      { x: 60, y: 103, w: 1, h: 1, color: "#e6c58b", blocking: false, kind: "lamp" },
     ],
   },
   {
@@ -113,10 +147,13 @@ const INTERIOR_ROOMS = [
     insideDoor: { x: 86, y: 111 },
     bed: null,
     furniture: [
-      { x: 78, y: 100, w: 16, h: 2, color: "#6f6a58", blocking: true },
-      { x: 79, y: 104, w: 6, h: 3, color: "#8f6f4f", blocking: true },
-      { x: 88, y: 104, w: 6, h: 3, color: "#8f6f4f", blocking: true },
-      { x: 83, y: 108, w: 7, h: 2, color: "#7a5f49", blocking: false },
+      { x: 78, y: 100, w: 16, h: 2, color: "#6f6a58", blocking: true, kind: "archive" },
+      { x: 79, y: 104, w: 6, h: 3, color: "#8f6f4f", blocking: true, kind: "desk" },
+      { x: 88, y: 104, w: 6, h: 3, color: "#8f6f4f", blocking: true, kind: "desk" },
+      { x: 83, y: 108, w: 7, h: 2, color: "#7a5f49", blocking: false, kind: "carpet" },
+      { x: 82, y: 103, w: 2, h: 1, color: "#654d3a", blocking: true, kind: "bench" },
+      { x: 89, y: 103, w: 2, h: 1, color: "#654d3a", blocking: true, kind: "bench" },
+      { x: 86, y: 100, w: 1, h: 1, color: "#e6c58b", blocking: false, kind: "lamp" },
     ],
   },
 ];
@@ -1467,7 +1504,7 @@ class Game {
 
   tryObjectInteraction(tx, ty) {
     const insideRoom = interiorRoomAt(tx, ty);
-    if (insideRoom?.id === "herbHut" && isInRect(tx, ty, 28, 100, 16, 2)) {
+    if (insideRoom?.id === "herbHut" && insideRoom.shopCounter && isInRect(tx, ty, insideRoom.shopCounter.x, insideRoom.shopCounter.y, insideRoom.shopCounter.w, insideRoom.shopCounter.h)) {
       if (this.isShopOpen()) {
         this.openMenu = "shop";
         this.showOverlay("shop");
@@ -1906,6 +1943,17 @@ class Game {
         this.ctx.fillStyle = this.baseTileColor(tx, ty);
         this.ctx.fillRect(sx, sy, TILE_SIZE, TILE_SIZE);
 
+        if (isVillagePath(tx, ty)) {
+          if ((tx + ty) % 2 === 0) {
+            this.ctx.fillStyle = "rgba(255,245,214,0.16)";
+            this.ctx.fillRect(sx + 2, sy + 2, 2, 2);
+          }
+          if ((tx * 7 + ty * 11) % 5 === 0) {
+            this.ctx.fillStyle = "rgba(70,60,50,0.18)";
+            this.ctx.fillRect(sx + 10, sy + 9, 3, 2);
+          }
+        }
+
         if (isInRect(tx, ty, LABORABLE.x, LABORABLE.y, LABORABLE.w, LABORABLE.h)) {
           const p = this.getPlot(tx, ty);
           this.drawFieldTile(p, sx, sy);
@@ -1931,6 +1979,11 @@ class Game {
 
     if (WATER_AREAS.some((rect) => isInRect(tx, ty, rect.x, rect.y, rect.w, rect.h))) return "#4b84a5";
     if (isBridgeSpot(tx, ty)) return this.flags.bridgeRepaired ? "#8d6443" : "#553f2a";
+    if (isVillagePath(tx, ty)) {
+      if (season === "winter") return "#9aa1ac";
+      if (season === "autumn") return "#9b8565";
+      return night ? "#7a7060" : "#ab9a7d";
+    }
     if (inZone(tx, ty, "village")) return "#7e8450";
     if (inZone(tx, ty, "forest")) return season === "winter" ? "#6d7f74" : "#5e8456";
     if (inZone(tx, ty, "hill")) return "#6a7d63";
@@ -1961,15 +2014,25 @@ class Game {
     }
   }
 
-  drawBuildings() {
-    const buildingDefs = [
+  getBuildingRenderDefs() {
+    const defs = [
       { ...BUILDINGS.house, wall: "#8f6548", roof: "#5a4436", window: "#a4c8db" },
       { ...BUILDINGS.herbHut, wall: "#6f7f4b", roof: "#3f5131", window: "#b9d8c8" },
       { ...BUILDINGS.tavern, wall: "#7c5a44", roof: "#4a352b", window: "#e4c6a2" },
       { ...BUILDINGS.townHall, wall: "#7a6d5d", roof: "#4f4a40", window: "#d4cdbf" },
     ];
-    if (this.flags.coopBuilt) buildingDefs.push({ ...BUILDINGS.coop, wall: "#8a6a4d", roof: "#5f4634", window: "#f0ddb9" });
-    if (this.flags.barnBuilt) buildingDefs.push({ ...BUILDINGS.barn, wall: "#74533f", roof: "#4d382d", window: "#f0d1a9" });
+    if (this.flags.coopBuilt) defs.push({ ...BUILDINGS.coop, wall: "#8a6a4d", roof: "#5f4634", window: "#f0ddb9" });
+    if (this.flags.barnBuilt) defs.push({ ...BUILDINGS.barn, wall: "#74533f", roof: "#4d382d", window: "#f0d1a9" });
+    return defs;
+  }
+
+  isNightLightTime() {
+    return this.dayMinute >= 18 * 60 || this.dayMinute < 6 * 60;
+  }
+
+  drawBuildings() {
+    const buildingDefs = this.getBuildingRenderDefs();
+    const litWindows = this.isNightLightTime();
 
     for (const b of buildingDefs) {
       this.ctx.fillStyle = b.roof;
@@ -1986,7 +2049,7 @@ class Game {
         b.w * TILE_SIZE,
         (b.h - 2) * TILE_SIZE,
       );
-      this.ctx.fillStyle = b.window;
+      this.ctx.fillStyle = litWindows ? "#f5d18f" : b.window;
       this.ctx.fillRect((b.x + 2) * TILE_SIZE - this.camera.x, (b.y + 3) * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
       this.ctx.fillRect((b.x + b.w - 3) * TILE_SIZE - this.camera.x, (b.y + 3) * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
       this.ctx.fillStyle = "#3b2d22";
@@ -1999,6 +2062,39 @@ class Game {
     this.ctx.fillRect(STORAGE_TILES.shipping.x * TILE_SIZE - this.camera.x, STORAGE_TILES.shipping.y * TILE_SIZE - this.camera.y, TILE_SIZE, TILE_SIZE);
     this.ctx.fillStyle = "#6e5e46";
     this.ctx.fillRect(RITUAL_RECT.x * TILE_SIZE - this.camera.x, RITUAL_RECT.y * TILE_SIZE - this.camera.y, RITUAL_RECT.w * TILE_SIZE, RITUAL_RECT.h * TILE_SIZE);
+  }
+
+  drawFurniturePiece(f) {
+    const sx = f.x * TILE_SIZE - this.camera.x;
+    const sy = f.y * TILE_SIZE - this.camera.y;
+    const sw = f.w * TILE_SIZE;
+    const sh = f.h * TILE_SIZE;
+    this.ctx.fillStyle = f.color;
+    this.ctx.fillRect(sx, sy, sw, sh);
+
+    if (f.kind === "rug" || f.kind === "carpet") {
+      this.ctx.fillStyle = "rgba(225, 198, 150, 0.25)";
+      this.ctx.fillRect(sx + 2, sy + 2, Math.max(0, sw - 4), Math.max(0, sh - 4));
+    } else if (f.kind === "table" || f.kind === "desk" || f.kind === "counter" || f.kind === "bar") {
+      this.ctx.fillStyle = "rgba(42, 28, 18, 0.35)";
+      this.ctx.fillRect(sx, sy + sh - 3, sw, 3);
+    } else if (f.kind === "shelf" || f.kind === "bookshelf" || f.kind === "archive") {
+      this.ctx.fillStyle = "rgba(202, 179, 115, 0.35)";
+      this.ctx.fillRect(sx + 1, sy + 2, Math.max(0, sw - 2), 2);
+      this.ctx.fillRect(sx + 1, sy + Math.floor(sh / 2), Math.max(0, sw - 2), 2);
+    } else if (f.kind === "lamp") {
+      this.ctx.fillStyle = "#ffe4ab";
+      this.ctx.fillRect(sx + 2, sy + 2, Math.max(2, sw - 4), Math.max(2, sh - 4));
+    } else if (f.kind === "plant") {
+      this.ctx.fillStyle = "#4c7149";
+      this.ctx.fillRect(sx + 2, sy + 1, Math.max(2, sw - 4), Math.max(2, sh - 3));
+    } else if (f.kind === "barrel") {
+      this.ctx.fillStyle = "rgba(45, 32, 22, 0.35)";
+      this.ctx.fillRect(sx, sy + 4, sw, 2);
+    } else if (f.kind === "bed") {
+      this.ctx.fillStyle = "#e8d2be";
+      this.ctx.fillRect(sx + 2, sy + 2, Math.max(0, sw - 4), Math.max(0, sh - 4));
+    }
   }
 
   drawDecor() {
@@ -2037,15 +2133,34 @@ class Game {
       );
     }
 
+    const villageProps = [
+      { x: 72, y: 27, w: 2, h: 1, c: "#7a5f47" },
+      { x: 89, y: 27, w: 2, h: 1, c: "#7a5f47" },
+      { x: 78, y: 30, w: 2, h: 2, c: "#6b8455" },
+      { x: 82, y: 30, w: 2, h: 2, c: "#6b8455" },
+      { x: 68, y: 24, w: 1, h: 2, c: "#6f8b62" },
+      { x: 87, y: 24, w: 1, h: 2, c: "#6f8b62" },
+    ];
+    for (const prop of villageProps) {
+      this.ctx.fillStyle = prop.c;
+      this.ctx.fillRect(
+        prop.x * TILE_SIZE - this.camera.x,
+        prop.y * TILE_SIZE - this.camera.y,
+        prop.w * TILE_SIZE,
+        prop.h * TILE_SIZE,
+      );
+    }
+
+    for (const lamp of LAMP_POSTS) {
+      this.ctx.fillStyle = "#3f3a33";
+      this.ctx.fillRect(lamp.x * TILE_SIZE - this.camera.x + 6, lamp.y * TILE_SIZE - this.camera.y - 8, 4, 24);
+      this.ctx.fillStyle = "#d9be7e";
+      this.ctx.fillRect(lamp.x * TILE_SIZE - this.camera.x + 4, lamp.y * TILE_SIZE - this.camera.y - 10, 8, 4);
+    }
+
     for (const room of INTERIOR_ROOMS) {
       for (const f of room.furniture) {
-        this.ctx.fillStyle = f.color;
-        this.ctx.fillRect(
-          f.x * TILE_SIZE - this.camera.x,
-          f.y * TILE_SIZE - this.camera.y,
-          f.w * TILE_SIZE,
-          f.h * TILE_SIZE,
-        );
+        this.drawFurniturePiece(f);
       }
       this.ctx.fillStyle = "#2e2521";
       this.ctx.fillRect(
@@ -2100,17 +2215,71 @@ class Game {
     this.ctx.fillRect(this.player.x - this.camera.x + 8, this.player.y - this.camera.y + 6, 16, 6);
   }
 
+  drawRadialGlow(worldX, worldY, radius, rgb, strength) {
+    const sx = worldX * TILE_SIZE - this.camera.x + TILE_SIZE * 0.5;
+    const sy = worldY * TILE_SIZE - this.camera.y + TILE_SIZE * 0.5;
+    const grad = this.ctx.createRadialGradient(sx, sy, 0, sx, sy, radius);
+    grad.addColorStop(0, `rgba(${rgb}, ${strength})`);
+    grad.addColorStop(1, `rgba(${rgb}, 0)`);
+    this.ctx.fillStyle = grad;
+    this.ctx.fillRect(sx - radius, sy - radius, radius * 2, radius * 2);
+  }
+
+  drawDynamicLighting(insideRoom, nightStrength) {
+    if (nightStrength <= 0) return;
+    this.ctx.save();
+    this.ctx.globalCompositeOperation = "lighter";
+
+    if (insideRoom) {
+      for (const f of insideRoom.furniture) {
+        if (f.kind === "lamp") {
+          this.drawRadialGlow(f.x + f.w / 2, f.y + f.h / 2, 96, "255,208,140", 0.38);
+        }
+      }
+      if (insideRoom.bed) this.drawRadialGlow(insideRoom.bed.x + 1.5, insideRoom.bed.y + 1, 64, "255,196,140", 0.2);
+    } else {
+      for (const b of this.getBuildingRenderDefs()) {
+        this.drawRadialGlow(b.x + 2.5, b.y + 3.5, 58, "255,201,130", 0.18);
+        this.drawRadialGlow(b.x + b.w - 2.5, b.y + 3.5, 58, "255,201,130", 0.18);
+      }
+      for (const lamp of LAMP_POSTS) {
+        this.drawRadialGlow(lamp.x + 0.5, lamp.y - 0.4, 76, "255,214,135", 0.32);
+      }
+      this.drawRadialGlow(this.player.x / TILE_SIZE + 1, this.player.y / TILE_SIZE + 1, 62, "238,228,180", 0.18);
+    }
+    this.ctx.restore();
+  }
+
   drawForegroundFog() {
-    if (this.currentSeason() === "autumn") {
+    const playerTileX = Math.floor((this.player.x + PLAYER_SIZE * 0.5) / TILE_SIZE);
+    const playerTileY = Math.floor((this.player.y + PLAYER_SIZE * 0.5) / TILE_SIZE);
+    const insideRoom = interiorRoomAt(playerTileX, playerTileY);
+
+    if (this.currentSeason() === "autumn" && !insideRoom) {
       this.ctx.fillStyle = "rgba(210,220,235,0.08)";
       this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
-    if (this.dayMinute >= 18 * 60) {
-      this.ctx.fillStyle = "rgba(12,18,25,0.22)";
+
+    const time = this.dayMinute;
+    let nightStrength = 0;
+    if (time >= 18 * 60 && time < 22 * 60) nightStrength = 0.2;
+    else if (time >= 22 * 60 || time < 5 * 60) nightStrength = 0.44;
+    else if (time >= 5 * 60 && time < 7 * 60) nightStrength = 0.14;
+    if (insideRoom) nightStrength *= 0.42;
+
+    if (this.weather === "rain") nightStrength += insideRoom ? 0.02 : 0.06;
+    if (this.weather === "storm") nightStrength += insideRoom ? 0.04 : 0.1;
+    nightStrength = clamp(nightStrength, 0, 0.65);
+
+    if (nightStrength > 0) {
+      this.ctx.fillStyle = `rgba(10, 16, 26, ${nightStrength})`;
       this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
+      this.drawDynamicLighting(insideRoom, nightStrength);
     }
-    if (this.weather === "rain" || this.weather === "storm") {
-      this.ctx.fillStyle = "rgba(150,180,220,0.12)";
+
+    if (!insideRoom && (this.weather === "rain" || this.weather === "storm")) {
+      const rainAlpha = this.weather === "storm" ? 0.18 : 0.12;
+      this.ctx.fillStyle = `rgba(150,180,220,${rainAlpha})`;
       this.ctx.fillRect(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT);
     }
   }
@@ -2256,6 +2425,10 @@ function isRoomWallTile(room, tx, ty) {
   const onLeftRight = tx === room.x || tx === room.x + room.w - 1;
   const onTopBottom = ty === room.y || ty === room.y + room.h - 1;
   return onLeftRight || onTopBottom;
+}
+
+function isVillagePath(tx, ty) {
+  return VILLAGE_PATHS.some((path) => isInRect(tx, ty, path.x, path.y, path.w, path.h));
 }
 
 function isBridgeTile(tx, ty, enabled) {
