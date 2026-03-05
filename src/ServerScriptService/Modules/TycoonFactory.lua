@@ -6,6 +6,34 @@ local TycoonConfig = require(configFolder:WaitForChild("TycoonConfig"))
 
 local TycoonFactory = {}
 
+local function clamp01(value)
+	return math.clamp(value, 0, 1)
+end
+
+local function lighten(color, amount)
+	return Color3.new(
+		clamp01(color.R + (1 - color.R) * amount),
+		clamp01(color.G + (1 - color.G) * amount),
+		clamp01(color.B + (1 - color.B) * amount)
+	)
+end
+
+local function darken(color, amount)
+	return Color3.new(
+		clamp01(color.R * (1 - amount)),
+		clamp01(color.G * (1 - amount)),
+		clamp01(color.B * (1 - amount))
+	)
+end
+
+local function hashFromText(text)
+	local hash = 0
+	for index = 1, #text do
+		hash = (hash * 31 + string.byte(text, index)) % 100000
+	end
+	return hash
+end
+
 local function createPart(name, size, cframe, color, material, parent)
 	local part = Instance.new("Part")
 	part.Name = name
@@ -17,6 +45,18 @@ local function createPart(name, size, cframe, color, material, parent)
 	part.TopSurface = Enum.SurfaceType.Smooth
 	part.BottomSurface = Enum.SurfaceType.Smooth
 	part.Parent = parent
+	return part
+end
+
+local function createCylinder(name, size, cframe, color, material, parent)
+	local part = createPart(name, size, cframe, color, material, parent)
+	part.Shape = Enum.PartType.Cylinder
+	return part
+end
+
+local function createBall(name, size, cframe, color, material, parent)
+	local part = createPart(name, size, cframe, color, material, parent)
+	part.Shape = Enum.PartType.Ball
 	return part
 end
 
@@ -35,7 +75,7 @@ local function createBillboard(parent, text, textColor)
 	label.TextScaled = true
 	label.Font = Enum.Font.GothamBold
 	label.TextColor3 = textColor
-	label.TextStrokeTransparency = 0.5
+	label.TextStrokeTransparency = 0.45
 	label.Text = text
 	label.Parent = billboard
 
@@ -52,6 +92,228 @@ local function createPrompt(parent, actionText, objectText)
 	prompt.RequiresLineOfSight = false
 	prompt.Parent = parent
 	return prompt
+end
+
+local function addSteam(parent, origin)
+	local anchor = createPart(
+		"SteamAnchor",
+		Vector3.new(0.2, 0.2, 0.2),
+		CFrame.new(origin),
+		Color3.fromRGB(255, 255, 255),
+		Enum.Material.SmoothPlastic,
+		parent
+	)
+	anchor.Transparency = 1
+	anchor.CanCollide = false
+
+	local attachment = Instance.new("Attachment")
+	attachment.Parent = anchor
+
+	local emitter = Instance.new("ParticleEmitter")
+	emitter.Rate = 6
+	emitter.Lifetime = NumberRange.new(1.5, 2.4)
+	emitter.Speed = NumberRange.new(1.8, 3.5)
+	emitter.SpreadAngle = Vector2.new(12, 12)
+	emitter.RotSpeed = NumberRange.new(-35, 35)
+	emitter.Size = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.5),
+		NumberSequenceKeypoint.new(1, 1.6),
+	})
+	emitter.Transparency = NumberSequence.new({
+		NumberSequenceKeypoint.new(0, 0.4),
+		NumberSequenceKeypoint.new(0.6, 0.65),
+		NumberSequenceKeypoint.new(1, 1),
+	})
+	emitter.Color = ColorSequence.new(Color3.fromRGB(245, 245, 245), Color3.fromRGB(210, 210, 210))
+	emitter.Parent = attachment
+end
+
+local function addPipe(parent, startPosition, endPosition, color)
+	local delta = endPosition - startPosition
+	local length = delta.Magnitude
+	if length <= 0.05 then
+		return
+	end
+	local midpoint = startPosition + delta * 0.5
+	local pipe = createPart(
+		"Pipe",
+		Vector3.new(0.8, 0.8, length),
+		CFrame.lookAt(midpoint, endPosition),
+		color,
+		Enum.Material.Metal,
+		parent
+	)
+	local endCapA = createBall("PipeJointA", Vector3.new(0.9, 0.9, 0.9), CFrame.new(startPosition), color, Enum.Material.Metal, parent)
+	local endCapB = createBall("PipeJointB", Vector3.new(0.9, 0.9, 0.9), CFrame.new(endPosition), color, Enum.Material.Metal, parent)
+	pipe.CastShadow = true
+	endCapA.CastShadow = true
+	endCapB.CastShadow = true
+end
+
+local function addRamenBowl(parent, cframe, scale)
+	scale = scale or 1
+	local bowlColor = Color3.fromRGB(240, 240, 240)
+	local brothColor = Color3.fromRGB(176, 102, 56)
+	local noodleColor = Color3.fromRGB(236, 209, 110)
+
+	local bowl = createCylinder(
+		"Bowl",
+		Vector3.new(1.2 * scale, 3.8 * scale, 3.8 * scale),
+		cframe * CFrame.Angles(0, 0, math.rad(90)),
+		bowlColor,
+		Enum.Material.SmoothPlastic,
+		parent
+	)
+	local broth = createCylinder(
+		"Broth",
+		Vector3.new(1.0 * scale, 3.0 * scale, 3.0 * scale),
+		cframe * CFrame.new(0, 0.3 * scale, 0) * CFrame.Angles(0, 0, math.rad(90)),
+		brothColor,
+		Enum.Material.SmoothPlastic,
+		parent
+	)
+	local noodleA = createPart(
+		"NoodleA",
+		Vector3.new(2.1 * scale, 0.16 * scale, 0.22 * scale),
+		cframe * CFrame.new(-0.2 * scale, 0.58 * scale, 0.28 * scale),
+		noodleColor,
+		Enum.Material.SmoothPlastic,
+		parent
+	)
+	local noodleB = createPart(
+		"NoodleB",
+		Vector3.new(2.0 * scale, 0.16 * scale, 0.22 * scale),
+		cframe * CFrame.new(0.25 * scale, 0.56 * scale, -0.15 * scale),
+		noodleColor,
+		Enum.Material.SmoothPlastic,
+		parent
+	)
+	local egg = createBall(
+		"Egg",
+		Vector3.new(0.5 * scale, 0.5 * scale, 0.5 * scale),
+		cframe * CFrame.new(0.65 * scale, 0.68 * scale, 0.45 * scale),
+		Color3.fromRGB(245, 229, 167),
+		Enum.Material.SmoothPlastic,
+		parent
+	)
+	local onion = createPart(
+		"GreenOnion",
+		Vector3.new(0.75 * scale, 0.15 * scale, 0.15 * scale),
+		cframe * CFrame.new(-0.6 * scale, 0.68 * scale, -0.4 * scale),
+		Color3.fromRGB(95, 180, 96),
+		Enum.Material.SmoothPlastic,
+		parent
+	)
+	bowl.Reflectance = 0.05
+	broth.Transparency = 0.08
+	noodleA.Material = Enum.Material.SmoothPlastic
+	noodleB.Material = Enum.Material.SmoothPlastic
+	egg.Material = Enum.Material.SmoothPlastic
+	onion.Material = Enum.Material.SmoothPlastic
+end
+
+local function addDecorativeFacade(parent, origin, accentColor)
+	local backWall = createPart(
+		"BackWall",
+		Vector3.new(126, 24, 2),
+		CFrame.new(origin + Vector3.new(0, 12, -68)),
+		Color3.fromRGB(30, 34, 46),
+		Enum.Material.Metal,
+		parent
+	)
+	local awning = createPart(
+		"Awning",
+		Vector3.new(112, 2, 14),
+		CFrame.new(origin + Vector3.new(0, 18, -61)),
+		Color3.fromRGB(36, 40, 58),
+		Enum.Material.Metal,
+		parent
+	)
+	local neonSign = createPart(
+		"NeonSign",
+		Vector3.new(34, 4, 0.5),
+		CFrame.new(origin + Vector3.new(0, 14, -66.7)),
+		lighten(accentColor, 0.2),
+		Enum.Material.Neon,
+		parent
+	)
+	createBillboard(neonSign, "NEON NOODLE WORKS", Color3.fromRGB(255, 255, 255))
+
+	for index = -2, 2 do
+		createPart(
+			("Window_%d"):format(index),
+			Vector3.new(16, 7, 0.35),
+			CFrame.new(origin + Vector3.new(index * 21, 9, -66.6)),
+			Color3.fromRGB(102, 176, 235),
+			Enum.Material.Glass,
+			parent
+		)
+	end
+
+	backWall.CastShadow = true
+	awning.CastShadow = true
+end
+
+local function addPlotPerimeter(parent, origin)
+	local curbColor = Color3.fromRGB(75, 81, 96)
+	local wallColor = Color3.fromRGB(46, 50, 64)
+
+	createPart("CurbNorth", Vector3.new(138, 1, 3), CFrame.new(origin + Vector3.new(0, 0.6, -68)), curbColor, Enum.Material.Concrete, parent)
+	createPart("CurbSouth", Vector3.new(138, 1, 3), CFrame.new(origin + Vector3.new(0, 0.6, 68)), curbColor, Enum.Material.Concrete, parent)
+	createPart("CurbWest", Vector3.new(3, 1, 132), CFrame.new(origin + Vector3.new(-68, 0.6, 0)), curbColor, Enum.Material.Concrete, parent)
+	createPart("CurbEast", Vector3.new(3, 1, 132), CFrame.new(origin + Vector3.new(68, 0.6, 0)), curbColor, Enum.Material.Concrete, parent)
+
+	createPart("FenceNorth", Vector3.new(138, 7, 1), CFrame.new(origin + Vector3.new(0, 4.5, -69.5)), wallColor, Enum.Material.Metal, parent)
+	createPart("FenceSouth", Vector3.new(138, 7, 1), CFrame.new(origin + Vector3.new(0, 4.5, 69.5)), wallColor, Enum.Material.Metal, parent)
+	createPart("FenceWest", Vector3.new(1, 7, 132), CFrame.new(origin + Vector3.new(-69.5, 4.5, 0)), wallColor, Enum.Material.Metal, parent)
+	createPart("FenceEast", Vector3.new(1, 7, 132), CFrame.new(origin + Vector3.new(69.5, 4.5, 0)), wallColor, Enum.Material.Metal, parent)
+end
+
+local function addWorkshopProps(parent, origin)
+	for rackIndex = 1, 3 do
+		local xOffset = -38 + rackIndex * 18
+		local rack = createPart(
+			("Rack_%d"):format(rackIndex),
+			Vector3.new(10, 7, 3),
+			CFrame.new(origin + Vector3.new(xOffset, 4, 52)),
+			Color3.fromRGB(58, 63, 79),
+			Enum.Material.Metal,
+			parent
+		)
+		for shelf = 1, 3 do
+			createPart(
+				("RackShelf_%d_%d"):format(rackIndex, shelf),
+				Vector3.new(10.2, 0.35, 3.2),
+				CFrame.new(origin + Vector3.new(xOffset, 1 + shelf * 2, 52)),
+				Color3.fromRGB(70, 76, 94),
+				Enum.Material.Metal,
+				parent
+			)
+		end
+		rack.CastShadow = true
+		addRamenBowl(parent, CFrame.new(origin + Vector3.new(xOffset, 7.8, 52)), 0.55)
+	end
+
+	local pallet = createPart(
+		"IngredientPallet",
+		Vector3.new(16, 1, 10),
+		CFrame.new(origin + Vector3.new(34, 1, 50)),
+		Color3.fromRGB(121, 97, 66),
+		Enum.Material.WoodPlanks,
+		parent
+	)
+	pallet.CastShadow = true
+	for crateIndex = 1, 4 do
+		local crate = createPart(
+			("Crate_%d"):format(crateIndex),
+			Vector3.new(3.2, 3.2, 3.2),
+			CFrame.new(origin + Vector3.new(28 + crateIndex * 2.7, 2.6, 49 + (crateIndex % 2) * 2)),
+			Color3.fromRGB(148, 112, 70),
+			Enum.Material.Wood,
+			parent
+		)
+		crate.CastShadow = true
+	end
 end
 
 function TycoonFactory.ResetPlotBuild(plot)
@@ -87,7 +349,7 @@ function TycoonFactory.SetButtonState(plot, unlockId, state, displayName, cost)
 		return
 	end
 
-	button.Part.Transparency = 0.2
+	button.Part.Transparency = 0.15
 	button.Part.CanCollide = true
 	button.Prompt.Enabled = true
 	button.Prompt.ActionText = ("Acheter $%d"):format(cost)
@@ -124,7 +386,7 @@ function TycoonFactory.SetResearchState(plot, researchId, state, displayName, cu
 		return
 	end
 
-	research.Part.Transparency = 0.15
+	research.Part.Transparency = 0.08
 	research.Part.CanCollide = true
 	research.Prompt.Enabled = true
 	research.Prompt.ActionText = ("Upgrade %d shards"):format(costShards)
@@ -147,6 +409,7 @@ function TycoonFactory.SetPlotUnclaimed(plot)
 	plot.OverclockPrompt.Enabled = false
 	plot.OverclockLabel.Text = "Overclock verrouille"
 	TycoonFactory.SetOwnerVisual(plot, "PLOT LIBRE", Color3.fromRGB(255, 255, 255))
+
 	for unlockId, button in pairs(plot.ButtonsById) do
 		button.Part.Transparency = 1
 		button.Prompt.Enabled = false
@@ -169,42 +432,228 @@ function TycoonFactory.BuildUnlock(plot, unlock)
 	model.Name = unlock.Id
 	model.Parent = plot.BuildFolder
 
+	local seed = hashFromText(unlock.Id)
 	local baseCFrame = CFrame.new(plot.Origin + unlock.BuildPosition)
-	local color = unlock.Color or Color3.fromRGB(255, 255, 255)
+	local accent = unlock.Color or Color3.fromRGB(255, 255, 255)
+	local primaryMetal = darken(accent, 0.55)
+	local secondaryMetal = darken(accent, 0.35)
 
-	local base = createPart(
-		"Core",
-		Vector3.new(8, 6, 8),
+	local platform = createPart(
+		"Platform",
+		Vector3.new(12, 1.2, 12),
 		baseCFrame,
-		color,
+		primaryMetal,
+		Enum.Material.Metal,
+		model
+	)
+	platform.CastShadow = true
+
+	createPart("TrimFront", Vector3.new(12.2, 0.8, 0.9), platform.CFrame * CFrame.new(0, 0.95, 5.45), accent, Enum.Material.Neon, model)
+	createPart("TrimBack", Vector3.new(12.2, 0.8, 0.9), platform.CFrame * CFrame.new(0, 0.95, -5.45), accent, Enum.Material.Neon, model)
+
+	for _, corner in ipairs({
+		Vector3.new(4.9, 1.9, 4.9),
+		Vector3.new(-4.9, 1.9, 4.9),
+		Vector3.new(4.9, 1.9, -4.9),
+		Vector3.new(-4.9, 1.9, -4.9),
+	}) do
+		createPart("Foot", Vector3.new(1, 3.8, 1), platform.CFrame * CFrame.new(corner), secondaryMetal, Enum.Material.Metal, model)
+	end
+
+	local bodyHeight = 5 + (seed % 3)
+	local machineBody = createPart(
+		"MachineBody",
+		Vector3.new(7.2, bodyHeight, 6.4),
+		platform.CFrame * CFrame.new(0, 1.2 + bodyHeight * 0.5, 0),
+		secondaryMetal,
+		Enum.Material.Metal,
+		model
+	)
+	machineBody.CastShadow = true
+
+	local glassPanel = createPart(
+		"GlassPanel",
+		Vector3.new(5.8, 2.6, 0.25),
+		machineBody.CFrame * CFrame.new(0, 0.4, 3.3),
+		lighten(accent, 0.3),
+		Enum.Material.Glass,
+		model
+	)
+	glassPanel.Transparency = 0.4
+
+	local neonStrip = createPart(
+		"StatusStrip",
+		Vector3.new(5.4, 0.35, 0.2),
+		machineBody.CFrame * CFrame.new(0, 1.2, 3.05),
+		lighten(accent, 0.1),
 		Enum.Material.Neon,
 		model
 	)
+	neonStrip.CastShadow = false
+
+	local monitor = createPart(
+		"ControlMonitor",
+		Vector3.new(2.8, 1.8, 0.2),
+		machineBody.CFrame * CFrame.new(-2.0, 0.2, 3.15),
+		Color3.fromRGB(88, 186, 245),
+		Enum.Material.Neon,
+		model
+	)
+	monitor.CastShadow = false
 
 	if unlock.Income and unlock.Income > 0 then
+		local dropTower = createPart(
+			"DropTower",
+			Vector3.new(1.8, bodyHeight + 2.8, 1.8),
+			machineBody.CFrame * CFrame.new(2.4, 1.5, -1.6),
+			lighten(accent, 0.15),
+			Enum.Material.Metal,
+			model
+		)
+		local nozzle = createCylinder(
+			"Nozzle",
+			Vector3.new(1.2, 1.2, 1.2),
+			dropTower.CFrame * CFrame.new(0, -(bodyHeight + 2.8) * 0.5 + 0.45, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Color3.fromRGB(213, 214, 216),
+			Enum.Material.Metal,
+			model
+		)
+		local flow = createPart(
+			"NoodleFlow",
+			Vector3.new(0.35, 1.9, 0.35),
+			nozzle.CFrame * CFrame.new(0, -1.25, 0),
+			Color3.fromRGB(236, 209, 110),
+			Enum.Material.Neon,
+			model
+		)
+		flow.CastShadow = false
+
+		local conveyor = createPart(
+			"MiniConveyor",
+			Vector3.new(5.4, 0.5, 2.3),
+			machineBody.CFrame * CFrame.new(0.3, -bodyHeight * 0.5 - 0.1, 2.7),
+			Color3.fromRGB(46, 48, 58),
+			Enum.Material.Metal,
+			model
+		)
+		createCylinder(
+			"ConveyorRollA",
+			Vector3.new(2.2, 0.9, 0.9),
+			conveyor.CFrame * CFrame.new(-2.45, 0.1, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Color3.fromRGB(92, 92, 96),
+			Enum.Material.Metal,
+			model
+		)
+		createCylinder(
+			"ConveyorRollB",
+			Vector3.new(2.2, 0.9, 0.9),
+			conveyor.CFrame * CFrame.new(2.45, 0.1, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Color3.fromRGB(92, 92, 96),
+			Enum.Material.Metal,
+			model
+		)
+		addRamenBowl(model, conveyor.CFrame * CFrame.new(1.2, 0.55, 0), 0.8)
+	end
+
+	if unlock.MultiplierBonus and unlock.MultiplierBonus > 0 then
+		local ring = createCylinder(
+			"UpgradeRing",
+			Vector3.new(1.0, 8.2, 8.2),
+			machineBody.CFrame * CFrame.new(0, bodyHeight * 0.25 + 1.1, 0) * CFrame.Angles(0, 0, math.rad(90)),
+			Color3.fromRGB(255, 201, 82),
+			Enum.Material.Neon,
+			model
+		)
+		ring.Transparency = 0.12
+		local orb = createBall(
+			"CatalystOrb",
+			Vector3.new(1.6, 1.6, 1.6),
+			ring.CFrame * CFrame.new(0, 0, 4.1),
+			lighten(accent, 0.45),
+			Enum.Material.Neon,
+			model
+		)
+		orb.CastShadow = false
+	end
+
+	if string.find(unlock.Id, "Lab") or string.find(unlock.Id, "Reactor") or string.find(unlock.Id, "Engine") then
+		local tank = createCylinder(
+			"FluidTank",
+			Vector3.new(4.8, 3.1, 3.1),
+			machineBody.CFrame * CFrame.new(-2.8, 1.0, -1.8) * CFrame.Angles(0, 0, math.rad(90)),
+			Color3.fromRGB(112, 193, 225),
+			Enum.Material.Glass,
+			model
+		)
+		tank.Transparency = 0.3
+		createCylinder(
+			"FluidCore",
+			Vector3.new(4.1, 2.2, 2.2),
+			tank.CFrame,
+			lighten(accent, 0.35),
+			Enum.Material.Neon,
+			model
+		).Transparency = 0.2
+		addPipe(
+			model,
+			(machineBody.CFrame * CFrame.new(-1.2, 1.8, -1.6)).Position,
+			(machineBody.CFrame * CFrame.new(1.8, 2.2, 1.7)).Position,
+			Color3.fromRGB(178, 182, 191)
+		)
+	end
+
+	if string.find(unlock.Id, "Conveyor") then
+		local longConveyor = createPart(
+			"LongConveyor",
+			Vector3.new(10, 0.7, 2.4),
+			platform.CFrame * CFrame.new(0, 0.95, -4.2),
+			Color3.fromRGB(45, 49, 61),
+			Enum.Material.Metal,
+			model
+		)
 		createPart(
-			"Emitter",
-			Vector3.new(2, 4, 2),
-			base.CFrame * CFrame.new(0, 5, 0),
-			Color3.fromRGB(255, 255, 255),
+			"ConveyorBelt",
+			Vector3.new(9.6, 0.12, 2.0),
+			longConveyor.CFrame * CFrame.new(0, 0.38, 0),
+			Color3.fromRGB(32, 34, 43),
 			Enum.Material.SmoothPlastic,
 			model
 		)
 	end
 
-	if unlock.MultiplierBonus and unlock.MultiplierBonus > 0 then
-		createPart(
-			"Ring",
-			Vector3.new(10, 1, 10),
-			base.CFrame * CFrame.new(0, 3, 0),
-			Color3.fromRGB(255, 198, 66),
-			Enum.Material.Neon,
+	if string.find(unlock.Id, "Kitchen") or string.find(unlock.Id, "Forge") or string.find(unlock.Id, "Core") then
+		local canopy = createPart(
+			"Canopy",
+			Vector3.new(9.8, 0.6, 6.2),
+			machineBody.CFrame * CFrame.new(0, bodyHeight * 0.5 + 1.2, 0),
+			darken(accent, 0.2),
+			Enum.Material.Metal,
 			model
 		)
+		addSteam(model, canopy.Position + Vector3.new(0, 0.6, 0))
 	end
 
-	local labelText = ("%s"):format(unlock.DisplayName)
-	createBillboard(base, labelText, Color3.fromRGB(255, 255, 255))
+	local bowlStation = createPart(
+		"BowlStation",
+		Vector3.new(3.6, 1.0, 3.6),
+		platform.CFrame * CFrame.new(-3.2, 1.25, 3.1),
+		Color3.fromRGB(78, 84, 103),
+		Enum.Material.Metal,
+		model
+	)
+	addRamenBowl(model, bowlStation.CFrame * CFrame.new(0, 0.7, 0), 0.62)
+
+	local labelAnchor = createPart(
+		"LabelAnchor",
+		Vector3.new(0.4, 5.2, 0.4),
+		machineBody.CFrame * CFrame.new(0, bodyHeight * 0.5 + 2.9, 0),
+		Color3.fromRGB(255, 255, 255),
+		Enum.Material.SmoothPlastic,
+		model
+	)
+	labelAnchor.Transparency = 1
+	labelAnchor.CanCollide = false
+	createBillboard(labelAnchor, unlock.DisplayName, Color3.fromRGB(255, 255, 255))
 end
 
 function TycoonFactory.CreateWorld()
@@ -219,13 +668,49 @@ function TycoonFactory.CreateWorld()
 
 	local ground = createPart(
 		"Ground",
-		Vector3.new(900, 1, 900),
+		Vector3.new(980, 1, 980),
 		CFrame.new(0, -2, 0),
-		Color3.fromRGB(15, 16, 22),
-		Enum.Material.Slate,
+		Color3.fromRGB(18, 19, 27),
+		Enum.Material.Asphalt,
 		root
 	)
 	ground.CastShadow = false
+
+	createPart(
+		"CentralRoadX",
+		Vector3.new(860, 0.2, 20),
+		CFrame.new(0, -1.45, 0),
+		Color3.fromRGB(32, 34, 43),
+		Enum.Material.Asphalt,
+		root
+	)
+	createPart(
+		"CentralRoadZ",
+		Vector3.new(20, 0.2, 860),
+		CFrame.new(0, -1.45, 0),
+		Color3.fromRGB(32, 34, 43),
+		Enum.Material.Asphalt,
+		root
+	)
+
+	for marker = -7, 7 do
+		createPart(
+			("RoadMarkerX_%d"):format(marker),
+			Vector3.new(12, 0.05, 1.1),
+			CFrame.new(marker * 56, -1.34, 0),
+			Color3.fromRGB(245, 230, 140),
+			Enum.Material.Neon,
+			root
+		)
+		createPart(
+			("RoadMarkerZ_%d"):format(marker),
+			Vector3.new(1.1, 0.05, 12),
+			CFrame.new(0, -1.34, marker * 56),
+			Color3.fromRGB(245, 230, 140),
+			Enum.Material.Neon,
+			root
+		)
+	end
 
 	local plots = {}
 	local columns = 2
@@ -246,10 +731,16 @@ function TycoonFactory.CreateWorld()
 			"Floor",
 			Vector3.new(140, 1, 140),
 			CFrame.new(origin + Vector3.new(0, 0, 0)),
-			Color3.fromRGB(22, 25, 35),
-			Enum.Material.Metal,
+			Color3.fromRGB(34, 37, 51),
+			Enum.Material.Concrete,
 			plotModel
 		)
+		floor.CastShadow = false
+
+		addPlotPerimeter(plotModel, origin)
+		local plotAccent = Color3.fromRGB(90 + index * 20, 190, 255 - index * 18)
+		addDecorativeFacade(plotModel, origin, plotAccent)
+		addWorkshopProps(plotModel, origin)
 
 		local claimPad = createPart(
 			"ClaimPad",
@@ -259,6 +750,7 @@ function TycoonFactory.CreateWorld()
 			Enum.Material.Neon,
 			plotModel
 		)
+		createPart("ClaimPadBase", Vector3.new(14, 1, 14), claimPad.CFrame * CFrame.new(0, -0.75, 0), Color3.fromRGB(58, 67, 74), Enum.Material.Metal, plotModel)
 		local claimPrompt = createPrompt(claimPad, "Prendre", "Tycoon libre")
 
 		local collector = createPart(
@@ -269,6 +761,7 @@ function TycoonFactory.CreateWorld()
 			Enum.Material.Neon,
 			plotModel
 		)
+		createPart("CollectorBase", Vector3.new(14, 1, 14), collector.CFrame * CFrame.new(0, -0.75, 0), Color3.fromRGB(72, 68, 45), Enum.Material.Metal, plotModel)
 		local collectorPrompt = createPrompt(collector, "Collecter", "Cash non collecte")
 		collectorPrompt.Enabled = false
 
@@ -280,6 +773,7 @@ function TycoonFactory.CreateWorld()
 			Enum.Material.Neon,
 			plotModel
 		)
+		createPart("RebirthBase", Vector3.new(16, 1, 16), rebirthPad.CFrame * CFrame.new(0, -0.75, 0), Color3.fromRGB(82, 47, 47), Enum.Material.Metal, plotModel)
 		local rebirthPrompt = createPrompt(rebirthPad, "Renaitre", "Prestige")
 		rebirthPrompt.Enabled = false
 
@@ -291,13 +785,14 @@ function TycoonFactory.CreateWorld()
 			Enum.Material.Neon,
 			plotModel
 		)
+		createPart("OverclockBase", Vector3.new(16, 1, 16), overclockPad.CFrame * CFrame.new(0, -0.75, 0), Color3.fromRGB(54, 65, 89), Enum.Material.Metal, plotModel)
 		local overclockPrompt = createPrompt(overclockPad, "Overclock", "Boost temporaire")
 		overclockPrompt.Enabled = false
 		local overclockLabel = createBillboard(overclockPad, "Overclock verrouille", Color3.fromRGB(255, 255, 255))
 
 		local sign = createPart(
 			"OwnerSign",
-			Vector3.new(28, 10, 2),
+			Vector3.new(30, 10, 2),
 			CFrame.new(origin + Vector3.new(-50, 8, 60)),
 			Color3.fromRGB(44, 51, 73),
 			Enum.Material.Metal,
@@ -324,8 +819,19 @@ function TycoonFactory.CreateWorld()
 		local totalButtons = #nonStarterUnlocks
 		for buttonIndex, unlock in ipairs(nonStarterUnlocks) do
 			local angle = ((buttonIndex - 1) / math.max(1, totalButtons)) * math.pi * 2
-			local radius = 50
+			local radius = 53
 			local position = origin + Vector3.new(math.cos(angle) * radius, 1, math.sin(angle) * radius)
+
+			local pedestal = createPart(
+				("ButtonPedestal_%s"):format(unlock.Id),
+				Vector3.new(9, 1, 9),
+				CFrame.new(position + Vector3.new(0, -0.65, 0)),
+				Color3.fromRGB(52, 56, 71),
+				Enum.Material.Metal,
+				buttonFolder
+			)
+			pedestal.CastShadow = true
+
 			local buttonPart = createPart(
 				("Button_%s"):format(unlock.Id),
 				Vector3.new(8, 1, 8),
@@ -358,6 +864,16 @@ function TycoonFactory.CreateWorld()
 			local spread = 100 / math.max(1, researchCount - 1)
 			local xOffset = -50 + (researchIndex - 1) * spread
 			local position = origin + Vector3.new(xOffset, 1, -56)
+
+			createPart(
+				("ResearchPedestal_%s"):format(researchUpgrade.Id),
+				Vector3.new(17.2, 1, 11.2),
+				CFrame.new(position + Vector3.new(0, -0.65, 0)),
+				Color3.fromRGB(58, 53, 78),
+				Enum.Material.Metal,
+				researchFolder
+			)
+
 			local researchPart = createPart(
 				("Research_%s"):format(researchUpgrade.Id),
 				Vector3.new(16, 1, 10),
