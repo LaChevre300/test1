@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ferme des Quatre Brumes</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <main id="app">
+    <section id="game-shell">
+      <canvas id="game-canvas" width="1280" height="720" aria-label="Ferme des Quatre Brumes"></canvas>
+      <div id="hud"></div>
+      <div id="message-log"></div>
+      <div id="overlay-root">
+        <div id="title-overlay" class="overlay visible">
+          <h1>Ferme des Quatre Brumes</h1>
+          <p id="title-pitch">Vacances à la campagne, ferme mystique et secrets dans les brumes.</p>
+          <div class="actions">
+            <button id="new-game-btn">Nouvelle partie</button>
+            <button id="load-game-btn">Continuer</button>
+            <button id="lang-toggle-btn">Langue: Français</button>
+          </div>
+          <p class="hint">Contrôles: ZQSD/WASD, E, 1-6, Tab, J, C, Esc, Espace</p>
+        </div>
+
+        <div id="inventory-overlay" class="overlay panel"></div>
+        <div id="journal-overlay" class="overlay panel"></div>
+        <div id="craft-overlay" class="overlay panel"></div>
+        <div id="shop-overlay" class="overlay panel"></div>
+        <div id="pause-overlay" class="overlay panel"></div>
+        <div id="festival-overlay" class="overlay panel"></div>
+        <div id="ending-overlay" class="overlay panel"></div>
+        <div id="fishing-overlay" class="overlay panel"></div>
+      </div>
+    </section>
+  </main>
+  <script type="module" src="src/game.js"></script>
+</body>
+</html>
