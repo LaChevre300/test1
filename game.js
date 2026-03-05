@@ -561,7 +561,6 @@
     startSavesList: document.getElementById("start-saves-list"),
     newLifeBtn: document.getElementById("new-life-btn"),
     saveCurrentBtn: document.getElementById("save-current-btn"),
-    saveCurrentAsBtn: document.getElementById("save-current-as-btn"),
     goHomeBtn: document.getElementById("go-home-btn"),
     settingsSavesList: document.getElementById("settings-saves-list"),
     topSettingsBtn: document.getElementById("top-settings-btn"),
@@ -835,21 +834,18 @@
     return true;
   }
 
-  function saveCurrentProgress(asNew = false) {
+  function saveCurrentProgress() {
     if (!game?.character) return;
     const data = serializeCurrentGame();
     if (!data) return;
     const saves = loadSaveStore();
     let saveId = currentSaveId;
-    if (asNew || !saveId) {
+    if (!saveId) {
       saveId = crypto.randomUUID();
     }
     const suggested = `${game.character.fullName} (${game.character.age} ans)`;
     const existingName = saves.find((entry) => entry.id === saveId)?.name;
-    const chosenName = asNew
-      ? (window.prompt("Nom de la sauvegarde :", suggested) || "").trim()
-      : "";
-    const saveName = chosenName || existingName || suggested;
+    const saveName = existingName || suggested;
     upsertSaveEntry({ id: saveId, name: saveName, data });
     currentSaveId = saveId;
     addLog(`Progression sauvegardée (${saveName}).`, "good");
@@ -3575,10 +3571,7 @@
     });
   }
   if (ui.saveCurrentBtn) {
-    ui.saveCurrentBtn.addEventListener("click", () => saveCurrentProgress(false));
-  }
-  if (ui.saveCurrentAsBtn) {
-    ui.saveCurrentAsBtn.addEventListener("click", () => saveCurrentProgress(true));
+    ui.saveCurrentBtn.addEventListener("click", () => saveCurrentProgress());
   }
   if (ui.goHomeBtn) {
     ui.goHomeBtn.addEventListener("click", () => {
