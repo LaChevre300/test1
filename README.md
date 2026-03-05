@@ -48,5 +48,6 @@ Puis ouvrir `http://localhost:8080`.
 - Passe polish visuel : meubles plus variés et uniques par pièce, routes village retravaillées
 - Éclairage dynamique : ambiance jour/soir/nuit, météo, lueurs de fenêtres et lampadaires, glow intérieur
 - Animation vivante : fumée des cheminées, scintillement des lampes, pluie en streaks, feuillage animé par le vent
+- Audio-réactif procédural (WebAudio) : pluie/orage dynamiques, crépitement de lampes et ambiance intérieure douce
 - Sauvegarde JSON locale : auto fin de journée + manuelle
 - Fin de jeu + écran de stats + **New Game+**

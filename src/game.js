@@ -430,6 +430,7 @@ class Game {
     this.fishingState = null;
     this.isNewGamePlus = false;
     this.fxTime = 0;
+    this.audio = new AmbientAudioEngine();
 
     this.camera = { x: 0, y: 0 };
     this.dayMinute = DAY_START;
@@ -561,6 +562,7 @@ class Game {
       if (["Tab", "Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].includes(ev.code)) {
         ev.preventDefault();
       }
+      this.audio.ensureStarted();
       this.keys.add(ev.code);
       this.pressed.add(ev.code);
     });
@@ -586,6 +588,7 @@ class Game {
   }
 
   newGame(isPlus) {
+    this.audio.ensureStarted();
     this.isNewGamePlus = isPlus;
     this.dayMinute = DAY_START;
     this.day = 1;
@@ -764,6 +767,7 @@ class Game {
   }
 
   loadGame() {
+    this.audio.ensureStarted();
     const raw = localStorage.getItem(SAVE_KEY);
     if (!raw) return false;
     try {
@@ -815,6 +819,17 @@ class Game {
 
   update(dt) {
     if (!this.running) return;
+    const playerTileX = Math.floor((this.player.x + PLAYER_SIZE * 0.5) / TILE_SIZE);
+    const playerTileY = Math.floor((this.player.y + PLAYER_SIZE * 0.5) / TILE_SIZE);
+    const insideRoom = interiorRoomAt(playerTileX, playerTileY);
+    this.audio.update({
+      weather: this.weather,
+      isInside: !!insideRoom,
+      isNight: this.isNightLightTime(),
+      isPaused: !!this.openMenu,
+      hasStorm: this.weather === "storm",
+    });
+
     this.handleMenuToggles();
     if (this.openMenu) {
       if (this.openMenu === "fishing") this.updateFishing(dt);
@@ -2551,6 +2566,154 @@ function animalColor(type) {
 function drawNode(ctx, tx, ty, camera, color, w, h) {
   ctx.fillStyle = color;
   ctx.fillRect(tx * TILE_SIZE - camera.x, ty * TILE_SIZE - camera.y, w, h);
+}
+
+class AmbientAudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.started = false;
+    this.master = null;
+    this.rainGain = null;
+    this.stormGain = null;
+    this.lampGain = null;
+    this.interiorGain = null;
+    this.stormOsc = null;
+    this.interiorOscA = null;
+    this.interiorOscB = null;
+  }
+
+  ensureStarted() {
+    try {
+      if (!this.started) {
+        this.init();
+        this.started = true;
+      }
+      if (this.ctx?.state === "suspended") this.ctx.resume();
+    } catch (_err) {
+      this.started = false;
+    }
+  }
+
+  init() {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    if (!Ctx) return;
+    this.ctx = new Ctx();
+
+    this.master = this.ctx.createGain();
+    this.master.gain.value = 0.35;
+    this.master.connect(this.ctx.destination);
+
+    this.rainGain = this.ctx.createGain();
+    this.rainGain.gain.value = 0;
+    this.rainGain.connect(this.master);
+
+    this.stormGain = this.ctx.createGain();
+    this.stormGain.gain.value = 0;
+    this.stormGain.connect(this.master);
+
+    this.lampGain = this.ctx.createGain();
+    this.lampGain.gain.value = 0;
+    this.lampGain.connect(this.master);
+
+    this.interiorGain = this.ctx.createGain();
+    this.interiorGain.gain.value = 0;
+    this.interiorGain.connect(this.master);
+
+    const noiseBuffer = createNoiseBuffer(this.ctx, 2);
+
+    const rainNoise = this.ctx.createBufferSource();
+    rainNoise.buffer = noiseBuffer;
+    rainNoise.loop = true;
+    rainNoise.playbackRate.value = 0.92;
+    const rainHigh = this.ctx.createBiquadFilter();
+    rainHigh.type = "highpass";
+    rainHigh.frequency.value = 620;
+    rainNoise.connect(rainHigh);
+    rainHigh.connect(this.rainGain);
+    rainNoise.start();
+
+    const lampNoise = this.ctx.createBufferSource();
+    lampNoise.buffer = noiseBuffer;
+    lampNoise.loop = true;
+    lampNoise.playbackRate.value = 1.3;
+    const lampBand = this.ctx.createBiquadFilter();
+    lampBand.type = "bandpass";
+    lampBand.frequency.value = 1850;
+    lampBand.Q.value = 0.75;
+    lampNoise.connect(lampBand);
+    lampBand.connect(this.lampGain);
+    lampNoise.start();
+
+    this.stormOsc = this.ctx.createOscillator();
+    this.stormOsc.type = "triangle";
+    this.stormOsc.frequency.value = 45;
+    const stormLow = this.ctx.createBiquadFilter();
+    stormLow.type = "lowpass";
+    stormLow.frequency.value = 120;
+    this.stormOsc.connect(stormLow);
+    stormLow.connect(this.stormGain);
+    this.stormOsc.start();
+
+    this.interiorOscA = this.ctx.createOscillator();
+    this.interiorOscA.type = "sine";
+    this.interiorOscA.frequency.value = 196;
+    this.interiorOscA.connect(this.interiorGain);
+    this.interiorOscA.start();
+
+    this.interiorOscB = this.ctx.createOscillator();
+    this.interiorOscB.type = "triangle";
+    this.interiorOscB.frequency.value = 246;
+    const interiorLow = this.ctx.createBiquadFilter();
+    interiorLow.type = "lowpass";
+    interiorLow.frequency.value = 540;
+    this.interiorOscB.connect(interiorLow);
+    interiorLow.connect(this.interiorGain);
+    this.interiorOscB.start();
+  }
+
+  update(state) {
+    if (!this.started || !this.ctx || this.ctx.state !== "running") return;
+    const now = this.ctx.currentTime;
+    const t = performance.now() * 0.001;
+
+    let rainLevel = 0;
+    if (state.weather === "rain") rainLevel = 0.13;
+    if (state.weather === "storm") rainLevel = 0.25;
+    if (state.isInside) rainLevel *= 0.38;
+    if (state.isPaused) rainLevel *= 0.7;
+
+    let stormLevel = state.hasStorm ? 0.09 : 0;
+    if (state.isInside) stormLevel *= 0.6;
+    if (state.isPaused) stormLevel *= 0.75;
+
+    let lampLevel = state.isNight ? 0.034 : 0.006;
+    if (state.isInside) lampLevel += 0.02;
+    if (state.isPaused) lampLevel *= 0.8;
+    const flicker = 0.78 + (Math.sin(t * 8.2) * 0.16 + Math.sin(t * 5.3 + 1.7) * 0.1);
+    lampLevel *= clamp(flicker, 0.45, 1.1);
+
+    let interiorLevel = state.isInside ? (state.isNight ? 0.07 : 0.05) : 0;
+    if (state.isPaused) interiorLevel *= 0.85;
+
+    this.rainGain.gain.setTargetAtTime(rainLevel, now, 0.22);
+    this.stormGain.gain.setTargetAtTime(stormLevel, now, 0.26);
+    this.lampGain.gain.setTargetAtTime(lampLevel, now, 0.08);
+    this.interiorGain.gain.setTargetAtTime(interiorLevel, now, 0.35);
+
+    this.stormOsc.frequency.setTargetAtTime(41 + Math.sin(t * 0.37) * 9, now, 0.6);
+    this.interiorOscA.frequency.setTargetAtTime(190 + Math.sin(t * 0.21) * 4, now, 0.45);
+    this.interiorOscB.frequency.setTargetAtTime(242 + Math.sin(t * 0.27 + 1.2) * 5, now, 0.45);
+  }
+}
+
+function createNoiseBuffer(ctx, seconds) {
+  const length = Math.floor(ctx.sampleRate * seconds);
+  const buffer = ctx.createBuffer(1, length, ctx.sampleRate);
+  const channel = buffer.getChannelData(0);
+  for (let i = 0; i < length; i += 1) {
+    channel[i] = (Math.random() * 2 - 1) * 0.7;
+  }
+  return buffer;
 }
 
 const game = new Game();
