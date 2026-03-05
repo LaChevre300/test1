@@ -797,6 +797,10 @@
     professionColleaguesRoot: document.getElementById("profession-colleagues-root"),
     professionMilitaryRoot: document.getElementById("profession-military-root"),
     schoolPeopleRoot: document.getElementById("school-people-root"),
+    subpageScreen: document.getElementById("subpage-screen"),
+    subpageBackBtn: document.getElementById("subpage-back-btn"),
+    subpageTitle: document.getElementById("subpage-title"),
+    subpageContent: document.getElementById("subpage-content"),
     eventText: document.getElementById("event-text"),
     eventChoices: document.getElementById("event-choices"),
     activityRoot: document.getElementById("activity-root"),
@@ -859,6 +863,7 @@
   let isAvatarEditorOpen = false;
   let actionResultState = null;
   let currentSaveId = null;
+  let activeSubpage = null;
 
   const SAVE_STORAGE_KEY = "chroniquesDynastieSavesV1";
 
@@ -1014,6 +1019,7 @@
     isCharacterModalOpen = false;
     isAvatarEditorOpen = false;
     actionResultState = null;
+    activeSubpage = null;
     renderSaveLists();
   }
 
@@ -1061,6 +1067,7 @@
     isCharacterModalOpen = false;
     isAvatarEditorOpen = false;
     actionResultState = null;
+    activeSubpage = null;
     showGameShell();
     render();
     return true;
@@ -1306,6 +1313,7 @@
     actionResultState = null;
     isCharacterModalOpen = false;
     isAvatarEditorOpen = false;
+    activeSubpage = null;
     addLog(
       `Début de la génération ${game.character.generation} : ${game.character.fullName} naît en ${game.character.country}.`,
       "good"
@@ -4417,33 +4425,33 @@
     render();
   }
 
-  function renderSchoolPeople() {
+  function renderSchoolPeople(target = ui.schoolPeopleRoot) {
     const c = game.character;
-    if (!ui.schoolPeopleRoot) return;
-    ui.schoolPeopleRoot.innerHTML = "";
+    if (!target) return;
+    target.innerHTML = "";
 
     if (!c.school.enrolled || c.school.expelled || c.age < 5 || c.age >= 18) {
       const empty = document.createElement("p");
       empty.className = "muted";
       empty.textContent = "Pas de classe active pour le moment.";
-      ui.schoolPeopleRoot.append(empty);
+      target.append(empty);
       return;
     }
 
     ensureSchoolNetwork(c);
     if (c.school.teacher?.alive) {
-      ui.schoolPeopleRoot.append(makePersonCard(c.school.teacher, "teacher", "Professeur · "));
+      target.append(makePersonCard(c.school.teacher, "teacher", "Professeur · "));
     }
     const aliveStudents = c.school.classmates.filter((student) => student.alive);
     if (!aliveStudents.length) {
       const empty = document.createElement("p");
       empty.className = "muted";
       empty.textContent = "Aucun élève disponible aujourd'hui.";
-      ui.schoolPeopleRoot.append(empty);
+      target.append(empty);
       return;
     }
     aliveStudents.slice(0, 8).forEach((student) => {
-      ui.schoolPeopleRoot.append(makePersonCard(student, "classmate", "Élève · "));
+      target.append(makePersonCard(student, "classmate", "Élève · "));
     });
   }
 
@@ -4538,8 +4546,8 @@
     render();
   }
 
-  function renderMilitaryBranches() {
-    if (!ui.professionMilitaryRoot) return;
+  function renderMilitaryBranches(target = ui.professionMilitaryRoot) {
+    if (!target) return;
     const branches = [
       { icon: "🛡️", name: "Infanterie seigneuriale" },
       { icon: "🏹", name: "Compagnies d'archers" },
@@ -4547,7 +4555,7 @@
       { icon: "🏰", name: "Garde du château" },
       { icon: "⚓", name: "Marine royale" }
     ];
-    ui.professionMilitaryRoot.innerHTML = "";
+    target.innerHTML = "";
     branches.forEach((entry) => {
       const details = document.createElement("details");
       details.className = "nav-subsection";
@@ -4570,31 +4578,31 @@
         actions.append(btn);
       });
       details.append(summary, actions);
-      ui.professionMilitaryRoot.append(details);
+      target.append(details);
     });
   }
 
-  function renderProfessionColleagues() {
-    if (!ui.professionColleaguesRoot) return;
+  function renderProfessionColleagues(target = ui.professionColleaguesRoot) {
+    if (!target) return;
     const c = game.character;
     ensureColleagues(c);
-    ui.professionColleaguesRoot.innerHTML = "";
+    target.innerHTML = "";
     if (!c.social.colleagues.length) {
       const empty = document.createElement("p");
       empty.className = "muted";
       empty.textContent = "Aucun collègue pour le moment.";
-      ui.professionColleaguesRoot.append(empty);
+      target.append(empty);
       return;
     }
     c.social.colleagues.slice(0, 10).forEach((person) => {
-      ui.professionColleaguesRoot.append(makePersonCard(person, "colleague"));
+      target.append(makePersonCard(person, "colleague"));
     });
   }
 
-  function renderRelationPeople() {
+  function renderRelationPeople(target = ui.relationPeopleRoot) {
     const c = game.character;
-    if (!ui.relationPeopleRoot) return;
-    ui.relationPeopleRoot.innerHTML = "";
+    if (!target) return;
+    target.innerHTML = "";
 
     const groups = [
       { scope: "parent", people: c.family.parents.filter((person) => person.alive) },
@@ -4615,28 +4623,18 @@
       const empty = document.createElement("p");
       empty.className = "muted";
       empty.textContent = "Aucune relation détaillée à afficher pour le moment.";
-      ui.relationPeopleRoot.append(empty);
+      target.append(empty);
       return;
     }
 
     flattened.slice(0, 30).forEach(({ scope, person }) => {
-      ui.relationPeopleRoot.append(makePersonCard(person, scope));
+      target.append(makePersonCard(person, scope));
     });
   }
 
   function renderRelations() {
     const c = game.character;
-    const lines = [];
-    const aliveParents = c.family.parents.filter((p) => p.alive);
-    const aliveSiblings = c.family.siblings.filter((s) => s.alive);
-    lines.push(`Parents vivants: ${aliveParents.length}`);
-    lines.push(`Frères/Sœurs vivants: ${aliveSiblings.length}`);
-    lines.push(`Conjoint(e): ${c.family.spouse?.name || "Aucun"}`);
-    lines.push(`Enfants vivants: ${aliveChildren().length}`);
-    lines.push(`Amis: ${c.social.friends.filter((f) => f.alive).length}`);
-    lines.push(`Ennemis: ${c.social.enemies.filter((f) => f.alive).length}`);
-    lines.push(`Voisins: ${c.social.neighbors.filter((f) => f.alive).length}`);
-    lines.push(`Collègues: ${c.social.colleagues.filter((f) => f.alive).length}`);
+    const lines = relationSummaryLines(c);
     ui.relationsList.innerHTML = "";
     lines.forEach((line) => {
       const li = document.createElement("li");
@@ -4721,6 +4719,168 @@
       });
       target.append(details);
     });
+  }
+
+  function buildSubpageBlock(title) {
+    const block = document.createElement("section");
+    block.className = "subpage-block";
+    const heading = document.createElement("h3");
+    heading.className = "subpage-block-title";
+    heading.textContent = title;
+    const body = document.createElement("div");
+    body.className = "subpage-block-body";
+    block.append(heading, body);
+    return { block, body };
+  }
+
+  function fillSimpleList(target, lines, emptyText) {
+    const list = document.createElement("ul");
+    list.className = "compact-list";
+    const clean = (lines || []).filter(Boolean);
+    if (!clean.length) {
+      const li = document.createElement("li");
+      li.textContent = emptyText;
+      list.append(li);
+      target.append(list);
+      return;
+    }
+    clean.forEach((line) => {
+      const li = document.createElement("li");
+      li.textContent = line;
+      list.append(li);
+    });
+    target.append(list);
+  }
+
+  function relationSummaryLines(c) {
+    const aliveParents = c.family.parents.filter((p) => p.alive);
+    const aliveSiblings = c.family.siblings.filter((s) => s.alive);
+    return [
+      `Parents vivants: ${aliveParents.length}`,
+      `Frères/Sœurs vivants: ${aliveSiblings.length}`,
+      `Conjoint(e): ${c.family.spouse?.name || "Aucun"}`,
+      `Enfants vivants: ${aliveChildren().length}`,
+      `Amis: ${c.social.friends.filter((f) => f.alive).length}`,
+      `Ennemis: ${c.social.enemies.filter((f) => f.alive).length}`,
+      `Voisins: ${c.social.neighbors.filter((f) => f.alive).length}`,
+      `Collègues: ${c.social.colleagues.filter((f) => f.alive).length}`
+    ];
+  }
+
+  function openSubpage(key, title) {
+    if (!key) return;
+    activeSubpage = { key, title: title || "Section" };
+    render();
+  }
+
+  function closeSubpage() {
+    if (!activeSubpage) return;
+    activeSubpage = null;
+    render();
+  }
+
+  function renderSubpage() {
+    if (!ui.subpageScreen || !ui.subpageContent || !ui.subpageTitle) return;
+    if (!activeSubpage) {
+      ui.subpageScreen.classList.remove("show");
+      ui.subpageScreen.setAttribute("aria-hidden", "true");
+      ui.subpageContent.innerHTML = "";
+      return;
+    }
+
+    const c = game.character;
+    const categories = Object.entries(getActionsByCategory());
+    const schoolEntries = categories.filter(([name]) => name === "École & carrière");
+    const jobEntries = categories.filter(([name]) => name === "Argent & biens");
+    const relationEntries = categories.filter(([name]) => name === "Famille" || name === "Relations & amour");
+    const activityEntries = categories.filter(
+      ([name]) =>
+        name !== "Crime & prison" &&
+        name !== "Famille" &&
+        name !== "Relations & amour" &&
+        name !== "École & carrière" &&
+        name !== "Argent & biens"
+    );
+    const crimeEntries = categories.filter(([name]) => name === "Crime & prison");
+
+    ui.subpageTitle.textContent = (activeSubpage.title || "Section").toUpperCase();
+    ui.subpageContent.innerHTML = "";
+
+    const section = (title) => {
+      const block = buildSubpageBlock(title);
+      ui.subpageContent.append(block.block);
+      return block.body;
+    };
+
+    if (activeSubpage.key === "profession-education") {
+      renderActionCategories(section("Cours & examens"), schoolEntries);
+      renderSchoolPeople(section("Classe"));
+    } else if (activeSubpage.key === "profession-jobs") {
+      renderActionCategories(section("Tâches du métier"), jobEntries);
+      renderProfessionColleagues(section("Collègues"));
+    } else if (activeSubpage.key === "profession-military") {
+      renderMilitaryBranches(section("Branches médiévales"));
+    } else if (activeSubpage.key === "activity-civil") {
+      renderActionCategories(section("Activités civiles"), activityEntries);
+    } else if (activeSubpage.key === "activity-crime") {
+      renderActionCategories(section("Crime & prison"), crimeEntries);
+    } else if (activeSubpage.key === "assets-overview") {
+      fillSimpleList(
+        section("Vue d'ensemble"),
+        [
+          `Famille: ${aliveChildren().length} enfant(s), conjoint: ${c.family.spouse ? "oui" : "non"}`,
+          `Travail: ${c.job || "Aucun"} · salaire ${Math.round(c.salary)}`,
+          `Maison: ${c.properties.length} propriété(s), ${c.vehicles.length} monture(s)`,
+          `Activité: ${c.criminal.inPrison ? "En prison" : "Libre de choisir une activité"}`
+        ],
+        "Aucune donnée."
+      );
+      fillSimpleList(
+        section("Ressources"),
+        [
+          `Emploi: ${c.job || "Aucun"}`,
+          `Salaire: ${c.salary || 0}`,
+          `Niveau d'éducation: ${EDU_LEVELS[c.educationLevel]}`,
+          `Dette universitaire: ${Math.round(c.universityDebt)}`,
+          `Notoriété criminelle: ${Math.round(c.notoriety)}`,
+          `Célébrité: ${Math.round(c.celebrity)}`,
+          `Rang politique: ${c.politicalLevel}`,
+          `Casier judiciaire: ${c.criminal.record}`
+        ],
+        "Aucune ressource."
+      );
+    } else if (activeSubpage.key === "assets-conditions") {
+      fillSimpleList(
+        section("Santé & état"),
+        [
+          ...c.conditions.illnesses.map((entry) => `Maladie: ${entry}`),
+          ...c.conditions.injuries.map((entry) => `Blessure: ${entry}`),
+          ...c.conditions.mental.map((entry) => `Trouble mental: ${entry}`),
+          ...c.conditions.addictions.map((entry) => `Dépendance: ${entry}`)
+        ],
+        "Aucune condition majeure."
+      );
+    } else if (activeSubpage.key === "assets-goods") {
+      fillSimpleList(section("Inventaire"), c.inventory, "Inventaire vide.");
+      fillSimpleList(section("Animaux"), c.animals, "Aucun animal.");
+    } else if (activeSubpage.key === "relations-summary") {
+      fillSimpleList(section("Résumé des liens"), relationSummaryLines(c), "Aucune relation.");
+    } else if (activeSubpage.key === "relations-people") {
+      renderRelationPeople(section("Personnes"));
+    } else if (activeSubpage.key === "relations-actions") {
+      renderActionCategories(section("Interactions sociales"), relationEntries);
+    } else if (activeSubpage.key === "relations-children") {
+      fillSimpleList(
+        section("Descendance"),
+        c.family.children
+          .filter((child) => child.alive)
+          .map((child) => `${child.name} (${child.age} ans${child.adopted ? ", adopté(e)" : ""})`),
+        "Aucun enfant vivant."
+      );
+    }
+
+    ui.subpageScreen.classList.add("show");
+    ui.subpageScreen.setAttribute("aria-hidden", "false");
   }
 
   function renderActions() {
@@ -4986,6 +5146,7 @@
     renderActions();
     renderCollections();
     renderTabs();
+    renderSubpage();
     renderBadges();
     renderDeathModal();
     renderCharacterModal();
@@ -5033,6 +5194,21 @@
   if (ui.settingsSavesList) {
     ui.settingsSavesList.addEventListener("click", handleSaveListClick);
   }
+  if (ui.gameShell) {
+    ui.gameShell.addEventListener("click", (event) => {
+      const summary = event.target.closest("summary[data-subpage]");
+      if (!summary || !ui.gameShell.contains(summary)) return;
+      event.preventDefault();
+      openSubpage(summary.dataset.subpage, summary.dataset.subpageTitle || summary.textContent.trim());
+    });
+    ui.gameShell.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" && event.key !== " ") return;
+      const summary = event.target.closest("summary[data-subpage]");
+      if (!summary || !ui.gameShell.contains(summary)) return;
+      event.preventDefault();
+      openSubpage(summary.dataset.subpage, summary.dataset.subpageTitle || summary.textContent.trim());
+    });
+  }
   if (ui.relationPeopleRoot) {
     ui.relationPeopleRoot.addEventListener("click", handlePersonInteractionClick);
   }
@@ -5042,10 +5218,17 @@
   if (ui.professionColleaguesRoot) {
     ui.professionColleaguesRoot.addEventListener("click", handlePersonInteractionClick);
   }
+  if (ui.subpageContent) {
+    ui.subpageContent.addEventListener("click", handlePersonInteractionClick);
+  }
+  if (ui.subpageBackBtn) {
+    ui.subpageBackBtn.addEventListener("click", closeSubpage);
+  }
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {
       isCharacterModalOpen = false;
       actionResultState = null;
+      activeSubpage = null;
       if (activeTab === "settings") {
         activeTab = previousTabBeforeSettings || "home";
       } else {
@@ -5059,6 +5242,7 @@
     const openProfile = () => {
       isAvatarEditorOpen = false;
       actionResultState = null;
+      activeSubpage = null;
       isCharacterModalOpen = true;
       renderCharacterModal();
     };
@@ -5147,6 +5331,7 @@
       }
       if (button.dataset.tab) {
         actionResultState = null;
+        activeSubpage = null;
         activeTab = button.dataset.tab;
         if (activeTab !== "settings") {
           previousTabBeforeSettings = activeTab;

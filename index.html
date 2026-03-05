@@ -57,7 +57,7 @@
           <div class="nav-tree">
             <div class="nav-group-title">Orientation</div>
             <details class="nav-section" open>
-              <summary>
+              <summary data-subpage="profession-education" data-subpage-title="Éducation">
                 <span class="nav-icon">🎓</span>
                 <span class="nav-main">
                   <span class="nav-title">Éducation</span>
@@ -83,7 +83,7 @@
 
             <div class="nav-group-title">Carrières</div>
             <details class="nav-section">
-              <summary>
+              <summary data-subpage="profession-jobs" data-subpage-title="Métiers">
                 <span class="nav-icon">💰</span>
                 <span class="nav-main">
                   <span class="nav-title">Métiers</span>
@@ -109,7 +109,7 @@
 
             <div class="nav-group-title">Ordres armés</div>
             <details class="nav-section">
-              <summary>
+              <summary data-subpage="profession-military" data-subpage-title="Ordres armés">
                 <span class="nav-icon">🛡️</span>
                 <span class="nav-main">
                   <span class="nav-title">Militaire</span>
@@ -139,7 +139,7 @@
           <div class="nav-tree">
             <div class="nav-group-title">Vie quotidienne</div>
             <details class="nav-section" open>
-              <summary>
+              <summary data-subpage="activity-civil" data-subpage-title="Activités civiles">
                 <span class="nav-icon">🎯</span>
                 <span class="nav-main">
                   <span class="nav-title">Activités civiles</span>
@@ -151,7 +151,7 @@
             </details>
             <div class="nav-group-title">Risques</div>
             <details class="nav-section">
-              <summary>
+              <summary data-subpage="activity-crime" data-subpage-title="Crime & prison">
                 <span class="nav-icon">🗡️</span>
                 <span class="nav-main">
                   <span class="nav-title">Crime & prison</span>
@@ -171,7 +171,7 @@
           <div class="nav-tree">
             <div class="nav-group-title">Comptes</div>
             <details class="nav-section" open>
-              <summary>
+              <summary data-subpage="assets-overview" data-subpage-title="Vue d'ensemble">
                 <span class="nav-icon">📜</span>
                 <span class="nav-main">
                   <span class="nav-title">Vue d'ensemble</span>
@@ -184,7 +184,7 @@
             </details>
             <div class="nav-group-title">État de santé</div>
             <details class="nav-section">
-              <summary>
+              <summary data-subpage="assets-conditions" data-subpage-title="Conditions">
                 <span class="nav-icon">🧪</span>
                 <span class="nav-main">
                   <span class="nav-title">Conditions</span>
@@ -196,7 +196,7 @@
             </details>
             <div class="nav-group-title">Possessions</div>
             <details class="nav-section">
-              <summary>
+              <summary data-subpage="assets-goods" data-subpage-title="Possessions">
                 <span class="nav-icon">🎒</span>
                 <span class="nav-main">
                   <span class="nav-title">Biens</span>
@@ -229,7 +229,7 @@
           <div class="nav-tree">
             <div class="nav-group-title">Vue rapide</div>
             <details class="nav-section" open>
-              <summary>
+              <summary data-subpage="relations-summary" data-subpage-title="Résumé des liens">
                 <span class="nav-icon">🤍</span>
                 <span class="nav-main">
                   <span class="nav-title">Résumé des liens</span>
@@ -241,7 +241,7 @@
             </details>
             <div class="nav-group-title">Liens vivants</div>
             <details class="nav-section">
-              <summary>
+              <summary data-subpage="relations-people" data-subpage-title="Personnes">
                 <span class="nav-icon">👥</span>
                 <span class="nav-main">
                   <span class="nav-title">Personnes</span>
@@ -253,7 +253,7 @@
             </details>
             <div class="nav-group-title">Gestion sociale</div>
             <details class="nav-section">
-              <summary>
+              <summary data-subpage="relations-actions" data-subpage-title="Interactions sociales">
                 <span class="nav-icon">💬</span>
                 <span class="nav-main">
                   <span class="nav-title">Interactions sociales</span>
@@ -264,7 +264,7 @@
               <div id="relation-root"></div>
             </details>
             <details class="nav-section">
-              <summary>
+              <summary data-subpage="relations-children" data-subpage-title="Descendance">
                 <span class="nav-icon">🧬</span>
                 <span class="nav-main">
                   <span class="nav-title">Descendance</span>
@@ -293,6 +293,15 @@
           <button id="open-avatar-editor-btn" class="btn btn-blue">Créer / modifier avatar</button>
           <button id="new-life-btn" class="btn btn-gray">Nouvelle vie</button>
         </article>
+      </section>
+
+      <section id="subpage-screen" class="subpage-screen" aria-hidden="true">
+        <header class="subpage-topbar">
+          <button id="subpage-back-btn" class="subpage-back-btn" aria-label="Retour">◀</button>
+          <h2 id="subpage-title" class="subpage-title">Section</h2>
+          <span class="subpage-spacer" aria-hidden="true"></span>
+        </header>
+        <div id="subpage-content" class="subpage-content"></div>
       </section>
 
       <section class="stats-bar" id="status-strip"></section>
