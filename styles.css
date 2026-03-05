@@ -951,6 +951,84 @@ body {
   text-align: left;
 }
 
+.nav-tree {
+  display: grid;
+  gap: 0.45rem;
+}
+
+.nav-section,
+.nav-subsection {
+  border: 1px solid #b8a184;
+  border-radius: 12px;
+  background: #f6ead2;
+  overflow: hidden;
+}
+
+.nav-subsection {
+  margin: 0.35rem 0.35rem 0.45rem;
+  border-style: dashed;
+}
+
+.nav-section > summary,
+.nav-subsection > summary {
+  list-style: none;
+  cursor: pointer;
+  display: grid;
+  align-items: center;
+  gap: 0.5rem;
+  color: #35587b;
+  border-bottom: 1px solid #c9b08a;
+  background: #f3e5c8;
+}
+
+.nav-section > summary {
+  grid-template-columns: 28px 1fr 16px;
+  padding: 0.58rem 0.65rem;
+}
+
+.nav-subsection > summary {
+  grid-template-columns: 1fr 16px;
+  padding: 0.48rem 0.55rem;
+}
+
+.nav-section > summary::-webkit-details-marker,
+.nav-subsection > summary::-webkit-details-marker {
+  display: none;
+}
+
+.nav-icon {
+  font-size: 1.2rem;
+  line-height: 1;
+}
+
+.nav-main {
+  display: grid;
+  gap: 0.08rem;
+}
+
+.nav-title {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #2f5579;
+}
+
+.nav-sub {
+  font-size: 0.74rem;
+  color: #59789a;
+}
+
+.nav-arrow {
+  font-size: 1.35rem;
+  color: #2f5579;
+  transform: rotate(0deg);
+  transition: transform 120ms ease;
+  justify-self: end;
+}
+
+details[open] > summary .nav-arrow {
+  transform: rotate(90deg);
+}
+
 .btn {
   border-radius: 12px;
   border: 0;

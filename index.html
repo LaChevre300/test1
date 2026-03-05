@@ -54,10 +54,69 @@
         <article class="card">
           <h2>Profession</h2>
           <ul id="profession-summary-list" class="compact-list"></ul>
-          <h3>Tâches</h3>
-          <div id="profession-root"></div>
-          <h3>École</h3>
-          <div id="school-people-root" class="person-grid"></div>
+          <div class="nav-tree">
+            <details class="nav-section" open>
+              <summary>
+                <span class="nav-icon">🎓</span>
+                <span class="nav-main">
+                  <span class="nav-title">Éducation</span>
+                  <span class="nav-sub">Retourner à l'école</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <details class="nav-subsection" open>
+                <summary>
+                  <span class="nav-title">Cours & examens</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <div id="profession-school-root"></div>
+              </details>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Classe</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <div id="school-people-root" class="person-grid"></div>
+              </details>
+            </details>
+
+            <details class="nav-section">
+              <summary>
+                <span class="nav-icon">💰</span>
+                <span class="nav-main">
+                  <span class="nav-title">Jobs</span>
+                  <span class="nav-sub">Trouver un travail et progresser</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <details class="nav-subsection" open>
+                <summary>
+                  <span class="nav-title">Tâches du métier</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <div id="profession-job-root"></div>
+              </details>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Collègues</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <div id="profession-colleagues-root" class="person-grid"></div>
+              </details>
+            </details>
+
+            <details class="nav-section">
+              <summary>
+                <span class="nav-icon">🛡️</span>
+                <span class="nav-main">
+                  <span class="nav-title">Militaire</span>
+                  <span class="nav-sub">Choisir une branche</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="profession-military-root"></div>
+            </details>
+          </div>
         </article>
 
         <article class="card event-card">
@@ -74,44 +133,137 @@
       <section id="screen-activity" class="screen">
         <article class="card">
           <h2>Activités</h2>
-          <div id="activity-root"></div>
-        </article>
-        <article class="card">
-          <h2>Crime & prison</h2>
-          <div id="crime-root"></div>
+          <div class="nav-tree">
+            <details class="nav-section" open>
+              <summary>
+                <span class="nav-icon">🎯</span>
+                <span class="nav-main">
+                  <span class="nav-title">Activités civiles</span>
+                  <span class="nav-sub">Santé, loisirs, progression</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="activity-root"></div>
+            </details>
+            <details class="nav-section">
+              <summary>
+                <span class="nav-icon">🗡️</span>
+                <span class="nav-main">
+                  <span class="nav-title">Crime & prison</span>
+                  <span class="nav-sub">Actions illégales et détention</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="crime-root"></div>
+            </details>
+          </div>
         </article>
       </section>
 
       <section id="screen-assets" class="screen">
         <article class="card">
-          <h2>Détails</h2>
-          <ul id="detail-menu" class="detail-list"></ul>
-        </article>
-
-        <article class="card">
-          <h2>Assets</h2>
-          <ul id="resources-list" class="compact-list"></ul>
-          <h3>Conditions</h3>
-          <ul id="conditions-list" class="compact-list"></ul>
-          <h3>Inventaire</h3>
-          <ul id="inventory-list" class="compact-list"></ul>
-          <h3>Animaux</h3>
-          <ul id="animals-list" class="compact-list"></ul>
+          <h2>Patrimoine</h2>
+          <div class="nav-tree">
+            <details class="nav-section" open>
+              <summary>
+                <span class="nav-icon">📜</span>
+                <span class="nav-main">
+                  <span class="nav-title">Vue d'ensemble</span>
+                  <span class="nav-sub">Résumé de ta situation</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <ul id="detail-menu" class="detail-list"></ul>
+              <ul id="resources-list" class="compact-list"></ul>
+            </details>
+            <details class="nav-section">
+              <summary>
+                <span class="nav-icon">🧪</span>
+                <span class="nav-main">
+                  <span class="nav-title">Conditions</span>
+                  <span class="nav-sub">Maladies, blessures, mental</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <ul id="conditions-list" class="compact-list"></ul>
+            </details>
+            <details class="nav-section">
+              <summary>
+                <span class="nav-icon">🎒</span>
+                <span class="nav-main">
+                  <span class="nav-title">Biens</span>
+                  <span class="nav-sub">Objets et animaux</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <details class="nav-subsection" open>
+                <summary>
+                  <span class="nav-title">Inventaire</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <ul id="inventory-list" class="compact-list"></ul>
+              </details>
+              <details class="nav-subsection">
+                <summary>
+                  <span class="nav-title">Animaux</span>
+                  <span class="nav-arrow">›</span>
+                </summary>
+                <ul id="animals-list" class="compact-list"></ul>
+              </details>
+            </details>
+          </div>
         </article>
       </section>
 
       <section id="screen-relationships" class="screen">
         <article class="card">
           <h2>Relationships</h2>
-          <ul id="relations-list" class="compact-list"></ul>
-          <h3>Personnes</h3>
-          <div id="relation-people-root" class="person-grid"></div>
-          <h3>Descendance</h3>
-          <ul id="children-list" class="compact-list"></ul>
-        </article>
-        <article class="card">
-          <h2>Interactions sociales</h2>
-          <div id="relation-root"></div>
+          <div class="nav-tree">
+            <details class="nav-section" open>
+              <summary>
+                <span class="nav-icon">🤍</span>
+                <span class="nav-main">
+                  <span class="nav-title">Résumé des liens</span>
+                  <span class="nav-sub">Famille, amis, ennemis</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <ul id="relations-list" class="compact-list"></ul>
+            </details>
+            <details class="nav-section">
+              <summary>
+                <span class="nav-icon">👥</span>
+                <span class="nav-main">
+                  <span class="nav-title">Personnes</span>
+                  <span class="nav-sub">Interagir individuellement</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="relation-people-root" class="person-grid"></div>
+            </details>
+            <details class="nav-section">
+              <summary>
+                <span class="nav-icon">💬</span>
+                <span class="nav-main">
+                  <span class="nav-title">Interactions sociales</span>
+                  <span class="nav-sub">Actions globales</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <div id="relation-root"></div>
+            </details>
+            <details class="nav-section">
+              <summary>
+                <span class="nav-icon">🧬</span>
+                <span class="nav-main">
+                  <span class="nav-title">Descendance</span>
+                  <span class="nav-sub">Enfants et héritiers</span>
+                </span>
+                <span class="nav-arrow">›</span>
+              </summary>
+              <ul id="children-list" class="compact-list"></ul>
+            </details>
+          </div>
         </article>
       </section>
 

@@ -792,7 +792,10 @@
     openAvatarEditorInlineBtn: document.getElementById("open-avatar-editor-inline-btn"),
     statusStrip: document.getElementById("status-strip"),
     professionSummaryList: document.getElementById("profession-summary-list"),
-    professionRoot: document.getElementById("profession-root"),
+    professionSchoolRoot: document.getElementById("profession-school-root"),
+    professionJobRoot: document.getElementById("profession-job-root"),
+    professionColleaguesRoot: document.getElementById("profession-colleagues-root"),
+    professionMilitaryRoot: document.getElementById("profession-military-root"),
     schoolPeopleRoot: document.getElementById("school-people-root"),
     eventText: document.getElementById("event-text"),
     eventChoices: document.getElementById("event-choices"),
@@ -1052,6 +1055,7 @@
     game.character.avatar = normalizedAvatarConfig(game.character.sex, game.character.avatar);
     ensureCharacterIntegrity(game.character);
     ensureSchoolNetwork(game.character);
+    ensureColleagues(game.character);
     currentSaveId = save.id;
     activeTab = "home";
     isCharacterModalOpen = false;
@@ -1240,6 +1244,10 @@
       careerLevel: 0,
       politicalLevel: 0,
       celebrity: 0,
+      military: {
+        branch: null,
+        rank: 0
+      },
       criminal: {
         record: inherited?.recordCarry || 0,
         inPrison: false,
@@ -1292,6 +1300,7 @@
     game.dynastyName = game.character.surname;
     ensureCharacterIntegrity(game.character);
     ensureSchoolNetwork(game.character);
+    ensureColleagues(game.character);
     activeTab = "home";
     previousTabBeforeSettings = "home";
     actionResultState = null;
@@ -1464,6 +1473,13 @@
     c.social.colleagues.forEach(ensurePersonIdentity);
     if (c.school.teacher) ensurePersonIdentity(c.school.teacher);
     c.school.classmates.forEach(ensurePersonIdentity);
+
+    if (!c.military) {
+      c.military = { branch: null, rank: 0 };
+    }
+    if (typeof c.military.rank !== "number") {
+      c.military.rank = 0;
+    }
   }
 
   function ensureSchoolNetwork(c) {
@@ -1499,6 +1515,24 @@
       c.school.classmates = c.school.classmates.slice(0, c.school.classroomSize);
     }
     c.school.classmates.forEach(ensurePersonIdentity);
+  }
+
+  function ensureColleagues(c) {
+    if (!c.job || c.criminal.inPrison) {
+      c.social.colleagues = [];
+      return;
+    }
+    c.social.colleagues = c.social.colleagues.filter((person) => person.alive);
+    const target = clamp(2 + Math.floor(c.careerLevel / 2), 1, 6);
+    while (c.social.colleagues.length < target) {
+      const colleague = newPerson("Collègue", Math.max(16, c.age - 14), c.age + 12, pick(SURNAMES));
+      colleague.closeness = rnd(28, 76);
+      c.social.colleagues.push(colleague);
+    }
+    if (c.social.colleagues.length > target + 1) {
+      c.social.colleagues = c.social.colleagues.slice(0, target + 1);
+    }
+    c.social.colleagues.forEach(ensurePersonIdentity);
   }
 
   function relationValue(person) {
@@ -1578,6 +1612,7 @@
     c.job = job.title;
     c.salary = job.salary;
     c.careerLevel = Math.max(0, Math.round(job.prestige / 10));
+    ensureColleagues(c);
     addLog(`Tu obtiens un poste de ${job.title}.`, "good");
     changeStat("reputation", rnd(1, 5));
   }
@@ -1693,6 +1728,7 @@
     }
 
     if (c.age >= 16 && c.job && !c.criminal.inPrison) {
+      ensureColleagues(c);
       const promotionRoll = 0.06 + c.stats.intelligence / 700 + c.careerLevel * 0.02;
       if (chance(promotionRoll)) {
         c.careerLevel += 1;
@@ -1709,6 +1745,7 @@
         c.job = null;
         c.salary = 0;
         c.careerLevel = 0;
+        c.social.colleagues = [];
       }
     }
   }
@@ -4423,13 +4460,134 @@
       }`,
       `Études: ${EDU_LEVELS[c.educationLevel]}`,
       `Travail: ${c.job || "Aucun"}${c.job ? ` · salaire ${Math.round(c.salary)}` : ""}`,
-      `Rang de carrière: ${c.careerLevel} · Dette universitaire: ${Math.round(c.universityDebt)}`
+      `Rang de carrière: ${c.careerLevel} · Dette universitaire: ${Math.round(c.universityDebt)}`,
+      `Militaire: ${c.military.branch || "Aucune branche"}${c.military.branch ? ` · rang ${c.military.rank}` : ""}`
     ];
     ui.professionSummaryList.innerHTML = "";
     lines.forEach((line) => {
       const li = document.createElement("li");
       li.textContent = line;
       ui.professionSummaryList.append(li);
+    });
+  }
+
+  function handleMilitaryAction(branch, action) {
+    const c = game.character;
+    if (!consumeAction()) return;
+    if (action === "join") {
+      if (c.age < 16) {
+        addLog("Tu es trop jeune pour t'engager.", "warn");
+        render();
+        return;
+      }
+      if (c.criminal.inPrison) {
+        addLog("Impossible de s'engager depuis la prison.", "bad");
+        render();
+        return;
+      }
+      if (c.military.branch && c.military.branch !== branch && chance(0.45)) {
+        addLog(`Transfert refusé: ${c.military.branch} bloque ton départ.`, "warn");
+        render();
+        return;
+      }
+      c.military.branch = branch;
+      c.military.rank = Math.max(1, c.military.rank || 1);
+      c.job = `${branch} (${c.socialClass})`;
+      c.salary = Math.max(c.salary, rnd(22, 34));
+      ensureColleagues(c);
+      changeStat("reputation", 4);
+      changeStat("strength", 3);
+      addLog(`Tu rejoins la branche ${branch}.`, "good");
+    } else if (action === "train") {
+      if (c.military.branch !== branch) {
+        addLog(`Tu dois d'abord rejoindre ${branch}.`, "warn");
+        render();
+        return;
+      }
+      changeStat("strength", rnd(2, 6));
+      changeStat("health", chance(0.2) ? -3 : 2);
+      if (chance(0.16)) {
+        addCondition("injuries", pick(INJURIES));
+        addLog(`Entraînement rude en ${branch}: tu te blesses.`, "warn");
+      } else {
+        addLog(`Séance d'entraînement réussie en ${branch}.`, "good");
+      }
+    } else if (action === "mission") {
+      if (c.military.branch !== branch) {
+        addLog(`Aucune mission disponible sans engagement en ${branch}.`, "warn");
+        render();
+        return;
+      }
+      if (chance(0.58 + c.stats.strength / 350)) {
+        const gain = rnd(8, 34);
+        changeMoney(gain);
+        c.military.rank = clamp(c.military.rank + (chance(0.4) ? 1 : 0), 0, 10);
+        changeStat("reputation", rnd(2, 7));
+        addLog(`Mission réussie pour ${branch} (+${gain} pièces).`, "good");
+      } else {
+        changeStat("health", -rnd(4, 10));
+        if (chance(0.12)) {
+          kill(`mort en mission (${branch})`);
+          return;
+        }
+        addCondition("injuries", pick(INJURIES));
+        addLog(`Mission difficile en ${branch}: tu rentres blessé(e).`, "bad");
+      }
+    }
+    autoSaveIfLinked();
+    render();
+  }
+
+  function renderMilitaryBranches() {
+    if (!ui.professionMilitaryRoot) return;
+    const branches = [
+      { icon: "🛡️", name: "Army" },
+      { icon: "✈️", name: "Air Force" },
+      { icon: "⚓", name: "Navy" },
+      { icon: "💪", name: "Marines" },
+      { icon: "🚤", name: "Coast Guard" }
+    ];
+    ui.professionMilitaryRoot.innerHTML = "";
+    branches.forEach((entry) => {
+      const details = document.createElement("details");
+      details.className = "nav-subsection";
+      const summary = document.createElement("summary");
+      summary.innerHTML = `<span class="nav-title">${entry.icon} ${entry.name}</span><span class="nav-arrow">›</span>`;
+      const actions = document.createElement("div");
+      actions.className = "action-buttons";
+
+      const buttons = [
+        { label: "S'engager", action: "join" },
+        { label: "S'entraîner", action: "train" },
+        { label: "Partir en mission", action: "mission" }
+      ];
+      buttons.forEach((item) => {
+        const btn = document.createElement("button");
+        btn.className = "action-btn";
+        btn.textContent = item.label;
+        btn.disabled = !game.character.alive;
+        btn.addEventListener("click", () => handleMilitaryAction(entry.name, item.action));
+        actions.append(btn);
+      });
+      details.append(summary, actions);
+      ui.professionMilitaryRoot.append(details);
+    });
+  }
+
+  function renderProfessionColleagues() {
+    if (!ui.professionColleaguesRoot) return;
+    const c = game.character;
+    ensureColleagues(c);
+    ui.professionColleaguesRoot.innerHTML = "";
+    if (!c.social.colleagues.length) {
+      const empty = document.createElement("p");
+      empty.className = "muted";
+      empty.textContent = "Aucun collègue pour le moment.";
+      ui.professionColleaguesRoot.append(empty);
+      return;
+    }
+    c.social.colleagues.slice(0, 10).forEach((person) => {
+      ui.professionColleaguesRoot.append(makePersonCard(person, "colleague"));
     });
   }
 
@@ -4567,9 +4725,8 @@
 
   function renderActions() {
     const categories = Object.entries(getActionsByCategory());
-    const professionEntries = categories.filter(
-      ([name]) => name === "École & carrière" || name === "Argent & biens"
-    );
+    const professionSchoolEntries = categories.filter(([name]) => name === "École & carrière");
+    const professionJobEntries = categories.filter(([name]) => name === "Argent & biens");
     const crimeEntries = categories.filter(([name]) => name === "Crime & prison");
     const relationEntries = categories.filter(
       ([name]) => name === "Famille" || name === "Relations & amour"
@@ -4582,7 +4739,8 @@
         name !== "École & carrière" &&
         name !== "Argent & biens"
     );
-    renderActionCategories(ui.professionRoot, professionEntries);
+    renderActionCategories(ui.professionSchoolRoot, professionSchoolEntries);
+    renderActionCategories(ui.professionJobRoot, professionJobEntries);
     renderActionCategories(ui.activityRoot, activityEntries);
     renderActionCategories(ui.crimeRoot, crimeEntries);
     renderActionCategories(ui.relationRoot, relationEntries);
@@ -4821,6 +4979,8 @@
     renderConditions();
     renderRelations();
     renderSchoolPeople();
+    renderProfessionColleagues();
+    renderMilitaryBranches();
     renderEvent();
     renderLog();
     renderActions();
@@ -4878,6 +5038,9 @@
   }
   if (ui.schoolPeopleRoot) {
     ui.schoolPeopleRoot.addEventListener("click", handlePersonInteractionClick);
+  }
+  if (ui.professionColleaguesRoot) {
+    ui.professionColleaguesRoot.addEventListener("click", handlePersonInteractionClick);
   }
   if (ui.topSettingsBtn) {
     ui.topSettingsBtn.addEventListener("click", () => {
