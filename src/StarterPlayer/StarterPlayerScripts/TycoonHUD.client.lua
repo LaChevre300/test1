@@ -1,4 +1,5 @@
 local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 local StarterGui = game:GetService("StarterGui")
 
 local player = Players.LocalPlayer
@@ -17,6 +18,16 @@ local function shortNumber(value)
 	return tostring(number)
 end
 
+local function toast(message)
+	pcall(function()
+		StarterGui:SetCore("SendNotification", {
+			Title = "Tycoon",
+			Text = message,
+			Duration = 3,
+		})
+	end)
+end
+
 local screenGui = Instance.new("ScreenGui")
 screenGui.Name = "TycoonHUD"
 screenGui.ResetOnSpawn = false
@@ -24,7 +35,7 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.fromOffset(360, 180)
+frame.Size = UDim2.fromOffset(360, 320)
 frame.Position = UDim2.fromOffset(20, 20)
 frame.BackgroundColor3 = Color3.fromRGB(17, 18, 24)
 frame.BorderSizePixel = 0
@@ -68,6 +79,7 @@ local labels = {
 	"Revenu / sec",
 	"Rebirths",
 	"Prochain rebirth",
+	"Auto collect",
 }
 for i, labelName in ipairs(labels) do
 	local text = Instance.new("TextLabel")
@@ -84,22 +96,84 @@ for i, labelName in ipairs(labels) do
 	stats[labelName] = text
 end
 
+local monetizationRemote = nil
+task.spawn(function()
+	local shared = ReplicatedStorage:WaitForChild("Shared", 10)
+	if not shared then
+		return
+	end
+	local remotes = shared:WaitForChild("Remotes", 10)
+	if not remotes then
+		return
+	end
+	local remote = remotes:WaitForChild("TycoonMonetizationRequest", 10)
+	if remote and remote:IsA("RemoteEvent") then
+		monetizationRemote = remote
+	end
+end)
+
+local function requestPurchase(action, itemKey)
+	if not monetizationRemote then
+		toast("Boutique indisponible.")
+		return
+	end
+	monetizationRemote:FireServer(action, itemKey)
+end
+
+local shopTitle = Instance.new("TextLabel")
+shopTitle.Size = UDim2.new(1, -14, 0, 22)
+shopTitle.Position = UDim2.fromOffset(7, 198)
+shopTitle.BackgroundTransparency = 1
+shopTitle.Font = Enum.Font.GothamBold
+shopTitle.TextSize = 15
+shopTitle.TextXAlignment = Enum.TextXAlignment.Left
+shopTitle.TextColor3 = Color3.fromRGB(255, 227, 107)
+shopTitle.Text = "Boutique"
+shopTitle.Parent = frame
+
+local function createShopButton(text, x, y, onClick)
+	local button = Instance.new("TextButton")
+	button.Size = UDim2.fromOffset(166, 34)
+	button.Position = UDim2.fromOffset(x, y)
+	button.BackgroundColor3 = Color3.fromRGB(42, 47, 63)
+	button.TextColor3 = Color3.fromRGB(255, 255, 255)
+	button.Font = Enum.Font.GothamBold
+	button.TextSize = 13
+	button.Text = text
+	button.AutoButtonColor = true
+	button.Parent = frame
+
+	local btnCorner = Instance.new("UICorner")
+	btnCorner.CornerRadius = UDim.new(0, 8)
+	btnCorner.Parent = button
+
+	button.MouseButton1Click:Connect(onClick)
+	return button
+end
+
+createShopButton("Cash +2.5K", 7, 224, function()
+	requestPurchase("prompt_product", "CashSmall")
+end)
+
+createShopButton("Cash +10K", 187, 224, function()
+	requestPurchase("prompt_product", "CashMedium")
+end)
+
+createShopButton("VIP x2 revenu", 7, 264, function()
+	requestPurchase("prompt_gamepass", "VipIncomeX2")
+end)
+
+createShopButton("Auto Collect", 187, 264, function()
+	requestPurchase("prompt_gamepass", "AutoCollector")
+end)
+
 local function refresh()
 	stats["Cash"].Text = ("Cash: $%s"):format(shortNumber(player:GetAttribute("TycoonCash")))
 	stats["Non collecte"].Text = ("Non collecte: $%s"):format(shortNumber(player:GetAttribute("TycoonUncollected")))
 	stats["Revenu / sec"].Text = ("Revenu / sec: $%s"):format(shortNumber(player:GetAttribute("TycoonIncome")))
 	stats["Rebirths"].Text = ("Rebirths: %s"):format(shortNumber(player:GetAttribute("TycoonRebirths")))
 	stats["Prochain rebirth"].Text = ("Prochain rebirth: $%s"):format(shortNumber(player:GetAttribute("TycoonNextRebirthCost")))
-end
-
-local function toast(message)
-	pcall(function()
-		StarterGui:SetCore("SendNotification", {
-			Title = "Tycoon",
-			Text = message,
-			Duration = 3,
-		})
-	end)
+	stats["Auto collect"].Text = ("Auto collect: %s"):format((player:GetAttribute("TycoonAutoCollect") and "ON") or "OFF")
 end
 
 local lastToastToken = ""
@@ -117,6 +191,7 @@ player:GetAttributeChangedSignal("TycoonUncollected"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonIncome"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonRebirths"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonNextRebirthCost"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonAutoCollect"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonToast"):Connect(onToastChanged)
 
 refresh()

@@ -10,11 +10,13 @@ end
 
 local modulesFolder = script:WaitForChild("Modules")
 local DataService = require(modulesFolder:WaitForChild("DataService"))
+local MonetizationService = require(modulesFolder:WaitForChild("MonetizationService"))
 local TycoonService = require(modulesFolder:WaitForChild("TycoonService"))
 local TycoonConfig = require(sharedFolder:WaitForChild("Config"):WaitForChild("TycoonConfig"))
 
 local dataService = DataService.new()
 local tycoonService = TycoonService.new()
+local monetizationService = MonetizationService.new(tycoonService)
 
 local function savePlayer(player)
 	local export = tycoonService:ExportPlayerData(player)
@@ -28,7 +30,9 @@ Players.PlayerAdded:Connect(function(player)
 	local ok = tycoonService:BindPlayer(player, data)
 	if not ok then
 		player:Kick("Le serveur est plein, aucun plot libre.")
+		return
 	end
+	monetizationService:OnPlayerAdded(player)
 end)
 
 Players.PlayerRemoving:Connect(function(player)
@@ -47,6 +51,7 @@ end)
 
 game:BindToClose(function()
 	tycoonService:Stop()
+	monetizationService:Destroy()
 	for _, player in ipairs(Players:GetPlayers()) do
 		savePlayer(player)
 	end

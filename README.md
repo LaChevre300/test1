@@ -24,10 +24,12 @@ Tu construis une chaine de production de nouilles ultra-tech :
 ```text
 src/
   Shared/Config/TycoonConfig.lua
+  Shared/Config/MonetizationConfig.lua
   ServerScriptService/
     Main.server.lua
     Modules/
       DataService.lua
+      MonetizationService.lua
       TycoonFactory.lua
       TycoonService.lua
   StarterPlayer/StarterPlayerScripts/
@@ -57,6 +59,26 @@ Ce guide explique :
 - comment synchroniser le projet dans Studio,
 - comment publier ton monde sur Roblox,
 - comment faire sans Rojo (methode manuelle).
+
+## Pack pre-release
+
+J'ai prepare aussi :
+
+- `PRE_RELEASE_CHECKLIST.md` (checklist complete avant mise en ligne)
+- `STORE_CONTENT_PACK.md` (titre, description, update log, pitch)
+- `ASSET_BRIEF.md` (briefs pour icone et thumbnails)
+
+## Monetisation prete
+
+Le jeu inclut deja une base monetisation:
+
+- GamePass: VIP x2 revenu, Auto Collect
+- Developer Products: Cash packs, Instant Rebirth
+- UI boutique en jeu
+
+Tu dois juste renseigner les IDs Roblox dans:
+
+- `src/Shared/Config/MonetizationConfig.lua`
 
 ## Reglages gameplay
 

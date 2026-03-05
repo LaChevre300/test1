@@ -136,6 +136,12 @@ function TycoonService:_setToast(player, message)
 	player:SetAttribute("TycoonToast", ("%d|%s"):format(os.time(), message))
 end
 
+function TycoonService:Notify(player, message)
+	if self.PlayerStates[player] then
+		self:_setToast(player, message)
+	end
+end
+
 function TycoonService:_recalculateIncome(state)
 	local baseIncome = 0
 	local multiplier = 1
@@ -148,7 +154,7 @@ function TycoonService:_recalculateIncome(state)
 	end
 
 	multiplier += (state.Data.Rebirths or 0) * TycoonConfig.RebirthIncomeBonus
-	state.IncomePerSecond = math.max(1, math.floor(baseIncome * multiplier))
+	state.IncomePerSecond = math.max(1, math.floor(baseIncome * multiplier * state.ExternalIncomeMultiplier))
 	state.Multiplier = multiplier
 end
 
@@ -183,6 +189,7 @@ function TycoonService:_updatePlayerStats(state)
 	player:SetAttribute("TycoonIncome", toShortInteger(state.IncomePerSecond))
 	player:SetAttribute("TycoonRebirths", toShortInteger(state.Data.Rebirths))
 	player:SetAttribute("TycoonNextRebirthCost", TycoonConfig.GetRebirthCost(state.Data.Rebirths or 0))
+	player:SetAttribute("TycoonAutoCollect", state.AutoCollect == true)
 
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if leaderstats then
@@ -228,6 +235,8 @@ function TycoonService:BindPlayer(player, data)
 		OwnedUnlocks = ownedSet,
 		IncomePerSecond = 1,
 		Multiplier = 1,
+		ExternalIncomeMultiplier = 1,
+		AutoCollect = false,
 	}
 
 	self.PlayerStates[player] = state
@@ -346,6 +355,74 @@ function TycoonService:TryRebirth(player)
 	return true
 end
 
+function TycoonService:ForceRebirth(player)
+	local state = self.PlayerStates[player]
+	if not state then
+		return false
+	end
+
+	state.Data.Cash = TycoonConfig.StartingCash
+	state.Data.Uncollected = 0
+	state.Data.Rebirths += 1
+	state.OwnedUnlocks = {}
+	for _, starterUnlock in ipairs(TycoonConfig.StarterUnlocks) do
+		state.OwnedUnlocks[starterUnlock] = true
+	end
+	state.Data.OwnedUnlocks = ownedListFromSet(state.OwnedUnlocks)
+
+	self:_recalculateIncome(state)
+	self:_loadBuiltUnlocks(state)
+	self:_refreshButtons(state)
+	self:_updatePlayerStats(state)
+	self:_setToast(player, "Rebirth force applique.")
+	return true
+end
+
+function TycoonService:AddCash(player, amount, source)
+	local state = self.PlayerStates[player]
+	if not state then
+		return false
+	end
+
+	local cleanAmount = toShortInteger(amount)
+	if cleanAmount <= 0 then
+		return false
+	end
+
+	state.Data.Cash += cleanAmount
+	state.Data.TotalEarnings += cleanAmount
+	self:_updatePlayerStats(state)
+	if source then
+		self:_setToast(player, ("+ $%d (%s)"):format(cleanAmount, source))
+	end
+	return true
+end
+
+function TycoonService:SetExternalIncomeMultiplier(player, multiplier)
+	local state = self.PlayerStates[player]
+	if not state then
+		return false
+	end
+
+	local cleanMultiplier = tonumber(multiplier) or 1
+	cleanMultiplier = math.max(1, cleanMultiplier)
+	state.ExternalIncomeMultiplier = math.max(state.ExternalIncomeMultiplier, cleanMultiplier)
+	self:_recalculateIncome(state)
+	self:_updatePlayerStats(state)
+	return true
+end
+
+function TycoonService:SetAutoCollect(player, enabled)
+	local state = self.PlayerStates[player]
+	if not state then
+		return false
+	end
+
+	state.AutoCollect = enabled == true
+	self:_updatePlayerStats(state)
+	return true
+end
+
 function TycoonService:ExportPlayerData(player)
 	local state = self.PlayerStates[player]
 	if not state then
@@ -373,7 +450,12 @@ function TycoonService:_startIncomeLoop()
 			task.wait(TycoonConfig.IncomeTickSeconds)
 			for player, state in pairs(self.PlayerStates) do
 				if player.Parent == Players then
-					state.Data.Uncollected += state.IncomePerSecond
+					if state.AutoCollect then
+						state.Data.Cash += state.IncomePerSecond
+						state.Data.TotalEarnings += state.IncomePerSecond
+					else
+						state.Data.Uncollected += state.IncomePerSecond
+					end
 					self:_updatePlayerStats(state)
 				end
 			end

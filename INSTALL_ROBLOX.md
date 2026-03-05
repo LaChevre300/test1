@@ -65,6 +65,23 @@ Dans Studio :
 
 Ton monde est alors en ligne dans Roblox.
 
+### 7) Configurer la monetisation (important)
+
+Le code est deja pret (gamepass + developer products), tu dois juste lier les IDs Roblox.
+
+1. Dans Creator Hub, cree tes **Game Passes**:
+   - VIP x2 revenu
+   - Auto Collect
+2. Cree tes **Developer Products**:
+   - Cash Pack S
+   - Cash Pack M
+   - Cash Pack L
+   - Instant Rebirth
+3. Copie leurs IDs.
+4. Renseigne les IDs dans:
+   - `src/Shared/Config/MonetizationConfig.lua`
+5. Relance un test Play dans Studio.
+
 ---
 
 ## Methode 2 : Build un fichier `.rbxlx` puis publier
@@ -101,6 +118,13 @@ Dans **Game Settings** :
 - **Security > Enable Studio Access to API Services** (pour tester DataStore en studio).
 - Configure icone, miniatures, permissions, etc.
 - Fais un test multijoueur local (2 joueurs) pour valider les plots.
+- Verifie la monetisation en achat test.
+
+## Fichiers pre-release utiles
+
+- `PRE_RELEASE_CHECKLIST.md`
+- `STORE_CONTENT_PACK.md`
+- `ASSET_BRIEF.md`
 
 ## Depannage rapide
 
