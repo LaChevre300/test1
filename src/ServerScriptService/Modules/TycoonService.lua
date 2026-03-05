@@ -33,12 +33,32 @@ local function ownedListFromSet(set)
 	return list
 end
 
+local function milestoneListFromSet(set)
+	local list = {}
+	for _, milestone in ipairs(TycoonConfig.Milestones or {}) do
+		if set[milestone.Id] then
+			list[#list + 1] = milestone.Id
+		end
+	end
+	return list
+end
+
+local function copyResearchLevels(source)
+	local out = {}
+	for _, research in ipairs(TycoonConfig.ResearchUpgrades or {}) do
+		local level = toShortInteger(source and source[research.Id] or 0)
+		out[research.Id] = math.clamp(level, 0, research.MaxLevel)
+	end
+	return out
+end
+
 function TycoonService.new()
 	local self = setmetatable({}, TycoonService)
 	self.WorldFolder, self.Plots = TycoonFactory.CreateWorld()
 	self.PlayerStates = {}
 	self.PlotByOwnerUserId = {}
 	self.IncomeLoopRunning = false
+	self.ToastNonce = 0
 
 	self:_wirePlotPrompts()
 	self:_startIncomeLoop()
@@ -50,12 +70,8 @@ function TycoonService:_wirePlotPrompts()
 	for _, plot in ipairs(self.Plots) do
 		plot.ClaimPrompt.Triggered:Connect(function(player)
 			local state = self.PlayerStates[player]
-			if state then
-				return
-			end
-
-			if plot.OwnerUserId then
-				return
+			if state and state.Plot == plot then
+				self:_setToast(player, "Ce plot t'appartient deja.")
 			end
 		end)
 
@@ -67,9 +83,19 @@ function TycoonService:_wirePlotPrompts()
 			self:TryRebirth(player)
 		end)
 
+		plot.OverclockPrompt.Triggered:Connect(function(player)
+			self:TriggerOverclock(player)
+		end)
+
 		for unlockId, button in pairs(plot.ButtonsById) do
 			button.Prompt.Triggered:Connect(function(player)
 				self:TryPurchase(player, unlockId)
+			end)
+		end
+
+		for researchId, research in pairs(plot.ResearchById) do
+			research.Prompt.Triggered:Connect(function(player)
+				self:TryResearchUpgrade(player, researchId)
 			end)
 		end
 	end
@@ -130,10 +156,16 @@ function TycoonService:_createLeaderstats(player, data)
 	rebirths.Name = "Rebirths"
 	rebirths.Value = toShortInteger(data.Rebirths)
 	rebirths.Parent = leaderstats
+
+	local shards = Instance.new("IntValue")
+	shards.Name = "Shards"
+	shards.Value = toShortInteger(data.Shards)
+	shards.Parent = leaderstats
 end
 
 function TycoonService:_setToast(player, message)
-	player:SetAttribute("TycoonToast", ("%d|%s"):format(os.time(), message))
+	self.ToastNonce += 1
+	player:SetAttribute("TycoonToast", ("%d|%s"):format(self.ToastNonce, message))
 end
 
 function TycoonService:Notify(player, message)
@@ -142,44 +174,170 @@ function TycoonService:Notify(player, message)
 	end
 end
 
+function TycoonService:_isOverclockUnlocked(state)
+	return state.OwnedUnlocks[TycoonConfig.OverclockUnlockId] == true
+end
+
+function TycoonService:_isOverclockActive(state)
+	if not self:_isOverclockUnlocked(state) then
+		return false
+	end
+	return os.clock() < (state.OverclockActiveUntil or 0)
+end
+
+function TycoonService:_getDiscountedCost(state, baseCost)
+	baseCost = toShortInteger(baseCost)
+	if baseCost <= 0 then
+		return 0
+	end
+	local discounted = math.floor(baseCost * (1 - state.CostDiscount))
+	return math.max(1, discounted)
+end
+
 function TycoonService:_recalculateIncome(state)
 	local baseIncome = 0
 	local multiplier = 1
+	local unlockCount = 0
 
 	for _, unlock in ipairs(TycoonConfig.Unlocks) do
 		if state.OwnedUnlocks[unlock.Id] then
+			unlockCount += 1
 			baseIncome += unlock.Income or 0
 			multiplier += unlock.MultiplierBonus or 0
 		end
 	end
 
+	local researchIncomeBonus = 0
+	local researchCostDiscount = 0
+	local overclockDurationBonus = 0
+	for _, research in ipairs(TycoonConfig.ResearchUpgrades or {}) do
+		local level = state.ResearchLevels[research.Id] or 0
+		if research.EffectType == "income_multiplier" then
+			researchIncomeBonus += level * (research.EffectPerLevel or 0)
+		elseif research.EffectType == "cost_discount" then
+			researchCostDiscount += level * (research.EffectPerLevel or 0)
+		elseif research.EffectType == "overclock_duration" then
+			overclockDurationBonus += level * (research.EffectPerLevel or 0)
+		end
+	end
+
 	multiplier += (state.Data.Rebirths or 0) * TycoonConfig.RebirthIncomeBonus
-	state.IncomePerSecond = math.max(1, math.floor(baseIncome * multiplier * state.ExternalIncomeMultiplier))
+	multiplier += researchIncomeBonus
+
+	local overclockMultiplier = self:_isOverclockActive(state) and TycoonConfig.OverclockMultiplier or 1
+	local total = baseIncome * multiplier * state.ExternalIncomeMultiplier * overclockMultiplier
+
+	state.IncomePerSecond = math.max(1, math.floor(total))
 	state.Multiplier = multiplier
+	state.BaseIncome = baseIncome
+	state.UnlockCount = unlockCount
+	state.CostDiscount = math.clamp(researchCostDiscount, 0, 0.65)
+	state.OverclockDurationBonus = overclockDurationBonus
 end
 
 function TycoonService:_refreshRebirthPrompt(state)
 	local plot = state.Plot
 	local hasPrestigeTerminal = state.OwnedUnlocks.PrestigeTerminal == true
 	local rebirthCost = TycoonConfig.GetRebirthCost(state.Data.Rebirths or 0)
+	local shardReward = TycoonConfig.GetRebirthShardReward(state.Data.Rebirths or 0)
 	plot.RebirthPrompt.Enabled = hasPrestigeTerminal
 	plot.RebirthPrompt.ActionText = ("Renaitre ($%d)"):format(rebirthCost)
-	plot.RebirthPrompt.ObjectText = "Reinitialise ton tycoon + bonus permanent"
+	plot.RebirthPrompt.ObjectText = ("Reset tycoon + %d shards"):format(shardReward)
+end
+
+function TycoonService:_refreshOverclockStatus(state)
+	local now = os.clock()
+	local plot = state.Plot
+
+	if not self:_isOverclockUnlocked(state) then
+		TycoonFactory.SetOverclockState(plot, "Overclock verrouille", false, Color3.fromRGB(136, 175, 255))
+		return
+	end
+
+	local activeRemaining = math.max(0, math.ceil((state.OverclockActiveUntil or 0) - now))
+	if activeRemaining > 0 then
+		TycoonFactory.SetOverclockState(
+			plot,
+			("OVERCLOCK ON (%ds)"):format(activeRemaining),
+			false,
+			Color3.fromRGB(81, 255, 152)
+		)
+		return
+	end
+
+	local cooldownRemaining = math.max(0, math.ceil((state.OverclockCooldownUntil or 0) - now))
+	if cooldownRemaining > 0 then
+		TycoonFactory.SetOverclockState(
+			plot,
+			("Cooldown %ds"):format(cooldownRemaining),
+			false,
+			Color3.fromRGB(136, 175, 255)
+		)
+		return
+	end
+
+	TycoonFactory.SetOverclockState(
+		plot,
+		("Overclock pret x%.1f"):format(TycoonConfig.OverclockMultiplier),
+		true,
+		Color3.fromRGB(118, 212, 255)
+	)
 end
 
 function TycoonService:_refreshButtons(state)
 	for _, unlock in ipairs(TycoonConfig.Unlocks) do
 		if not unlock.Starter then
+			local discountedCost = self:_getDiscountedCost(state, unlock.Cost)
 			if state.OwnedUnlocks[unlock.Id] then
-				TycoonFactory.SetButtonState(state.Plot, unlock.Id, "hidden", unlock.DisplayName, unlock.Cost)
+				TycoonFactory.SetButtonState(state.Plot, unlock.Id, "hidden", unlock.DisplayName, discountedCost)
 			elseif hasAllRequirements(state.OwnedUnlocks, unlock.Requires) then
-				TycoonFactory.SetButtonState(state.Plot, unlock.Id, "available", unlock.DisplayName, unlock.Cost)
+				TycoonFactory.SetButtonState(state.Plot, unlock.Id, "available", unlock.DisplayName, discountedCost)
 			else
-				TycoonFactory.SetButtonState(state.Plot, unlock.Id, "locked", unlock.DisplayName, unlock.Cost)
+				TycoonFactory.SetButtonState(state.Plot, unlock.Id, "locked", unlock.DisplayName, discountedCost)
 			end
 		end
 	end
 	self:_refreshRebirthPrompt(state)
+end
+
+function TycoonService:_refreshResearchButtons(state)
+	local researchUnlocked = state.OwnedUnlocks[TycoonConfig.ResearchUnlockId] == true
+	for _, research in ipairs(TycoonConfig.ResearchUpgrades) do
+		local currentLevel = state.ResearchLevels[research.Id] or 0
+		local nextCost = TycoonConfig.GetResearchLevelCost(research.Id, currentLevel)
+
+		if not researchUnlocked then
+			TycoonFactory.SetResearchState(
+				state.Plot,
+				research.Id,
+				"locked",
+				research.DisplayName,
+				currentLevel,
+				research.MaxLevel,
+				nextCost
+			)
+		elseif currentLevel >= research.MaxLevel then
+			TycoonFactory.SetResearchState(
+				state.Plot,
+				research.Id,
+				"maxed",
+				research.DisplayName,
+				currentLevel,
+				research.MaxLevel,
+				nextCost
+			)
+		else
+			TycoonFactory.SetResearchState(
+				state.Plot,
+				research.Id,
+				"available",
+				research.DisplayName,
+				currentLevel,
+				research.MaxLevel,
+				nextCost
+			)
+		end
+	end
 end
 
 function TycoonService:_updatePlayerStats(state)
@@ -188,18 +346,34 @@ function TycoonService:_updatePlayerStats(state)
 	player:SetAttribute("TycoonUncollected", toShortInteger(state.Data.Uncollected))
 	player:SetAttribute("TycoonIncome", toShortInteger(state.IncomePerSecond))
 	player:SetAttribute("TycoonRebirths", toShortInteger(state.Data.Rebirths))
+	player:SetAttribute("TycoonShards", toShortInteger(state.Data.Shards))
 	player:SetAttribute("TycoonNextRebirthCost", TycoonConfig.GetRebirthCost(state.Data.Rebirths or 0))
 	player:SetAttribute("TycoonAutoCollect", state.AutoCollect == true)
+	player:SetAttribute("TycoonUnlockCount", state.UnlockCount or 0)
+	player:SetAttribute("TycoonTotalUnlocks", #TycoonConfig.Unlocks)
+	player:SetAttribute("TycoonMilestonesDone", state.ClaimedMilestoneCount or 0)
+	player:SetAttribute("TycoonMilestonesTotal", #TycoonConfig.Milestones)
+	player:SetAttribute("TycoonCostDiscountPct", math.floor((state.CostDiscount or 0) * 100))
+	player:SetAttribute(
+		"TycoonOverclockReady",
+		self:_isOverclockUnlocked(state)
+			and (not self:_isOverclockActive(state))
+			and os.clock() >= (state.OverclockCooldownUntil or 0)
+	)
 
 	local leaderstats = player:FindFirstChild("leaderstats")
 	if leaderstats then
 		local cash = leaderstats:FindFirstChild("Cash")
 		local rebirths = leaderstats:FindFirstChild("Rebirths")
+		local shards = leaderstats:FindFirstChild("Shards")
 		if cash then
 			cash.Value = toShortInteger(state.Data.Cash)
 		end
 		if rebirths then
 			rebirths.Value = toShortInteger(state.Data.Rebirths)
+		end
+		if shards then
+			shards.Value = toShortInteger(state.Data.Shards)
 		end
 	end
 end
@@ -211,6 +385,30 @@ function TycoonService:_loadBuiltUnlocks(state)
 			TycoonFactory.BuildUnlock(state.Plot, unlock)
 		end
 	end
+end
+
+function TycoonService:_checkMilestones(state)
+	local rewardCount = 0
+	local rewardCash = 0
+	local rewardShards = 0
+
+	for _, milestone in ipairs(TycoonConfig.Milestones) do
+		if not state.ClaimedMilestones[milestone.Id] and state.Data.TotalEarnings >= milestone.TargetTotalEarnings then
+			state.ClaimedMilestones[milestone.Id] = true
+			state.ClaimedMilestoneCount += 1
+			state.Data.Cash += milestone.RewardCash or 0
+			state.Data.Shards += milestone.RewardShards or 0
+			rewardCount += 1
+			rewardCash += milestone.RewardCash or 0
+			rewardShards += milestone.RewardShards or 0
+		end
+	end
+
+	if rewardCount > 0 then
+		state.Data.ClaimedMilestones = milestoneListFromSet(state.ClaimedMilestones)
+	end
+
+	return rewardCount, rewardCash, rewardShards
 end
 
 function TycoonService:BindPlayer(player, data)
@@ -228,24 +426,52 @@ function TycoonService:BindPlayer(player, data)
 		ownedSet[starterUnlockId] = true
 	end
 
+	local claimedMilestones = {}
+	local claimedMilestoneCount = 0
+	for _, milestoneId in ipairs(data.ClaimedMilestones or {}) do
+		if type(milestoneId) == "string" and not claimedMilestones[milestoneId] then
+			claimedMilestones[milestoneId] = true
+			claimedMilestoneCount += 1
+		end
+	end
+
 	local state = {
 		Player = player,
 		Plot = plot,
 		Data = data,
 		OwnedUnlocks = ownedSet,
+		ResearchLevels = copyResearchLevels(data.ResearchLevels),
+		ClaimedMilestones = claimedMilestones,
+		ClaimedMilestoneCount = claimedMilestoneCount,
 		IncomePerSecond = 1,
 		Multiplier = 1,
+		BaseIncome = 0,
+		UnlockCount = 0,
+		CostDiscount = 0,
+		OverclockDurationBonus = 0,
 		ExternalIncomeMultiplier = 1,
 		AutoCollect = false,
+		OverclockActiveUntil = 0,
+		OverclockCooldownUntil = 0,
 	}
+
+	data.ResearchLevels = copyResearchLevels(state.ResearchLevels)
+	data.ClaimedMilestones = milestoneListFromSet(state.ClaimedMilestones)
 
 	self.PlayerStates[player] = state
 	self:_createLeaderstats(player, data)
 	self:_recalculateIncome(state)
 	self:_loadBuiltUnlocks(state)
 	self:_refreshButtons(state)
-	self:_updatePlayerStats(state)
+	self:_refreshResearchButtons(state)
+	self:_refreshOverclockStatus(state)
 
+	local rewardCount, rewardCash, rewardShards = self:_checkMilestones(state)
+	if rewardCount > 0 then
+		self:_setToast(player, ("Milestones retroactifs: +$%d et +%d shards"):format(rewardCash, rewardShards))
+	end
+
+	self:_updatePlayerStats(state)
 	self:_setToast(player, ("Tycoon attribue: %s"):format(plot.Model.Name))
 	return true
 end
@@ -260,12 +486,20 @@ function TycoonService:UnbindPlayer(player)
 	self.PlayerStates[player] = nil
 end
 
-function TycoonService:TryPurchase(player, unlockId)
+function TycoonService:_getOwnedState(player)
 	local state = self.PlayerStates[player]
 	if not state then
-		return false
+		return nil
 	end
 	if state.Plot.OwnerUserId ~= player.UserId then
+		return nil
+	end
+	return state
+end
+
+function TycoonService:TryPurchase(player, unlockId)
+	local state = self:_getOwnedState(player)
+	if not state then
 		return false
 	end
 
@@ -280,29 +514,30 @@ function TycoonService:TryPurchase(player, unlockId)
 		self:_setToast(player, "Prerequis manquants.")
 		return false
 	end
-	if state.Data.Cash < unlock.Cost then
+
+	local price = self:_getDiscountedCost(state, unlock.Cost)
+	if state.Data.Cash < price then
 		self:_setToast(player, "Pas assez de cash.")
 		return false
 	end
 
-	state.Data.Cash -= unlock.Cost
+	state.Data.Cash -= price
 	state.OwnedUnlocks[unlockId] = true
 	state.Data.OwnedUnlocks = ownedListFromSet(state.OwnedUnlocks)
 
 	TycoonFactory.BuildUnlock(state.Plot, unlock)
 	self:_recalculateIncome(state)
 	self:_refreshButtons(state)
+	self:_refreshResearchButtons(state)
+	self:_refreshOverclockStatus(state)
 	self:_updatePlayerStats(state)
 	self:_setToast(player, ("Achat reussi: %s"):format(unlock.DisplayName))
 	return true
 end
 
 function TycoonService:Collect(player)
-	local state = self.PlayerStates[player]
+	local state = self:_getOwnedState(player)
 	if not state then
-		return false
-	end
-	if state.Plot.OwnerUserId ~= player.UserId then
 		return false
 	end
 
@@ -316,13 +551,90 @@ function TycoonService:Collect(player)
 	state.Data.Uncollected = 0
 	state.Data.TotalEarnings += uncollected
 
+	local rewardCount, rewardCash, rewardShards = self:_checkMilestones(state)
+	self:_refreshResearchButtons(state)
 	self:_updatePlayerStats(state)
-	self:_setToast(player, ("+ $%d collectes"):format(uncollected))
+
+	if rewardCount > 0 then
+		self:_setToast(player, ("+ $%d collectes | Milestones +$%d +%d shards"):format(uncollected, rewardCash, rewardShards))
+	else
+		self:_setToast(player, ("+ $%d collectes"):format(uncollected))
+	end
+	return true
+end
+
+function TycoonService:TryResearchUpgrade(player, researchId)
+	local state = self:_getOwnedState(player)
+	if not state then
+		return false
+	end
+	if not state.OwnedUnlocks[TycoonConfig.ResearchUnlockId] then
+		self:_setToast(player, "Debloque d'abord la recherche avancee.")
+		return false
+	end
+
+	local research = TycoonConfig.GetResearchById(researchId)
+	if not research then
+		return false
+	end
+
+	local currentLevel = state.ResearchLevels[researchId] or 0
+	if currentLevel >= research.MaxLevel then
+		self:_setToast(player, "Recherche deja au niveau max.")
+		return false
+	end
+
+	local cost = TycoonConfig.GetResearchLevelCost(researchId, currentLevel)
+	if state.Data.Shards < cost then
+		self:_setToast(player, ("Il faut %d shards."):format(cost))
+		return false
+	end
+
+	state.Data.Shards -= cost
+	state.ResearchLevels[researchId] = currentLevel + 1
+	state.Data.ResearchLevels = copyResearchLevels(state.ResearchLevels)
+
+	self:_recalculateIncome(state)
+	self:_refreshButtons(state)
+	self:_refreshResearchButtons(state)
+	self:_refreshOverclockStatus(state)
+	self:_updatePlayerStats(state)
+	self:_setToast(player, ("%s passe niveau %d"):format(research.DisplayName, currentLevel + 1))
+	return true
+end
+
+function TycoonService:_performRebirth(state, forced)
+	local rewardShards = TycoonConfig.GetRebirthShardReward(state.Data.Rebirths or 0)
+
+	state.Data.Cash = TycoonConfig.StartingCash
+	state.Data.Uncollected = 0
+	state.Data.Rebirths += 1
+	state.Data.Shards += rewardShards
+	state.OwnedUnlocks = {}
+	for _, starterUnlock in ipairs(TycoonConfig.StarterUnlocks) do
+		state.OwnedUnlocks[starterUnlock] = true
+	end
+	state.Data.OwnedUnlocks = ownedListFromSet(state.OwnedUnlocks)
+	state.OverclockActiveUntil = 0
+	state.OverclockCooldownUntil = 0
+
+	self:_recalculateIncome(state)
+	self:_loadBuiltUnlocks(state)
+	self:_refreshButtons(state)
+	self:_refreshResearchButtons(state)
+	self:_refreshOverclockStatus(state)
+	self:_updatePlayerStats(state)
+
+	if forced then
+		self:_setToast(state.Player, ("Instant Rebirth applique (+%d shards)"):format(rewardShards))
+	else
+		self:_setToast(state.Player, ("Rebirth reussi ! +%d shards"):format(rewardShards))
+	end
 	return true
 end
 
 function TycoonService:TryRebirth(player)
-	local state = self.PlayerStates[player]
+	local state = self:_getOwnedState(player)
 	if not state then
 		return false
 	end
@@ -337,49 +649,51 @@ function TycoonService:TryRebirth(player)
 		return false
 	end
 
-	state.Data.Cash = TycoonConfig.StartingCash
-	state.Data.Uncollected = 0
-	state.Data.Rebirths += 1
-	state.OwnedUnlocks = {}
-	for _, starterUnlock in ipairs(TycoonConfig.StarterUnlocks) do
-		state.OwnedUnlocks[starterUnlock] = true
-	end
-	state.Data.OwnedUnlocks = ownedListFromSet(state.OwnedUnlocks)
-
-	self:_recalculateIncome(state)
-	self:_loadBuiltUnlocks(state)
-	self:_refreshButtons(state)
-	self:_updatePlayerStats(state)
-
-	self:_setToast(player, ("Rebirth reussi ! Bonus revenu permanent x%.2f"):format(state.Multiplier))
-	return true
+	return self:_performRebirth(state, false)
 end
 
 function TycoonService:ForceRebirth(player)
-	local state = self.PlayerStates[player]
+	local state = self:_getOwnedState(player)
 	if not state then
 		return false
 	end
+	return self:_performRebirth(state, true)
+end
 
-	state.Data.Cash = TycoonConfig.StartingCash
-	state.Data.Uncollected = 0
-	state.Data.Rebirths += 1
-	state.OwnedUnlocks = {}
-	for _, starterUnlock in ipairs(TycoonConfig.StarterUnlocks) do
-		state.OwnedUnlocks[starterUnlock] = true
+function TycoonService:TriggerOverclock(player)
+	local state = self:_getOwnedState(player)
+	if not state then
+		return false
 	end
-	state.Data.OwnedUnlocks = ownedListFromSet(state.OwnedUnlocks)
+	if not self:_isOverclockUnlocked(state) then
+		self:_setToast(player, "Debloque d'abord le Hub Controle Fusion.")
+		return false
+	end
+
+	local now = os.clock()
+	if now < state.OverclockActiveUntil then
+		self:_setToast(player, "Overclock deja actif.")
+		return false
+	end
+	if now < state.OverclockCooldownUntil then
+		local remain = math.ceil(state.OverclockCooldownUntil - now)
+		self:_setToast(player, ("Overclock en cooldown: %ds"):format(remain))
+		return false
+	end
+
+	local duration = TycoonConfig.OverclockDuration + (state.OverclockDurationBonus or 0)
+	state.OverclockActiveUntil = now + duration
+	state.OverclockCooldownUntil = now + TycoonConfig.OverclockCooldown
 
 	self:_recalculateIncome(state)
-	self:_loadBuiltUnlocks(state)
-	self:_refreshButtons(state)
+	self:_refreshOverclockStatus(state)
 	self:_updatePlayerStats(state)
-	self:_setToast(player, "Rebirth force applique.")
+	self:_setToast(player, ("Overclock active pour %ds"):format(math.floor(duration)))
 	return true
 end
 
-function TycoonService:AddCash(player, amount, source)
-	local state = self.PlayerStates[player]
+function TycoonService:AddCash(player, amount, source, includeInTotalEarnings)
+	local state = self:_getOwnedState(player)
 	if not state then
 		return false
 	end
@@ -390,7 +704,11 @@ function TycoonService:AddCash(player, amount, source)
 	end
 
 	state.Data.Cash += cleanAmount
-	state.Data.TotalEarnings += cleanAmount
+	if includeInTotalEarnings == true then
+		state.Data.TotalEarnings += cleanAmount
+		self:_checkMilestones(state)
+	end
+	self:_refreshResearchButtons(state)
 	self:_updatePlayerStats(state)
 	if source then
 		self:_setToast(player, ("+ $%d (%s)"):format(cleanAmount, source))
@@ -399,7 +717,7 @@ function TycoonService:AddCash(player, amount, source)
 end
 
 function TycoonService:SetExternalIncomeMultiplier(player, multiplier)
-	local state = self.PlayerStates[player]
+	local state = self:_getOwnedState(player)
 	if not state then
 		return false
 	end
@@ -413,7 +731,7 @@ function TycoonService:SetExternalIncomeMultiplier(player, multiplier)
 end
 
 function TycoonService:SetAutoCollect(player, enabled)
-	local state = self.PlayerStates[player]
+	local state = self:_getOwnedState(player)
 	if not state then
 		return false
 	end
@@ -430,12 +748,18 @@ function TycoonService:ExportPlayerData(player)
 	end
 
 	state.Data.OwnedUnlocks = ownedListFromSet(state.OwnedUnlocks)
+	state.Data.ResearchLevels = copyResearchLevels(state.ResearchLevels)
+	state.Data.ClaimedMilestones = milestoneListFromSet(state.ClaimedMilestones)
+
 	return {
 		Cash = toShortInteger(state.Data.Cash),
 		Uncollected = toShortInteger(state.Data.Uncollected),
 		Rebirths = toShortInteger(state.Data.Rebirths),
+		Shards = toShortInteger(state.Data.Shards),
 		TotalEarnings = toShortInteger(state.Data.TotalEarnings),
 		OwnedUnlocks = state.Data.OwnedUnlocks,
+		ResearchLevels = state.Data.ResearchLevels,
+		ClaimedMilestones = state.Data.ClaimedMilestones,
 	}
 end
 
@@ -450,12 +774,19 @@ function TycoonService:_startIncomeLoop()
 			task.wait(TycoonConfig.IncomeTickSeconds)
 			for player, state in pairs(self.PlayerStates) do
 				if player.Parent == Players then
+					self:_recalculateIncome(state)
 					if state.AutoCollect then
 						state.Data.Cash += state.IncomePerSecond
 						state.Data.TotalEarnings += state.IncomePerSecond
+						local rewardCount, rewardCash, rewardShards = self:_checkMilestones(state)
+						if rewardCount > 0 then
+							self:_setToast(player, ("Milestones auto: +$%d +%d shards"):format(rewardCash, rewardShards))
+						end
 					else
 						state.Data.Uncollected += state.IncomePerSecond
 					end
+					self:_refreshOverclockStatus(state)
+					self:_refreshResearchButtons(state)
 					self:_updatePlayerStats(state)
 				end
 			end

@@ -22,8 +22,11 @@ local function makeDefaultData()
 		Cash = TycoonConfig.StartingCash,
 		Uncollected = 0,
 		Rebirths = 0,
+		Shards = 0,
 		TotalEarnings = 0,
 		OwnedUnlocks = copyArray(TycoonConfig.StarterUnlocks),
+		ResearchLevels = {},
+		ClaimedMilestones = {},
 	}
 end
 
@@ -41,6 +44,9 @@ local function mergeData(raw)
 	end
 	if type(raw.Rebirths) == "number" then
 		data.Rebirths = math.max(0, math.floor(raw.Rebirths))
+	end
+	if type(raw.Shards) == "number" then
+		data.Shards = math.max(0, math.floor(raw.Shards))
 	end
 	if type(raw.TotalEarnings) == "number" then
 		data.TotalEarnings = math.max(0, math.floor(raw.TotalEarnings))
@@ -70,6 +76,29 @@ local function mergeData(raw)
 		end
 		if not found then
 			data.OwnedUnlocks[#data.OwnedUnlocks + 1] = starterId
+		end
+	end
+
+	if type(raw.ResearchLevels) == "table" then
+		for _, research in ipairs(TycoonConfig.ResearchUpgrades or {}) do
+			local rawLevel = raw.ResearchLevels[research.Id]
+			if type(rawLevel) == "number" then
+				data.ResearchLevels[research.Id] = math.clamp(math.floor(rawLevel), 0, research.MaxLevel)
+			end
+		end
+	end
+
+	local milestoneById = {}
+	for _, milestone in ipairs(TycoonConfig.Milestones or {}) do
+		milestoneById[milestone.Id] = true
+	end
+	if type(raw.ClaimedMilestones) == "table" then
+		local seenMilestones = {}
+		for _, milestoneId in ipairs(raw.ClaimedMilestones) do
+			if type(milestoneId) == "string" and milestoneById[milestoneId] and not seenMilestones[milestoneId] then
+				seenMilestones[milestoneId] = true
+				table.insert(data.ClaimedMilestones, milestoneId)
+			end
 		end
 	end
 

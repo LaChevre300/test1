@@ -2,9 +2,12 @@
 
 Tycoon complet au style **cyberpunk / usine de ramen futuriste** :
 
-- progression en 10 paliers (droppers, upgrades, machines avancees),
+- progression longue en 30 paliers (droppers, upgrades, machines avancees),
 - economie avec revenu/seconde + cash a collecter,
 - systeme de **Rebirth** (prestige) avec bonus permanent,
+- systeme de **shards** et recherche permanente,
+- milestones de progression avec recompenses,
+- overclock temporaire activable en jeu,
 - sauvegarde DataStore (cash, rebirths, unlocks),
 - HUD client en temps reel,
 - generation automatique de 4 parcelles de tycoon.
@@ -18,6 +21,7 @@ Tu construis une chaine de production de nouilles ultra-tech :
 3. collecte le cash non collecte sur le pad jaune,
 4. debloque le terminal prestige,
 5. fais un rebirth sur le pad rouge pour augmenter ton scaling.
+6. depense tes shards en recherche permanente.
 
 ## Arborescence
 
@@ -86,6 +90,9 @@ Les principaux parametres sont dans `src/Shared/Config/TycoonConfig.lua` :
 
 - couts, revenus, multiplicateurs,
 - formule de rebirth,
+- milestones et recompenses,
+- arbre de recherche (cout shards / effets),
+- overclock (duree / cooldown / multiplicateur),
 - nombre de plots,
 - intervalle d'autosave.
 

@@ -35,7 +35,7 @@ screenGui.Parent = player:WaitForChild("PlayerGui")
 
 local frame = Instance.new("Frame")
 frame.Name = "Main"
-frame.Size = UDim2.fromOffset(360, 320)
+frame.Size = UDim2.fromOffset(360, 410)
 frame.Position = UDim2.fromOffset(20, 20)
 frame.BackgroundColor3 = Color3.fromRGB(17, 18, 24)
 frame.BorderSizePixel = 0
@@ -78,7 +78,11 @@ local labels = {
 	"Non collecte",
 	"Revenu / sec",
 	"Rebirths",
+	"Shards",
 	"Prochain rebirth",
+	"Progression",
+	"Milestones",
+	"Discount",
 	"Auto collect",
 }
 for i, labelName in ipairs(labels) do
@@ -122,7 +126,7 @@ end
 
 local shopTitle = Instance.new("TextLabel")
 shopTitle.Size = UDim2.new(1, -14, 0, 22)
-shopTitle.Position = UDim2.fromOffset(7, 198)
+shopTitle.Position = UDim2.fromOffset(7, 286)
 shopTitle.BackgroundTransparency = 1
 shopTitle.Font = Enum.Font.GothamBold
 shopTitle.TextSize = 15
@@ -133,7 +137,7 @@ shopTitle.Parent = frame
 
 local function createShopButton(text, x, y, onClick)
 	local button = Instance.new("TextButton")
-	button.Size = UDim2.fromOffset(166, 34)
+	button.Size = UDim2.fromOffset(112, 34)
 	button.Position = UDim2.fromOffset(x, y)
 	button.BackgroundColor3 = Color3.fromRGB(42, 47, 63)
 	button.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -151,20 +155,28 @@ local function createShopButton(text, x, y, onClick)
 	return button
 end
 
-createShopButton("Cash +2.5K", 7, 224, function()
+createShopButton("Cash +2.5K", 7, 312, function()
 	requestPurchase("prompt_product", "CashSmall")
 end)
 
-createShopButton("Cash +10K", 187, 224, function()
+createShopButton("Cash +10K", 124, 312, function()
 	requestPurchase("prompt_product", "CashMedium")
 end)
 
-createShopButton("VIP x2 revenu", 7, 264, function()
+createShopButton("Cash +50K", 241, 312, function()
+	requestPurchase("prompt_product", "CashLarge")
+end)
+
+createShopButton("VIP x2 revenu", 7, 352, function()
 	requestPurchase("prompt_gamepass", "VipIncomeX2")
 end)
 
-createShopButton("Auto Collect", 187, 264, function()
+createShopButton("Auto Collect", 124, 352, function()
 	requestPurchase("prompt_gamepass", "AutoCollector")
+end)
+
+createShopButton("Instant Rebirth", 241, 352, function()
+	requestPurchase("prompt_product", "InstantRebirth")
 end)
 
 local function refresh()
@@ -172,7 +184,17 @@ local function refresh()
 	stats["Non collecte"].Text = ("Non collecte: $%s"):format(shortNumber(player:GetAttribute("TycoonUncollected")))
 	stats["Revenu / sec"].Text = ("Revenu / sec: $%s"):format(shortNumber(player:GetAttribute("TycoonIncome")))
 	stats["Rebirths"].Text = ("Rebirths: %s"):format(shortNumber(player:GetAttribute("TycoonRebirths")))
+	stats["Shards"].Text = ("Shards: %s"):format(shortNumber(player:GetAttribute("TycoonShards")))
 	stats["Prochain rebirth"].Text = ("Prochain rebirth: $%s"):format(shortNumber(player:GetAttribute("TycoonNextRebirthCost")))
+	stats["Progression"].Text = ("Progression: %s/%s"):format(
+		shortNumber(player:GetAttribute("TycoonUnlockCount")),
+		shortNumber(player:GetAttribute("TycoonTotalUnlocks"))
+	)
+	stats["Milestones"].Text = ("Milestones: %s/%s"):format(
+		shortNumber(player:GetAttribute("TycoonMilestonesDone")),
+		shortNumber(player:GetAttribute("TycoonMilestonesTotal"))
+	)
+	stats["Discount"].Text = ("Discount achats: %s%%"):format(shortNumber(player:GetAttribute("TycoonCostDiscountPct")))
 	stats["Auto collect"].Text = ("Auto collect: %s"):format((player:GetAttribute("TycoonAutoCollect") and "ON") or "OFF")
 end
 
@@ -190,7 +212,13 @@ player:GetAttributeChangedSignal("TycoonCash"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonUncollected"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonIncome"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonRebirths"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonShards"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonNextRebirthCost"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonUnlockCount"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonTotalUnlocks"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonMilestonesDone"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonMilestonesTotal"):Connect(refresh)
+player:GetAttributeChangedSignal("TycoonCostDiscountPct"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonAutoCollect"):Connect(refresh)
 player:GetAttributeChangedSignal("TycoonToast"):Connect(onToastChanged)
 

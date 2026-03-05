@@ -94,16 +94,68 @@ function TycoonFactory.SetButtonState(plot, unlockId, state, displayName, cost)
 	button.Label.Text = ("%s\n$%d"):format(displayName, cost)
 end
 
+function TycoonFactory.SetResearchState(plot, researchId, state, displayName, currentLevel, maxLevel, costShards)
+	local research = plot.ResearchById[researchId]
+	if not research then
+		return
+	end
+
+	if state == "hidden" then
+		research.Part.Transparency = 1
+		research.Part.CanCollide = false
+		research.Prompt.Enabled = false
+		research.Label.Text = displayName
+		return
+	end
+
+	if state == "locked" then
+		research.Part.Transparency = 0.8
+		research.Part.CanCollide = false
+		research.Prompt.Enabled = false
+		research.Label.Text = ("[LOCKED] %s L%d/%d"):format(displayName, currentLevel, maxLevel)
+		return
+	end
+
+	if state == "maxed" then
+		research.Part.Transparency = 0.3
+		research.Part.CanCollide = false
+		research.Prompt.Enabled = false
+		research.Label.Text = ("[MAX] %s L%d/%d"):format(displayName, currentLevel, maxLevel)
+		return
+	end
+
+	research.Part.Transparency = 0.15
+	research.Part.CanCollide = true
+	research.Prompt.Enabled = true
+	research.Prompt.ActionText = ("Upgrade %d shards"):format(costShards)
+	research.Label.Text = ("%s\nL%d/%d - %d shards"):format(displayName, currentLevel, maxLevel, costShards)
+end
+
+function TycoonFactory.SetOverclockState(plot, text, enabled, color)
+	plot.OverclockPrompt.Enabled = enabled
+	plot.OverclockLabel.Text = text
+	if color then
+		plot.OverclockPad.Color = color
+	end
+end
+
 function TycoonFactory.SetPlotUnclaimed(plot)
 	plot.OwnerUserId = nil
 	plot.ClaimPrompt.Enabled = true
 	plot.CollectorPrompt.Enabled = false
 	plot.RebirthPrompt.Enabled = false
+	plot.OverclockPrompt.Enabled = false
+	plot.OverclockLabel.Text = "Overclock verrouille"
 	TycoonFactory.SetOwnerVisual(plot, "PLOT LIBRE", Color3.fromRGB(255, 255, 255))
 	for unlockId, button in pairs(plot.ButtonsById) do
 		button.Part.Transparency = 1
 		button.Prompt.Enabled = false
 		button.Label.Text = unlockId
+	end
+	for researchId, research in pairs(plot.ResearchById) do
+		research.Part.Transparency = 1
+		research.Prompt.Enabled = false
+		research.Label.Text = researchId
 	end
 	TycoonFactory.ResetPlotBuild(plot)
 end
@@ -167,7 +219,7 @@ function TycoonFactory.CreateWorld()
 
 	local ground = createPart(
 		"Ground",
-		Vector3.new(750, 1, 750),
+		Vector3.new(900, 1, 900),
 		CFrame.new(0, -2, 0),
 		Color3.fromRGB(15, 16, 22),
 		Enum.Material.Slate,
@@ -192,7 +244,7 @@ function TycoonFactory.CreateWorld()
 
 		local floor = createPart(
 			"Floor",
-			Vector3.new(110, 1, 110),
+			Vector3.new(140, 1, 140),
 			CFrame.new(origin + Vector3.new(0, 0, 0)),
 			Color3.fromRGB(22, 25, 35),
 			Enum.Material.Metal,
@@ -202,7 +254,7 @@ function TycoonFactory.CreateWorld()
 		local claimPad = createPart(
 			"ClaimPad",
 			Vector3.new(12, 1, 12),
-			CFrame.new(origin + Vector3.new(-40, 1, 42)),
+			CFrame.new(origin + Vector3.new(-50, 1, 54)),
 			Color3.fromRGB(67, 255, 170),
 			Enum.Material.Neon,
 			plotModel
@@ -212,7 +264,7 @@ function TycoonFactory.CreateWorld()
 		local collector = createPart(
 			"Collector",
 			Vector3.new(12, 1, 12),
-			CFrame.new(origin + Vector3.new(40, 1, 42)),
+			CFrame.new(origin + Vector3.new(50, 1, 54)),
 			Color3.fromRGB(255, 226, 87),
 			Enum.Material.Neon,
 			plotModel
@@ -223,7 +275,7 @@ function TycoonFactory.CreateWorld()
 		local rebirthPad = createPart(
 			"RebirthPad",
 			Vector3.new(14, 1, 14),
-			CFrame.new(origin + Vector3.new(40, 1, -42)),
+			CFrame.new(origin + Vector3.new(50, 1, -54)),
 			Color3.fromRGB(255, 94, 94),
 			Enum.Material.Neon,
 			plotModel
@@ -231,10 +283,22 @@ function TycoonFactory.CreateWorld()
 		local rebirthPrompt = createPrompt(rebirthPad, "Renaitre", "Prestige")
 		rebirthPrompt.Enabled = false
 
+		local overclockPad = createPart(
+			"OverclockPad",
+			Vector3.new(14, 1, 14),
+			CFrame.new(origin + Vector3.new(0, 1, 56)),
+			Color3.fromRGB(136, 175, 255),
+			Enum.Material.Neon,
+			plotModel
+		)
+		local overclockPrompt = createPrompt(overclockPad, "Overclock", "Boost temporaire")
+		overclockPrompt.Enabled = false
+		local overclockLabel = createBillboard(overclockPad, "Overclock verrouille", Color3.fromRGB(255, 255, 255))
+
 		local sign = createPart(
 			"OwnerSign",
 			Vector3.new(28, 10, 2),
-			CFrame.new(origin + Vector3.new(-40, 8, 50)),
+			CFrame.new(origin + Vector3.new(-50, 8, 60)),
 			Color3.fromRGB(44, 51, 73),
 			Enum.Material.Metal,
 			plotModel
@@ -250,38 +314,70 @@ function TycoonFactory.CreateWorld()
 		buttonFolder.Parent = plotModel
 
 		local buttonsById = {}
-		local buttonRow = 0
-		local buttonCol = 0
+		local nonStarterUnlocks = {}
 		for _, unlock in ipairs(TycoonConfig.Unlocks) do
 			if not unlock.Starter then
-				local position = origin + Vector3.new(-42 + buttonCol * 10, 1, 28 + buttonRow * 10)
-				local buttonPart = createPart(
-					("Button_%s"):format(unlock.Id),
-					Vector3.new(8, 1, 8),
-					CFrame.new(position),
-					unlock.Color or Color3.fromRGB(255, 255, 255),
-					Enum.Material.Neon,
-					buttonFolder
-				)
-				buttonPart.Transparency = 1
-				buttonPart.CanCollide = false
-
-				local prompt = createPrompt(buttonPart, "Acheter", unlock.DisplayName)
-				prompt.Enabled = false
-
-				local label = createBillboard(buttonPart, unlock.DisplayName, Color3.fromRGB(255, 255, 255))
-				buttonsById[unlock.Id] = {
-					Part = buttonPart,
-					Prompt = prompt,
-					Label = label,
-				}
-
-				buttonCol += 1
-				if buttonCol >= 4 then
-					buttonCol = 0
-					buttonRow += 1
-				end
+				table.insert(nonStarterUnlocks, unlock)
 			end
+		end
+
+		local totalButtons = #nonStarterUnlocks
+		for buttonIndex, unlock in ipairs(nonStarterUnlocks) do
+			local angle = ((buttonIndex - 1) / math.max(1, totalButtons)) * math.pi * 2
+			local radius = 50
+			local position = origin + Vector3.new(math.cos(angle) * radius, 1, math.sin(angle) * radius)
+			local buttonPart = createPart(
+				("Button_%s"):format(unlock.Id),
+				Vector3.new(8, 1, 8),
+				CFrame.new(position),
+				unlock.Color or Color3.fromRGB(255, 255, 255),
+				Enum.Material.Neon,
+				buttonFolder
+			)
+			buttonPart.Transparency = 1
+			buttonPart.CanCollide = false
+
+			local prompt = createPrompt(buttonPart, "Acheter", unlock.DisplayName)
+			prompt.Enabled = false
+
+			local label = createBillboard(buttonPart, unlock.DisplayName, Color3.fromRGB(255, 255, 255))
+			buttonsById[unlock.Id] = {
+				Part = buttonPart,
+				Prompt = prompt,
+				Label = label,
+			}
+		end
+
+		local researchFolder = Instance.new("Folder")
+		researchFolder.Name = "Research"
+		researchFolder.Parent = plotModel
+
+		local researchById = {}
+		local researchCount = #TycoonConfig.ResearchUpgrades
+		for researchIndex, researchUpgrade in ipairs(TycoonConfig.ResearchUpgrades) do
+			local spread = 100 / math.max(1, researchCount - 1)
+			local xOffset = -50 + (researchIndex - 1) * spread
+			local position = origin + Vector3.new(xOffset, 1, -56)
+			local researchPart = createPart(
+				("Research_%s"):format(researchUpgrade.Id),
+				Vector3.new(16, 1, 10),
+				CFrame.new(position),
+				Color3.fromRGB(255, 133, 244),
+				Enum.Material.Neon,
+				researchFolder
+			)
+			researchPart.Transparency = 1
+			researchPart.CanCollide = false
+
+			local prompt = createPrompt(researchPart, "Upgrade", researchUpgrade.DisplayName)
+			prompt.Enabled = false
+
+			local label = createBillboard(researchPart, researchUpgrade.DisplayName, Color3.fromRGB(255, 255, 255))
+			researchById[researchUpgrade.Id] = {
+				Part = researchPart,
+				Prompt = prompt,
+				Label = label,
+			}
 		end
 
 		plots[index] = {
@@ -294,7 +390,11 @@ function TycoonFactory.CreateWorld()
 			ClaimPrompt = claimPrompt,
 			CollectorPrompt = collectorPrompt,
 			RebirthPrompt = rebirthPrompt,
+			OverclockPad = overclockPad,
+			OverclockPrompt = overclockPrompt,
+			OverclockLabel = overclockLabel,
 			ButtonsById = buttonsById,
+			ResearchById = researchById,
 			BuildFolder = buildFolder,
 		}
 

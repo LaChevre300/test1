@@ -9,6 +9,9 @@ Utilise cette checklist avant publication.
 - [ ] Les upgrades s'achetent dans le bon ordre.
 - [ ] Le pad de collecte fonctionne.
 - [ ] Le rebirth fonctionne.
+- [ ] Les milestones se debloquent et donnent les recompenses.
+- [ ] La recherche permanente (shards) fonctionne.
+- [ ] Le pad overclock fonctionne (activation + cooldown).
 - [ ] Le save/load fonctionne (test sortie + rejoin).
 
 ## 2) Roblox Studio settings
