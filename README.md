@@ -1,0 +1,60 @@
+# Neon Noodle Tycoon (Roblox)
+
+Tycoon complet au style **cyberpunk / usine de ramen futuriste** :
+
+- progression en 10 paliers (droppers, upgrades, machines avancees),
+- economie avec revenu/seconde + cash a collecter,
+- systeme de **Rebirth** (prestige) avec bonus permanent,
+- sauvegarde DataStore (cash, rebirths, unlocks),
+- HUD client en temps reel,
+- generation automatique de 4 parcelles de tycoon.
+
+## Concept de jeu
+
+Tu construis une chaine de production de nouilles ultra-tech :
+
+1. demarre avec un dropper de base,
+2. achete des ameliorations via les boutons du plot,
+3. collecte le cash non collecte sur le pad jaune,
+4. debloque le terminal prestige,
+5. fais un rebirth sur le pad rouge pour augmenter ton scaling.
+
+## Arborescence
+
+```text
+src/
+  Shared/Config/TycoonConfig.lua
+  ServerScriptService/
+    Main.server.lua
+    Modules/
+      DataService.lua
+      TycoonFactory.lua
+      TycoonService.lua
+  StarterPlayer/StarterPlayerScripts/
+    TycoonHUD.client.lua
+default.project.json
+```
+
+## Utilisation (Rojo)
+
+1. Installe Rojo.
+2. Demarre le serveur Rojo a la racine du repo :
+   ```bash
+   rojo serve
+   ```
+3. Dans Roblox Studio, ouvre ton `.rbxl/.rbxlx` puis connecte Rojo.
+4. Lance Play Test.
+
+## Reglages gameplay
+
+Les principaux parametres sont dans `src/Shared/Config/TycoonConfig.lua` :
+
+- couts, revenus, multiplicateurs,
+- formule de rebirth,
+- nombre de plots,
+- intervalle d'autosave.
+
+## Notes
+
+- Si DataStore API est desactivee en Studio, le jeu reste jouable (avec warnings de save/load).
+- Le systeme est pret a etre etendu (cosmetiques, gamepass, quetes, NPC, etc.).
