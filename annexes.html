@@ -13,9 +13,8 @@
   </head>
   <body>
     <header class="topbar">
-      <button id="menuToggle" class="menu-toggle" aria-expanded="true" aria-controls="pagesNav">☰ Pages</button>
+      <button id="menuToggle" class="menu-toggle" aria-expanded="true" aria-controls="pagesNav" onclick="const n=document.getElementById('pagesNav');const o=n.classList.toggle('open');this.setAttribute('aria-expanded',o?'true':'false');">☰ Pages</button>
       <div class="brand"><img src="assets/icon.svg" alt="Logo" width="28" height="28" /><span>Carnet Survivaliste</span></div>
-      <button id="themeToggle" class="theme-toggle">🌙</button>
     </header>
     <nav id="pagesNav" class="pages-nav open" aria-label="Liste des pages">
       <a href="index.html">Accueil</a><a href="plans.html">Plans</a><a href="eau.html">Eau</a><a href="nourriture.html">Nourriture</a><a href="abri-feu-energie.html">Abri / Feu / Énergie</a><a href="sante.html">Santé</a><a href="navigation-comms.html">Navigation / Comms</a><a href="securite.html">Sécurité</a><a href="competences.html">Compétences</a><a class="active-page" href="annexes.html">Annexes</a>

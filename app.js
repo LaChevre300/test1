@@ -36,10 +36,10 @@ function initPagesMenu() {
   const btn = byId("menuToggle");
   const nav = byId("pagesNav");
   if (!btn || !nav) return;
-  btn.addEventListener("click", () => {
-    const open = nav.classList.toggle("open");
-    btn.setAttribute("aria-expanded", open ? "true" : "false");
-  });
+  // Le clic est géré en inline dans le HTML pour rester fonctionnel
+  // même si une partie du JavaScript global échoue.
+  const open = nav.classList.contains("open");
+  btn.setAttribute("aria-expanded", open ? "true" : "false");
 }
 
 async function loadAlerts() {
