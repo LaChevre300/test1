@@ -65,6 +65,8 @@ export function createLabWorld() {
   const half = 72; // ~144m x 144m
   const wallH = 7.2;
   const wallT = 1.0;
+  // Cloisons intérieures: doivent rejoindre le faux-plafond (tiles à wallH - 1.15)
+  const innerWallH = wallH - 0.65; // top à wallH - 1.15 (avec sol à y=-0.5)
 
   const bounds = {
     minX: -half + 2,
@@ -216,8 +218,8 @@ export function createLabWorld() {
 
   // Helper: murs intérieurs (visuel + collider)
   function addWallBox(sizeX, sizeZ, x, z) {
-    const mesh = new THREE.Mesh(new THREE.BoxGeometry(sizeX, wallH - 1.2, wallT), wallMat);
-    mesh.position.set(x, (wallH - 1.2) / 2 - 0.5, z);
+    const mesh = new THREE.Mesh(new THREE.BoxGeometry(sizeX, innerWallH, wallT), wallMat);
+    mesh.position.set(x, innerWallH / 2 - 0.5, z);
     mesh.castShadow = false;
     mesh.receiveShadow = true;
     group.add(mesh);
@@ -229,9 +231,9 @@ export function createLabWorld() {
     return mesh;
   }
   function addWallBoxRot(sizeX, sizeZ, x, z, rotY) {
-    const geo = new THREE.BoxGeometry(sizeX, wallH - 1.2, wallT);
+    const geo = new THREE.BoxGeometry(sizeX, innerWallH, wallT);
     const mesh = new THREE.Mesh(geo, wallMat);
-    mesh.position.set(x, (wallH - 1.2) / 2 - 0.5, z);
+    mesh.position.set(x, innerWallH / 2 - 0.5, z);
     mesh.rotation.y = rotY;
     mesh.castShadow = false;
     mesh.receiveShadow = true;
@@ -411,14 +413,21 @@ export function createLabWorld() {
     minZ: -half + 8,
     maxZ: -18,
   };
-  // murs de la salle (avec une porte côté sud)
+  // murs de la salle (avec une vraie ouverture de porte côté sud)
   addWallBox(server.maxX - server.minX, 0, (server.minX + server.maxX) / 2, server.minZ);
-  addWallBox(server.maxX - server.minX - 10, 0, (server.minX + server.maxX) / 2 + 5, server.maxZ); // porte à gauche
+  const serverDoorX = server.minX + 5.0;
+  const serverDoorGap = 3.9;
+  const sLeftEnd = serverDoorX - serverDoorGap / 2;
+  const sRightStart = serverDoorX + serverDoorGap / 2;
+  const sLeftLen = sLeftEnd - server.minX;
+  const sRightLen = server.maxX - sRightStart;
+  if (sLeftLen > 0.6) addWallBox(sLeftLen, 0, server.minX + sLeftLen / 2, server.maxZ);
+  if (sRightLen > 0.6) addWallBox(sRightLen, 0, sRightStart + sRightLen / 2, server.maxZ);
   addWallBoxRot(server.maxZ - server.minZ, 0, server.minX, (server.minZ + server.maxZ) / 2, Math.PI / 2);
   addWallBoxRot(server.maxZ - server.minZ, 0, server.maxX, (server.minZ + server.maxZ) / 2, Math.PI / 2);
 
   // Porte salle serveurs (ouverture laissée à gauche sur le mur sud)
-  door({ x: server.minX + 5.0, z: server.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 1.15, isDouble: false });
+  door({ x: serverDoorX, z: server.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 1.25, isDouble: false });
 
   // Salle cours (NE)
   const classroom = {
@@ -428,12 +437,20 @@ export function createLabWorld() {
     maxZ: -18,
   };
   addWallBox(classroom.maxX - classroom.minX, 0, (classroom.minX + classroom.maxX) / 2, classroom.minZ);
-  addWallBox(classroom.maxX - classroom.minX - 10, 0, (classroom.minX + classroom.maxX) / 2 - 5, classroom.maxZ);
+  // mur sud avec ouverture porte
+  const classDoorX = classroom.maxX - 5.0;
+  const classDoorGap = 3.9;
+  const cLeftEnd = classDoorX - classDoorGap / 2;
+  const cRightStart = classDoorX + classDoorGap / 2;
+  const cLeftLen = cLeftEnd - classroom.minX;
+  const cRightLen = classroom.maxX - cRightStart;
+  if (cLeftLen > 0.6) addWallBox(cLeftLen, 0, classroom.minX + cLeftLen / 2, classroom.maxZ);
+  if (cRightLen > 0.6) addWallBox(cRightLen, 0, cRightStart + cRightLen / 2, classroom.maxZ);
   addWallBoxRot(classroom.maxZ - classroom.minZ, 0, classroom.minX, (classroom.minZ + classroom.maxZ) / 2, Math.PI / 2);
   addWallBoxRot(classroom.maxZ - classroom.minZ, 0, classroom.maxX, (classroom.minZ + classroom.maxZ) / 2, Math.PI / 2);
 
   // Porte salle de cours (ouverture laissée à droite sur le mur sud)
-  door({ x: classroom.maxX - 5.0, z: classroom.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 0.9, isDouble: false });
+  door({ x: classDoorX, z: classroom.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 1.05, isDouble: false });
 
   // Cloison vitrée côté sud de la salle de cours (plus “réaliste”)
   const glassMat = new THREE.MeshPhysicalMaterial({
@@ -446,16 +463,31 @@ export function createLabWorld() {
     transparent: true,
     opacity: 0.95,
   });
-  const glassW = (classroom.maxX - classroom.minX) - 16;
+  // Cloison vitrée NE DOIT PAS barrer la porte: on la segmente autour de l'ouverture.
+  const glassZ = classroom.maxZ + 0.55;
+  const glassGap = 4.4;
+  const gLeftEnd = classDoorX - glassGap / 2;
+  const gRightStart = classDoorX + glassGap / 2;
+  const gLeftLen = gLeftEnd - (classroom.minX + 2.5);
+  const gRightLen = (classroom.maxX - 2.5) - gRightStart;
   const glassH = 3.1;
   const glassT = 0.1;
-  const glass = new THREE.Mesh(new THREE.BoxGeometry(glassW, glassH, glassT), glassMat);
-  glass.position.set((classroom.minX + classroom.maxX) / 2, 1.35, classroom.maxZ + 0.55);
-  glass.castShadow = false;
-  glass.receiveShadow = true;
-  group.add(glass);
-  // collision fine: même dimensions que le verre (évite murs invisibles)
-  addColliderBox(group, colliders, losColliders, new THREE.Vector3(glassW, glassH, glassT + 0.25), glass.position.clone(), "glassWallCollider", true);
+  if (gLeftLen > 1.0) {
+    const glassL = new THREE.Mesh(new THREE.BoxGeometry(gLeftLen, glassH, glassT), glassMat);
+    glassL.position.set(classroom.minX + 2.5 + gLeftLen / 2, 1.35, glassZ);
+    glassL.castShadow = false;
+    glassL.receiveShadow = true;
+    group.add(glassL);
+    addColliderBox(group, colliders, losColliders, new THREE.Vector3(gLeftLen, glassH, glassT + 0.25), glassL.position.clone(), "glassWallCollider", true);
+  }
+  if (gRightLen > 1.0) {
+    const glassR = new THREE.Mesh(new THREE.BoxGeometry(gRightLen, glassH, glassT), glassMat);
+    glassR.position.set(gRightStart + gRightLen / 2, 1.35, glassZ);
+    glassR.castShadow = false;
+    glassR.receiveShadow = true;
+    group.add(glassR);
+    addColliderBox(group, colliders, losColliders, new THREE.Vector3(gRightLen, glassH, glassT + 0.25), glassR.position.clone(), "glassWallCollider", true);
+  }
 
   // Signalétique (panneaux)
   const signTex = (() => {
@@ -494,12 +526,20 @@ export function createLabWorld() {
     maxZ: half - 8,
   };
   addWallBox(storage.maxX - storage.minX, 0, (storage.minX + storage.maxX) / 2, storage.minZ);
-  addWallBox(storage.maxX - storage.minX - 10, 0, (storage.minX + storage.maxX) / 2 + 5, storage.maxZ);
+  // mur sud avec ouverture porte
+  const storageDoorX = storage.minX + 5.0;
+  const storageDoorGap = 3.9;
+  const stLeftEnd = storageDoorX - storageDoorGap / 2;
+  const stRightStart = storageDoorX + storageDoorGap / 2;
+  const stLeftLen = stLeftEnd - storage.minX;
+  const stRightLen = storage.maxX - stRightStart;
+  if (stLeftLen > 0.6) addWallBox(stLeftLen, 0, storage.minX + stLeftLen / 2, storage.maxZ);
+  if (stRightLen > 0.6) addWallBox(stRightLen, 0, stRightStart + stRightLen / 2, storage.maxZ);
   addWallBoxRot(storage.maxZ - storage.minZ, 0, storage.minX, (storage.minZ + storage.maxZ) / 2, Math.PI / 2);
   addWallBoxRot(storage.maxZ - storage.minZ, 0, storage.maxX, (storage.minZ + storage.maxZ) / 2, Math.PI / 2);
 
   // Porte stockage (ouverture à gauche sur le mur sud)
-  door({ x: storage.minX + 5.0, z: storage.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 1.0, isDouble: false });
+  door({ x: storageDoorX, z: storage.maxZ, rotY: 0, width: 3.2, height: 3.0, openAngle: 1.15, isDouble: false });
 
   // --- Remplissage massif (InstancedMesh) ---
   // Géométries simples, mais beaucoup d’instances.
