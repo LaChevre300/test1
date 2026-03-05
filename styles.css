@@ -953,20 +953,24 @@ body {
 
 .nav-tree {
   display: grid;
-  gap: 0.45rem;
+  gap: 0.35rem;
 }
 
 .nav-section,
 .nav-subsection {
-  border: 1px solid #b8a184;
-  border-radius: 12px;
-  background: #f6ead2;
+  border: 1px solid #b7a385;
+  border-radius: 0;
+  background: #f1e7d1;
   overflow: hidden;
+  box-shadow: none;
 }
 
 .nav-subsection {
-  margin: 0.35rem 0.35rem 0.45rem;
-  border-style: dashed;
+  margin: 0;
+  border-top: 0;
+  border-left: 0;
+  border-right: 0;
+  border-bottom: 1px solid #c4b193;
 }
 
 .nav-section > summary,
@@ -976,19 +980,20 @@ body {
   display: grid;
   align-items: center;
   gap: 0.5rem;
-  color: #35587b;
-  border-bottom: 1px solid #c9b08a;
-  background: #f3e5c8;
+  color: #2e4f6f;
+  border-bottom: 1px solid #c7b38f;
+  background: #f1e7d0;
 }
 
 .nav-section > summary {
   grid-template-columns: 28px 1fr 16px;
-  padding: 0.58rem 0.65rem;
+  padding: 0.6rem 0.62rem;
 }
 
 .nav-subsection > summary {
   grid-template-columns: 1fr 16px;
-  padding: 0.48rem 0.55rem;
+  padding: 0.45rem 0.55rem;
+  font-size: 0.82rem;
 }
 
 .nav-section > summary::-webkit-details-marker,
@@ -1007,19 +1012,19 @@ body {
 }
 
 .nav-title {
-  font-size: 0.95rem;
+  font-size: 0.93rem;
   font-weight: 700;
-  color: #2f5579;
+  color: #244968;
 }
 
 .nav-sub {
   font-size: 0.74rem;
-  color: #59789a;
+  color: #5a7592;
 }
 
 .nav-arrow {
-  font-size: 1.35rem;
-  color: #2f5579;
+  font-size: 1.25rem;
+  color: #1f4d73;
   transform: rotate(0deg);
   transition: transform 120ms ease;
   justify-self: end;
@@ -1027,6 +1032,28 @@ body {
 
 details[open] > summary .nav-arrow {
   transform: rotate(90deg);
+}
+
+.nav-group-title {
+  background: #726f69;
+  color: #f4f1ea;
+  text-align: center;
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  border: 1px solid #6a665f;
+  padding: 0.22rem 0.35rem;
+}
+
+.nav-section > .action-buttons,
+.nav-section > .detail-list,
+.nav-section > .compact-list,
+.nav-subsection > .action-buttons,
+.nav-subsection > .detail-list,
+.nav-subsection > .compact-list,
+.nav-subsection > .person-grid {
+  padding: 0.3rem;
 }
 
 .btn {
